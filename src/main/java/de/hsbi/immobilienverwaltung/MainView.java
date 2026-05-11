@@ -9,6 +9,6 @@ public class MainView extends VerticalLayout {
 
     public MainView() {
         add(new H1("Vaadin läuft 🚀"));
-        add(new H1("Jannick commit"));
+        add(new H1("Samuel 🚀"));
     }
 }
