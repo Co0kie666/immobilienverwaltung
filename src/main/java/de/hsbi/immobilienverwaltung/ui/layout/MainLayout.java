@@ -22,7 +22,6 @@ import de.hsbi.immobilienverwaltung.ui.finanzen.FinanzDashboardView;
 import de.hsbi.immobilienverwaltung.ui.immobilien.ImmobilienListView;
 import de.hsbi.immobilienverwaltung.ui.mieter.MieterVertraegeView;
 
-
 public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
     private final H1 pageTitle = new H1();
