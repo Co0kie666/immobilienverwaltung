@@ -1,4 +1,4 @@
 package de.hsbi.immobilienverwaltung.ui.immobilien;
 
-public class WohneinheitFormView {
+public class MieteinheitFormView {
 }
