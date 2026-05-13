@@ -21,7 +21,6 @@ import de.hsbi.immobilienverwaltung.ui.auth.LoginView;
 import de.hsbi.immobilienverwaltung.ui.finanzen.FinanzDashboardView;
 import de.hsbi.immobilienverwaltung.ui.immobilien.ImmobilienListView;
 import de.hsbi.immobilienverwaltung.ui.mieter.MieterVertraegeView;
-import de.hsbi.immobilienverwaltung.ui.settings.SettingsView;
 
 
 public class MainLayout extends AppLayout implements AfterNavigationObserver {
@@ -84,9 +83,6 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
         Div spacer = new Div();
         spacer.addClassName("sidebar-spacer");
 
-        // General Label
-        Span generalLabel = new Span("General");
-        generalLabel.addClassName("menu-label");
 
         // Bottom Navigation
         VerticalLayout bottomNavigation = new VerticalLayout();
@@ -98,10 +94,9 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
         RouterLink logoutLink = createNavLink("Logout", VaadinIcon.SIGN_OUT, LoginView.class);
         logoutLink.addClassName("logout-link");
 
-        bottomNavigation.add(createNavLink("Settings", VaadinIcon.COG, SettingsView.class),
-                logoutLink);
+        bottomNavigation.add(logoutLink);
 
-        sidebar.add(logoArea, menuLabel, navigation, spacer, generalLabel, bottomNavigation);
+        sidebar.add(logoArea, menuLabel, navigation, spacer, bottomNavigation);
 
         return sidebar;
     }

@@ -3,7 +3,6 @@ package de.hsbi.immobilienverwaltung.ui.immobilien;
 
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
