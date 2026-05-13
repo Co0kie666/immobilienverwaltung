@@ -1,4 +1,4 @@
 package de.hsbi.immobilienverwaltung.service.interfaces;
 
-public interface WohneinheitService {
+public interface MieteinheitService {
 }

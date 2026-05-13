@@ -1,14 +1,24 @@
 package de.hsbi.immobilienverwaltung;
 
-import com.vaadin.flow.component.html.H1;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.router.Route;
+import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
+import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 
-@Route("")
-public class MainView extends VerticalLayout {
+@Route(value = "", layout = MainLayout.class)
+public class MainView extends Div implements HasPageHeader {
 
     public MainView() {
-        add(new H1("Vaadin läuft 🚀"));
-        add(new H1("Samuel 🚀"));
+
+    }
+
+    @Override
+    public String getPageTitle() {
+        return "Dashboard";
+    }
+
+    @Override
+    public String getPageSubtitle() {
+        return "Zentrale Übersicht und KPIs";
     }
 }
