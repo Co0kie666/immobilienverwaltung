@@ -1,4 +1,4 @@
 package de.hsbi.immobilienverwaltung.service.impl;
 
-public class WohneinheitServiceImpl {
+public class MieteinheitServiceImpl {
 }

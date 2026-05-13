@@ -1,4 +1,4 @@
 package de.hsbi.immobilienverwaltung.repository;
 
-public class WohneinheitRepository {
+public class MieteinheitRepository {
 }
