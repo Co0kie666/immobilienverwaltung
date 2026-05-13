@@ -1,12 +1,3 @@
-vaadin-app-layout {
-    --vaadin-app-layout-drawer-width: 250px;
-}
-
-vaadin-app-layout::part(drawer) {
-    background: white;
-    border-right: 1px solid #e5e7eb;
-}
-
 .sidebar {
     width: 100%;
     height: 100%;
