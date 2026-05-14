@@ -1,4 +1,6 @@
-@import url('mainlayout.css');
+@import url('./components.css');
+@import url('./mainlayout.css');
+@import url('./dashboardview.css');
 
 html,
 body {
