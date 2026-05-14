@@ -1,0 +1,411 @@
+/* =========================================================
+   Global Component Styles
+   Für wiederverwendbare UI-Bausteine im gesamten Projekt
+   ========================================================= */
+
+/* ---------- Design Tokens ---------- */
+
+:root {
+    --color-bg: #f8fafc;
+    --color-surface: #ffffff;
+    --color-border: #e5e7eb;
+
+    --color-text: #111827;
+    --color-text-muted: #6b7280;
+    --color-text-light: #9ca3af;
+
+    --color-primary: #2563eb;
+    --color-primary-light: #eff6ff;
+    --color-primary-dark: #1e3a8a;
+
+    --color-success: #10b981;
+    --color-success-light: rgba(16, 185, 129, 0.1);
+
+    --color-warning: #f59e0b;
+    --color-warning-light: #fff7ed;
+
+    --color-danger: #ef4444;
+    --color-danger-light: #fef2f2;
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+
+    --shadow-soft: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
+}
+
+
+/* =========================================================
+   Page Layout Helpers
+   ========================================================= */
+
+.page-content {
+    padding: 32px;
+    background: var(--color-bg);
+    min-height: 100%;
+    box-sizing: border-box;
+}
+
+.page-section {
+    margin-bottom: 32px;
+}
+
+.page-section-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--color-text);
+    margin: 0 0 16px 0;
+}
+
+
+/* =========================================================
+   Cards
+   ========================================================= */
+
+.card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: var(--shadow-soft);
+    box-sizing: border-box;
+}
+
+.card-no-shadow {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-sizing: border-box;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.card-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--color-text);
+    margin: 0;
+}
+
+.card-subtitle {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    margin: 4px 0 0 0;
+}
+
+
+/* =========================================================
+   Buttons
+   Nutzung:
+   button.addClassName("primary-button");
+   button.addClassName("secondary-button");
+   button.addClassName("danger-button");
+   ========================================================= */
+
+.primary-button {
+    background: var(--color-primary) !important;
+    color: white !important;
+    border-radius: var(--radius-md) !important;
+    font-weight: 700 !important;
+    border: none !important;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+}
+
+.primary-button:hover {
+    background: var(--color-primary-dark) !important;
+    color: white !important;
+}
+
+.secondary-button {
+    background: white !important;
+    color: #374151 !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: var(--radius-md) !important;
+    font-weight: 700 !important;
+    box-shadow: none !important;
+}
+
+.secondary-button:hover {
+    background: #f9fafb !important;
+    color: var(--color-text) !important;
+}
+
+.danger-button {
+    background: var(--color-danger) !important;
+    color: white !important;
+    border-radius: var(--radius-md) !important;
+    font-weight: 700 !important;
+    border: none !important;
+}
+
+.danger-button:hover {
+    background: #dc2626 !important;
+    color: white !important;
+}
+
+.ghost-button {
+    background: transparent !important;
+    color: var(--color-text-muted) !important;
+    border-radius: var(--radius-md) !important;
+    font-weight: 700 !important;
+}
+
+.ghost-button:hover {
+    background: #f3f4f6 !important;
+    color: var(--color-text) !important;
+}
+
+.icon-button {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    padding: 0 !important;
+    border-radius: var(--radius-md) !important;
+    background: transparent !important;
+    color: var(--color-text-muted) !important;
+}
+
+.icon-button:hover {
+    background: #f3f4f6 !important;
+    color: var(--color-text) !important;
+}
+
+.full-width-button {
+    width: 100%;
+}
+
+
+/* =========================================================
+   Status Badges
+   Nutzung:
+   badge.addClassNames("status-badge", "success");
+   badge.addClassNames("status-badge", "warning");
+   ========================================================= */
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+
+    padding: 5px 11px;
+    border-radius: 999px;
+
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.status-badge.success {
+    background: var(--color-success-light);
+    color: var(--color-success);
+}
+
+.status-badge.warning {
+    background: var(--color-warning-light);
+    color: var(--color-warning);
+}
+
+.status-badge.danger {
+    background: var(--color-danger-light);
+    color: var(--color-danger);
+}
+
+.status-badge.neutral {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.status-badge.primary {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+}
+
+
+/* =========================================================
+   KPI Cards
+   Nutzung für Dashboard / Auswertungen
+   ========================================================= */
+
+.kpi-card {
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: var(--shadow-soft);
+    box-sizing: border-box;
+}
+
+.kpi-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.kpi-icon-box {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.kpi-icon-box.primary {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+}
+
+.kpi-icon-box.success {
+    background: var(--color-success-light);
+    color: var(--color-success);
+}
+
+.kpi-icon-box.warning {
+    background: var(--color-warning-light);
+    color: var(--color-warning);
+}
+
+.kpi-icon-box.danger {
+    background: var(--color-danger-light);
+    color: var(--color-danger);
+}
+
+.kpi-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin: 0 0 6px 0;
+}
+
+.kpi-value {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--color-text);
+    margin: 0;
+}
+
+.kpi-subtitle {
+    font-size: 12px;
+    color: var(--color-text-light);
+    margin-top: 6px;
+}
+
+
+/* =========================================================
+   Form Cards
+   ========================================================= */
+
+.form-card {
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    overflow: hidden;
+}
+
+.form-card-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--color-border);
+    background: #f9fafb;
+}
+
+.form-card-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--color-text);
+    margin: 0;
+}
+
+.form-card-subtitle {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    margin: 4px 0 0 0;
+}
+
+.form-card-content {
+    padding: 24px;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 20px 24px;
+    border-top: 1px solid var(--color-border);
+    background: #f9fafb;
+}
+
+/* =========================================================
+   Tables / Grid Cards
+   ========================================================= */
+
+.table-card {
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    overflow: hidden;
+}
+
+.table-card-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--color-border);
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.table-card vaadin-grid {
+    border: none;
+}
+
+.table-card vaadin-grid::part(header-cell) {
+    background: #f9fafb;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.table-card vaadin-grid::part(body-cell) {
+    font-size: 14px;
+    color: var(--color-text);
+}
+
+
+/* =========================================================
+   Empty States falls auf einer Seite noch keine Daten vorhanden sind
+   ========================================================= */
+
+.empty-state {
+    background: white;
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 48px 24px;
+    text-align: center;
+    color: var(--color-text-muted);
+}
+
+.empty-state-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--color-text);
+    margin-bottom: 8px;
+}
+
+.empty-state-text {
+    font-size: 14px;
+    color: var(--color-text-muted);
+}
