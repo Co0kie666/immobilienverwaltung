@@ -1,4 +1,5 @@
 @import url('mainlayout.css');
+@import url('./components.css');
 
 html,
 body {
