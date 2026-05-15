@@ -29,11 +29,11 @@ public class LoginView extends VerticalLayout {
         Button registerButton =
                 new Button("Noch kein Konto? Registrieren");
 
-        registerButton.addClickListener(_ ->
+        registerButton.addClickListener(e ->
                 UI.getCurrent().navigate("register")
         );
 
-        loginButton.addClickListener(_ ->
+        loginButton.addClickListener(e ->
                 UI.getCurrent().navigate("dashboard")
         );
 
