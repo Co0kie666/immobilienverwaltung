@@ -9,7 +9,7 @@ import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
-@Route("login")
+@Route("")
 @PageTitle("ImmoPro | Login")
 public class LoginView extends VerticalLayout {
 
@@ -31,6 +31,10 @@ public class LoginView extends VerticalLayout {
 
         registerButton.addClickListener(e ->
                 UI.getCurrent().navigate("register")
+        );
+
+        loginButton.addClickListener(e ->
+                UI.getCurrent().navigate("dashboard")
         );
 
         add(

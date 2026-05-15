@@ -43,7 +43,11 @@ import com.vaadin.flow.router.Route;
                     new Button("Bereits registriert? Anmelden");
 
             loginButton.addClickListener(e ->
-                    UI.getCurrent().navigate("login")
+                    UI.getCurrent().navigate("")
+            );
+
+            registerButton.addClickListener(e ->
+                    UI.getCurrent().navigate("")
             );
 
             add(
