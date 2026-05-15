@@ -16,12 +16,11 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.RouterLink;
-import de.hsbi.immobilienverwaltung.MainView;
 import de.hsbi.immobilienverwaltung.ui.auth.LoginView;
+import de.hsbi.immobilienverwaltung.ui.dashboard.DashboardView;
 import de.hsbi.immobilienverwaltung.ui.finanzen.FinanzDashboardView;
 import de.hsbi.immobilienverwaltung.ui.immobilien.ImmobilienListView;
 import de.hsbi.immobilienverwaltung.ui.mieter.MieterVertraegeView;
-
 
 public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
@@ -73,7 +72,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
         navigation.setAlignItems(FlexComponent.Alignment.STRETCH);
 
         navigation.add(
-                createNavLink("Dashboard", VaadinIcon.HOME, MainView.class),
+                createNavLink("Dashboard", VaadinIcon.HOME, DashboardView.class),
                 createNavLink("Immobilien", VaadinIcon.BUILDING, ImmobilienListView.class),
                 createNavLink("Mieter & Verträge", VaadinIcon.USERS, MieterVertraegeView.class),
                 createNavLink("Finanzen", VaadinIcon.CHART, FinanzDashboardView.class)
@@ -105,14 +104,21 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     private RouterLink createNavLink(String text, VaadinIcon icon, Class<? extends Component> target) {
         RouterLink link = new RouterLink();
         link.setRoute(target);
-        link.addClassName("nav-link"); // Verweis auf CSS Klasse
+        link.addClassName("nav-link");
+
+        if (target.equals(DashboardView.class)) {
+            link.setHighlightCondition((routerLink, event) ->
+                    event.getLocation().getPath().isEmpty()
+                            || event.getLocation().getPath().equals("dashboard")
+            );
+        }
 
         Icon navIcon = icon.create();
         navIcon.addClassName("nav-icon");
 
         Span label = new Span(text);
-
         link.add(navIcon, label);
+
         return link;
     }
 
