@@ -14,7 +14,4 @@ public interface HasPageHeader {
         return List.of();
     }
 
-    default boolean showSearchBar() {
-        return true;
-    }
 }
