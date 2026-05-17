@@ -2,6 +2,7 @@
 @import url('mainlayout.css');
 @import url('immobilien.css');
 @import url('dashboardview.css');
+@import url('finanzdashboard.css');
 
 /* =========================================================
    Global Component Styles
@@ -46,7 +47,6 @@
 
     --search-bg: #f6f6f6;
 }
-
 
 html,
 body {

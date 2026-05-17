@@ -1,0 +1,210 @@
+.finance-page {
+    padding: 32px;
+    background: var(--color-bg);
+    min-height: 100%;
+    box-sizing: border-box;
+}
+
+.finance-filter-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.finance-filter-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.finance-filter-active {
+    background: var(--color-primary-light) !important;
+    color: var(--color-primary) !important;
+}
+
+.finance-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.finance-kpi-card {
+    background: white;
+    border: 1px solid var(--color-border);
+    border-left: 4px solid var(--color-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    padding: 24px;
+}
+
+.finance-kpi-card.success {
+    border-left-color: var(--color-success);
+}
+
+.finance-kpi-card.danger {
+    border-left-color: var(--color-danger);
+}
+
+.finance-kpi-card.warning {
+    border-left-color: var(--color-warning);
+}
+
+.finance-kpi-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.finance-kpi-title {
+    display: block;
+    font-size: 13px;
+    color: var(--color-text-muted);
+    margin-bottom: 8px;
+}
+
+.finance-kpi-value {
+    font-size: 26px;
+    font-weight: 800;
+    margin: 0 0 12px 0;
+    color: var(--color-text);
+}
+
+.finance-kpi-trend {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.finance-kpi-trend.success {
+    color: var(--color-success);
+}
+
+.finance-kpi-trend.danger {
+    color: var(--color-danger);
+}
+
+.finance-kpi-trend.warning {
+    color: var(--color-warning);
+}
+
+.finance-kpi-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.finance-kpi-icon.primary {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+}
+
+.finance-kpi-icon.success {
+    background: var(--color-success-light);
+    color: var(--color-success);
+}
+
+.finance-kpi-icon.danger {
+    background: var(--color-danger-light);
+    color: var(--color-danger);
+}
+
+.finance-kpi-icon.warning {
+    background: var(--color-warning-light);
+    color: var(--color-warning);
+}
+
+.finance-dashboard-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.finance-side-column {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.finance-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.finance-vacancy-value {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 16px 0;
+}
+
+.finance-vacancy-value h2 {
+    margin: 0;
+    font-size: 30px;
+}
+
+.finance-mini-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.finance-mini-box {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 14px;
+}
+
+.finance-mini-label {
+    display: block;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-bottom: 6px;
+}
+
+.finance-table-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.finance-table {
+    padding: 0 16px 16px 16px;
+}
+
+.finance-table-row {
+    display: grid;
+    grid-template-columns: 1fr 1.6fr 1.2fr 1fr 1.2fr;
+    gap: 16px;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 13px;
+}
+
+.finance-table-row:last-child {
+    border-bottom: none;
+}
+
+.finance-table-head {
+    color: var(--color-text-muted);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.finance-table-row strong {
+    font-weight: 800;
+    color: var(--color-text);
+}

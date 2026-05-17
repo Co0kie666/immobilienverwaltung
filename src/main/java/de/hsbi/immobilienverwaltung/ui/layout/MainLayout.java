@@ -104,14 +104,21 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     private RouterLink createNavLink(String text, VaadinIcon icon, Class<? extends Component> target) {
         RouterLink link = new RouterLink();
         link.setRoute(target);
-        link.addClassName("nav-link"); // Verweis auf CSS Klasse
+        link.addClassName("nav-link");
+
+        if (target.equals(DashboardView.class)) {
+            link.setHighlightCondition((routerLink, event) ->
+                    event.getLocation().getPath().isEmpty()
+                            || event.getLocation().getPath().equals("dashboard")
+            );
+        }
 
         Icon navIcon = icon.create();
         navIcon.addClassName("nav-icon");
 
         Span label = new Span(text);
-
         link.add(navIcon, label);
+
         return link;
     }
 

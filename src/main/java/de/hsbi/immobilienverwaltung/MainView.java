@@ -2,16 +2,18 @@ package de.hsbi.immobilienverwaltung;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
-import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 
-@Route(value = "", layout = MainLayout.class)
-public class MainView extends Div implements HasPageHeader {
+@Route("mainlayout")
+public class MainView extends Div implements HasPageHeader, BeforeEnterObserver {
 
-    // Homepage navigiert direkt zu dashboard
-    public MainView() {
-        UI.getCurrent().navigate("dashboard");
+    // Homepage navigiert direkt zu /dashboard
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+            UI.getCurrent().getPage().setLocation("");
     }
 
     @Override
@@ -24,3 +26,5 @@ public class MainView extends Div implements HasPageHeader {
         return "Zentrale Übersicht und KPIs";
     }
 }
+
+
