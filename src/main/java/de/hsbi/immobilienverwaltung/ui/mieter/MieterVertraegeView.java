@@ -16,14 +16,17 @@ import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
+import com.vaadin.flow.router.AfterNavigationEvent;
+import com.vaadin.flow.router.AfterNavigationObserver;
 
 
 
 @Route(value = "mieter-vertraege", layout = MainLayout.class)
-public class MieterVertraegeView extends Div implements HasPageHeader {
+public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavigationObserver {
 
     // Speichert, welcher Bereich gerade ausgewählt ist
     private TabellenModus aktiverModus = TabellenModus.MIETER;
+    private Tabs tabs;
 
     private final Grid<MieterDummyDaten.MieterRow> mieterGrid =
             new Grid<>(MieterDummyDaten.MieterRow.class, false);
@@ -75,20 +78,15 @@ public class MieterVertraegeView extends Div implements HasPageHeader {
                 .setAutoWidth(true)
                 .setFlexGrow(2);
 
-        mieterGrid.addColumn(MieterDummyDaten.MieterRow::immobilieEinheit)
-                .setHeader("Immobilie / Einheit")
-                .setAutoWidth(true)
-                .setFlexGrow(2);
-
-        mieterGrid.addColumn(MieterDummyDaten.MieterRow::vertragsdauer)
-                .setHeader("Vertragsdauer")
-                .setAutoWidth(true)
-                .setFlexGrow(2);
-
-        mieterGrid.addColumn(MieterDummyDaten.MieterRow::miete)
-                .setHeader("Miete mtl.")
+        mieterGrid.addColumn(MieterDummyDaten.MieterRow::telefon)
+                .setHeader("Telefon")
                 .setAutoWidth(true)
                 .setFlexGrow(1);
+
+        mieterGrid.addColumn(MieterDummyDaten.MieterRow::immobilieEinheit)
+                .setHeader("Aktuelle Einheit")
+                .setAutoWidth(true)
+                .setFlexGrow(2);
 
         mieterGrid.addColumn(new ComponentRenderer<>(this::createStatusBadge))
                 .setHeader("Status")
@@ -110,20 +108,25 @@ public class MieterVertraegeView extends Div implements HasPageHeader {
         mietvertragGrid.setWidthFull();
         mietvertragGrid.setAllRowsVisible(true);
 
+        mietvertragGrid.addColumn(MieterDummyDaten.MietvertragRow::id)
+                .setHeader("Vertragsnummer")
+                .setAutoWidth(true)
+                .setFlexGrow(1);
+
         mietvertragGrid.addColumn(MieterDummyDaten.MietvertragRow::mieter)
                 .setHeader("Mieter")
                 .setAutoWidth(true)
                 .setFlexGrow(2);
 
         mietvertragGrid.addColumn(MieterDummyDaten.MietvertragRow::immobilieEinheit)
-                .setHeader("Immobilie / Einheit")
+                .setHeader("Einheit")
                 .setAutoWidth(true)
                 .setFlexGrow(2);
 
-        mietvertragGrid.addColumn(MieterDummyDaten.MietvertragRow::laufzeit)
+        mietvertragGrid.addColumn(row -> getLaufzeitBis(row.laufzeit()))
                 .setHeader("Laufzeit")
                 .setAutoWidth(true)
-                .setFlexGrow(2);
+                .setFlexGrow(1);
 
         mietvertragGrid.addColumn(MieterDummyDaten.MietvertragRow::miete)
                 .setHeader("Miete mtl.")
@@ -142,6 +145,19 @@ public class MieterVertraegeView extends Div implements HasPageHeader {
 
         // Holt die Dummy-Daten aus der extra Dummy-Klasse
         mietvertragGrid.setItems(MieterDummyDaten.getMietvertraege());
+    }
+
+    // Zeigt bei der Laufzeit-Spalte nur das Ende an
+    private String getLaufzeitBis(String laufzeit) {
+        if (laufzeit == null || laufzeit.isBlank()) {
+            return "-";
+        }
+
+        if (laufzeit.contains(" - ")) {
+            return laufzeit.substring(laufzeit.indexOf(" - ") + 3);
+        }
+
+        return laufzeit;
     }
 
     // Erstellt den Status-Badge für einen Mieter
@@ -164,10 +180,7 @@ public class MieterVertraegeView extends Div implements HasPageHeader {
                 getUI().ifPresent(ui -> ui.navigate(MieterListView.class, row.id()))
         );
 
-        Button editButton = new Button(VaadinIcon.EDIT.create());
-        editButton.addClassName("icon-button");
-
-        actions.add(detailsButton, editButton);
+        actions.add(detailsButton);
 
         return actions;
     }
@@ -181,7 +194,7 @@ public class MieterVertraegeView extends Div implements HasPageHeader {
         header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
 
         // Mieter & Verträge switchen
-        Tabs tabs = new Tabs(
+        tabs = new Tabs(
                 new Tab("Mieter"),
                 new Tab("Verträge")
         );
@@ -189,13 +202,9 @@ public class MieterVertraegeView extends Div implements HasPageHeader {
         // Prüft, welcher Tab ausgewählt wurde
         tabs.addSelectedChangeListener(event -> {
             if (tabs.getSelectedIndex() == 0) {
-                aktiverModus = TabellenModus.MIETER;
-                mieterGrid.setVisible(true);
-                mietvertragGrid.setVisible(false);
+                setAktiverModus(TabellenModus.MIETER);
             } else {
-                aktiverModus = TabellenModus.VERTRAEGE;
-                mieterGrid.setVisible(false);
-                mietvertragGrid.setVisible(true);
+                setAktiverModus(TabellenModus.VERTRAEGE);
             }
         });
 
@@ -236,6 +245,40 @@ public class MieterVertraegeView extends Div implements HasPageHeader {
         return header;
     }
 
+    // Setzt den aktiven Tabellenbereich
+    private void setAktiverModus(TabellenModus modus) {
+        aktiverModus = modus;
+
+        boolean mieterAktiv = modus == TabellenModus.MIETER;
+
+        mieterGrid.setVisible(mieterAktiv);
+        mietvertragGrid.setVisible(!mieterAktiv);
+
+        if (tabs != null) {
+            int zielIndex = mieterAktiv ? 0 : 1;
+
+            if (tabs.getSelectedIndex() != zielIndex) {
+                tabs.setSelectedIndex(zielIndex);
+            }
+        }
+    }
+
+    // Prüft beim Öffnen der Seite, welcher Tab aktiv sein soll
+    @Override
+    public void afterNavigation(AfterNavigationEvent event) {
+        String tab = event.getLocation()
+                .getQueryParameters()
+                .getParameters()
+                .getOrDefault("tab", java.util.List.of("mieter"))
+                .get(0);
+
+        if ("vertraege".equalsIgnoreCase(tab)) {
+            setAktiverModus(TabellenModus.VERTRAEGE);
+        } else {
+            setAktiverModus(TabellenModus.MIETER);
+        }
+    }
+
     // Erstellt den Status-Badge für einen Mietvertrag
     private Component createMietvertragStatusBadge(MieterDummyDaten.MietvertragRow row) {
         Span badge = new Span(row.status());
@@ -251,10 +294,12 @@ public class MieterVertraegeView extends Div implements HasPageHeader {
         Button detailsButton = new Button(VaadinIcon.EYE.create());
         detailsButton.addClassName("icon-button");
 
-        Button editButton = new Button(VaadinIcon.EDIT.create());
-        editButton.addClassName("icon-button");
+        // Öffnet die Detailansicht von diesem Mietvertrag
+        detailsButton.addClickListener(event ->
+                getUI().ifPresent(ui -> ui.navigate(MietvertragListView.class, row.id()))
+        );
 
-        actions.add(detailsButton, editButton);
+        actions.add(detailsButton);
 
         return actions;
     }

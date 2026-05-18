@@ -2,26 +2,35 @@ package de.hsbi.immobilienverwaltung.ui.mieter;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.data.renderer.ComponentRenderer;
+import com.vaadin.flow.component.select.Select;
+import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.textfield.TextArea;
+import java.util.ArrayList;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
-
-
 import java.util.Optional;
 
 @Route(value = "mieter-details", layout = MainLayout.class)
 public class MieterListView extends Div implements HasPageHeader, HasUrlParameter<String> {
+
+    private MieterDummyDaten.MieterRow aktuellerMieter;
+    private boolean bearbeitenAktiv = false;
+    private final List<MieterDummyDaten.NotizRow> temporaereNotizen = new ArrayList<>();
 
     public MieterListView() {
         addClassName("page-content");
@@ -30,21 +39,29 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
     // Holt die Mieter-ID aus der URL
     @Override
     public void setParameter(BeforeEvent event, String mieterId) {
-        removeAll();
-
         Optional<MieterDummyDaten.MieterRow> optionalMieter =
                 MieterDummyDaten.findMieterById(mieterId);
 
         if (optionalMieter.isEmpty()) {
+            removeAll();
             add(createNotFoundCard());
             return;
         }
 
-        MieterDummyDaten.MieterRow mieter = optionalMieter.get();
+        aktuellerMieter = optionalMieter.get();
+        bearbeitenAktiv = false;
+        temporaereNotizen.clear();
+
+        renderView();
+    }
+
+    // Baut die Ansicht neu auf
+    private void renderView() {
+        removeAll();
 
         add(
-                createMieterHeader(mieter),
-                createContentLayout(mieter)
+                createMieterHeader(aktuellerMieter),
+                createContentLayout(aktuellerMieter)
         );
     }
 
@@ -64,7 +81,7 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
 
         // Geht zurück zur Mieter & Verträge Übersicht
         backButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate(MieterVertraegeView.class))
+                getUI().ifPresent(ui -> ui.navigate("mieter-vertraege?tab=mieter"))
         );
 
         VerticalLayout textArea = new VerticalLayout();
@@ -87,11 +104,33 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         leftArea.setSpacing(true);
         leftArea.add(backButton, textArea, statusBadge);
 
-        Button editButton = new Button("Mieter bearbeiten", VaadinIcon.EDIT.create());
-        editButton.addClassName("secondary-button");
+        Button editButton;
+
+        if (bearbeitenAktiv) {
+            editButton = new Button("Speichern", VaadinIcon.CHECK.create());
+            editButton.addClassName("primary-button");
+        } else {
+            editButton = new Button("Mieter bearbeiten", VaadinIcon.EDIT.create());
+            editButton.addClassName("secondary-button");
+        }
+
+        editButton.addClickListener(event -> {
+            bearbeitenAktiv = !bearbeitenAktiv;
+            renderView();
+        });
 
         Button newContractButton = new Button("Neuer Mietvertrag", VaadinIcon.PLUS.create());
-        newContractButton.addClassName("primary-button");
+
+        if (bearbeitenAktiv) {
+            newContractButton.addClassName("secondary-button");
+            newContractButton.setEnabled(false);
+        } else {
+            newContractButton.addClassName("primary-button");
+            newContractButton.setEnabled(true);
+            newContractButton.addClickListener(event ->
+                    getUI().ifPresent(ui -> ui.navigate(MietvertragFormView.class))
+            );
+        }
 
         HorizontalLayout rightArea = new HorizontalLayout();
         rightArea.setAlignItems(FlexComponent.Alignment.CENTER);
@@ -115,14 +154,14 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         VerticalLayout leftColumn = new VerticalLayout();
         leftColumn.setPadding(false);
         leftColumn.setSpacing(true);
-        leftColumn.setWidth("360px");
+        leftColumn.setWidth("430px");
 
         leftColumn.add(
                 createStammdatenCard(mieter),
                 createKontaktCard(mieter)
         );
 
-        // Rechte Spalte mit Buchungen und später Notizen
+        // Rechte Spalte mit Buchungen und Notizen
         VerticalLayout rightColumn = new VerticalLayout();
         rightColumn.setPadding(false);
         rightColumn.setSpacing(true);
@@ -150,33 +189,62 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         content.setPadding(false);
         content.setSpacing(true);
 
-        HorizontalLayout header = new HorizontalLayout();
-        header.setWidthFull();
-        header.setAlignItems(FlexComponent.Alignment.CENTER);
-        header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
-
         Span title = new Span("Stammdaten");
         title.addClassName("card-title");
 
-        Button editButton = new Button(VaadinIcon.EDIT.create());
-        editButton.addClassName("icon-button");
+        content.add(title);
 
-        header.add(title, editButton);
+        if (bearbeitenAktiv) {
+            content.add(
+                    createEditField("Vollständiger Name", mieter.vollstaendigerName()),
 
-        content.add(
-                header,
-                createInfoBlock("Vollständiger Name", mieter.vollstaendigerName()),
-                createTwoColumnInfoRow(
-                        "Geburtsdatum", mieter.geburtsdatum(),
-                        "Nationalität", mieter.nationalitaet()
-                ),
-                createInfoBlock("Beruf / Arbeitgeber", mieter.berufArbeitgeber()),
-                createBonitaetRow(mieter)
-        );
+                    // Geburtsdatum bleibt fest, Nationalität kann bearbeitet werden
+                    createBirthdateNationalityEditRow(mieter),
+
+                    createEditField("Beruf / Arbeitgeber", mieter.berufArbeitgeber()),
+
+                    // Bonität kann ausgewählt werden, Prüfdatum wird automatisch gesetzt
+                    createBonitaetEditRow(mieter)
+            );
+        } else {
+            content.add(
+                    createInfoBlock("Vollständiger Name", mieter.vollstaendigerName()),
+                    createTwoColumnInfoRow(
+                            "Geburtsdatum", mieter.geburtsdatum(),
+                            "Nationalität", mieter.nationalitaet()
+                    ),
+                    createInfoBlock("Beruf / Arbeitgeber", mieter.berufArbeitgeber()),
+                    createBonitaetRow(mieter)
+            );
+        }
 
         card.add(content);
 
         return card;
+    }
+
+    // Erstellt die Bonitätsauskunft im Bearbeiten-Modus
+    private Component createBonitaetEditRow(MieterDummyDaten.MieterRow mieter) {
+        Div row = new Div();
+        row.addClassName("detail-edit-row");
+
+        Select<String> bonitaetSelect = new Select<>();
+        bonitaetSelect.setLabel("Bonitätsauskunft");
+        bonitaetSelect.setItems("Positiv (Schufa)", "Kritisch");
+        bonitaetSelect.setValue(
+                mieter.bonitaet().equals("Kritisch") ? "Kritisch" : "Positiv (Schufa)"
+        );
+        bonitaetSelect.setWidthFull();
+        bonitaetSelect.addClassName("detail-edit-field");
+
+        String aktuellesDatum = LocalDate.now()
+                .format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+
+        Component pruefdatum = createInfoBlock("Prüfdatum", "Geprüft am " + aktuellesDatum);
+
+        row.add(bonitaetSelect, pruefdatum);
+
+        return row;
     }
 
     // Karte mit Kontaktinformationen
@@ -192,12 +260,21 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         Span title = new Span("Kontaktinformationen");
         title.addClassName("card-title");
 
-        content.add(
-                title,
-                createInfoBlock("E-Mail", mieter.email()),
-                createInfoBlock("Telefon", mieter.telefon()),
-                createInfoBlock("Aktuelle Meldeadresse", mieter.meldeadresse())
-        );
+        content.add(title);
+
+        if (bearbeitenAktiv) {
+            content.add(
+                    createEditField("E-Mail", mieter.email()),
+                    createEditField("Telefon", mieter.telefon()),
+                    createEditField("Aktuelle Meldeadresse", mieter.meldeadresse().replace("\n", ", "))
+            );
+        } else {
+            content.add(
+                    createInfoBlock("E-Mail", mieter.email()),
+                    createInfoBlock("Telefon", mieter.telefon()),
+                    createInfoBlock("Aktuelle Meldeadresse", mieter.meldeadresse())
+            );
+        }
 
         card.add(content);
 
@@ -283,12 +360,18 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         Button addNoteButton = new Button("Hinzufügen", VaadinIcon.PLUS.create());
         addNoteButton.addClassName("ghost-button");
 
+        // Öffnet den Dialog zum Hinzufügen einer neuen Notiz
+        addNoteButton.addClickListener(event -> openNotizDialog(mieter));
+
         header.add(title, addNoteButton);
 
         content.add(header);
 
-        List<MieterDummyDaten.NotizRow> notizen =
-                MieterDummyDaten.getNotizenByMieterId(mieter.id());
+        List<MieterDummyDaten.NotizRow> notizen = new ArrayList<>();
+
+        // Neue Notizen sollen oben stehen
+        notizen.addAll(temporaereNotizen);
+        notizen.addAll(MieterDummyDaten.getNotizenByMieterId(mieter.id()));
 
         if (notizen.isEmpty()) {
             Span emptyText = new Span("Keine wichtigen Notizen vorhanden.");
@@ -301,6 +384,90 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         card.add(content);
 
         return card;
+    }
+
+    // Öffnet einen Dialog zum Hinzufügen einer neuen Notiz
+    private void openNotizDialog(MieterDummyDaten.MieterRow mieter) {
+        Dialog dialog = new Dialog();
+        dialog.setWidth("520px");
+
+        VerticalLayout content = new VerticalLayout();
+        content.setPadding(false);
+        content.setSpacing(true);
+        content.setWidthFull();
+
+        Span title = new Span("Neue Notiz hinzufügen");
+        title.addClassName("card-title");
+
+        Span subtitle = new Span("Die Notiz wird nur für diesen Mieter erstellt.");
+        subtitle.addClassName("card-subtitle");
+
+        TextField titelField = new TextField("Titel");
+        titelField.setPlaceholder("z.B. Haustiere");
+        titelField.setRequiredIndicatorVisible(true);
+        titelField.setWidthFull();
+
+        TextArea textArea = new TextArea("Notiz");
+        textArea.setPlaceholder("Notiztext eingeben...");
+        textArea.setRequiredIndicatorVisible(true);
+        textArea.setWidthFull();
+        textArea.setMinHeight("120px");
+
+        Button cancelButton = new Button("Abbrechen", VaadinIcon.CLOSE.create());
+        cancelButton.addClassName("secondary-button");
+        cancelButton.addClickListener(event -> dialog.close());
+
+        Button saveButton = new Button("Notiz speichern", VaadinIcon.CHECK.create());
+        saveButton.addClassName("primary-button");
+
+        saveButton.addClickListener(event -> {
+            boolean titelLeer = titelField.getValue() == null || titelField.getValue().isBlank();
+            boolean textLeer = textArea.getValue() == null || textArea.getValue().isBlank();
+
+            titelField.setInvalid(titelLeer);
+            textArea.setInvalid(textLeer);
+
+            titelField.setErrorMessage("Bitte Titel eingeben");
+            textArea.setErrorMessage("Bitte Notiztext eingeben");
+
+            if (titelLeer || textLeer) {
+                return;
+            }
+
+            String aktuellesDatum = LocalDate.now()
+                    .format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+
+            MieterDummyDaten.NotizRow neueNotiz = new MieterDummyDaten.NotizRow(
+                    mieter.id(),
+                    titelField.getValue(),
+                    textArea.getValue(),
+                    aktuellesDatum,
+                    "neutral"
+            );
+
+            temporaereNotizen.add(0, neueNotiz);
+
+            dialog.close();
+            renderView();
+        });
+
+        HorizontalLayout actions = new HorizontalLayout();
+        actions.setWidthFull();
+        actions.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
+        actions.setAlignItems(FlexComponent.Alignment.CENTER);
+        actions.setSpacing(true);
+        actions.add(cancelButton, saveButton);
+
+        content.add(
+                title,
+                subtitle,
+                titelField,
+                textArea,
+                actions
+        );
+
+        dialog.add(content);
+        dialog.open();
     }
 
     // Erstellt eine einzelne Notiz
@@ -342,28 +509,6 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         return badge;
     }
 
-
-    // Karte für einfache Notizen
-    private Component createNotizenCard() {
-        Div card = new Div();
-        card.addClassName("card");
-
-        VerticalLayout content = new VerticalLayout();
-        content.setPadding(false);
-        content.setSpacing(true);
-
-        Span title = new Span("Notizen");
-        title.addClassName("card-title");
-
-        Span note = new Span("Keine wichtigen Notizen vorhanden.");
-        note.addClassName("card-subtitle");
-
-        content.add(title, note);
-        card.add(content);
-
-        return card;
-    }
-
     // Erstellt eine einfache Zeile mit Bezeichnung und Wert
     private Component createInfoRow(String labelText, String valueText) {
         return createInfoRow(labelText, new Span(valueText));
@@ -400,6 +545,16 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         return block;
     }
 
+    // Erstellt ein Textfeld für den Bearbeiten-Modus
+    private TextField createEditField(String labelText, String valueText) {
+        TextField field = new TextField(labelText);
+        field.setValue(valueText == null ? "" : valueText);
+        field.setWidthFull();
+        field.addClassName("detail-edit-field");
+
+        return field;
+    }
+
     // Erstellt zwei Info-Blöcke nebeneinander
     private Component createTwoColumnInfoRow(
             String firstLabel,
@@ -417,6 +572,37 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         row.add(firstBlock, secondBlock);
         row.setFlexGrow(1, firstBlock);
         row.setFlexGrow(1, secondBlock);
+
+        return row;
+    }
+
+    // Erstellt zwei Textfelder nebeneinander
+    private Component createTwoColumnEditRow(
+            String firstLabel,
+            String firstValue,
+            String secondLabel,
+            String secondValue
+    ) {
+        Div row = new Div();
+        row.addClassName("detail-edit-row");
+
+        TextField firstField = createEditField(firstLabel, firstValue);
+        TextField secondField = createEditField(secondLabel, secondValue);
+
+        row.add(firstField, secondField);
+
+        return row;
+    }
+
+    // Erstellt eine Zeile, bei der das Geburtsdatum nicht bearbeitet werden kann
+    private Component createBirthdateNationalityEditRow(MieterDummyDaten.MieterRow mieter) {
+        Div row = new Div();
+        row.addClassName("detail-edit-row");
+
+        Component geburtsdatum = createInfoBlock("Geburtsdatum", mieter.geburtsdatum());
+        TextField nationalitaet = createEditField("Nationalität", mieter.nationalitaet());
+
+        row.add(geburtsdatum, nationalitaet);
 
         return row;
     }
@@ -446,13 +632,6 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         block.add(label, row);
 
         return block;
-    }
-
-    // Erstellt den Status-Badge vom Mieter
-    private Component createStatusBadge(MieterDummyDaten.MieterRow mieter) {
-        Span badge = new Span(mieter.status());
-        badge.addClassNames("status-badge", mieter.statusStyle());
-        return badge;
     }
 
     // Wird angezeigt, wenn keine passende Dummy-ID gefunden wurde
