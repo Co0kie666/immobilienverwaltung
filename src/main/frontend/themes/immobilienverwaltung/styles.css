@@ -2,6 +2,7 @@
 @import url('./mainlayout.css');
 @import url('./dashboardview.css');
 @import url('./finanzdashboard.css');
+@import url('./buchungsform.css');
 
 html,
 body {
