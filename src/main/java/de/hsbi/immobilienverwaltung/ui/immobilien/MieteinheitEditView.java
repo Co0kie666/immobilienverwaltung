@@ -15,10 +15,11 @@ import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 
-@Route(value = "immobilien/:immobilieId/einheiten/neu", layout = MainLayout.class)
-public class MieteinheitFormView extends Div implements HasPageHeader, BeforeEnterObserver {
+@Route(value = "immobilien/:immobilieId/einheiten/:mieteinheitId/bearbeiten", layout = MainLayout.class)
+public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnterObserver {
 
     private Long immobilieId;
+    private Long mieteinheitId;
 
     private final TextField nummerField = new TextField("Einheit-Nr.");
     private final Select<String> typSelect = new Select<>();
@@ -27,9 +28,9 @@ public class MieteinheitFormView extends Div implements HasPageHeader, BeforeEnt
     private final NumberField zimmeranzahlField = new NumberField("Zimmeranzahl");
     private final Select<String> statusSelect = new Select<>();
 
-    public MieteinheitFormView() {
+    public MieteinheitEditView() {
         addClassName("page-content");
-        addClassName("mieteinheit-form-view");
+        addClassName("mieteinheit-edit-view");
 
         add(createFormCard());
     }
@@ -40,6 +41,13 @@ public class MieteinheitFormView extends Div implements HasPageHeader, BeforeEnt
                 .get("immobilieId")
                 .map(Long::valueOf)
                 .orElse(null);
+
+        this.mieteinheitId = event.getRouteParameters()
+                .get("mieteinheitId")
+                .map(Long::valueOf)
+                .orElse(null);
+
+        ladeDummyDaten();
     }
 
     private Div createFormCard() {
@@ -49,7 +57,7 @@ public class MieteinheitFormView extends Div implements HasPageHeader, BeforeEnt
         Div header = new Div();
         header.addClassName("form-card-header");
 
-        H3 title = new H3("Mieteinheit hinzufügen");
+        H3 title = new H3("Mieteinheit bearbeiten");
         title.addClassName("form-card-title");
 
         header.add(title);
@@ -61,7 +69,6 @@ public class MieteinheitFormView extends Div implements HasPageHeader, BeforeEnt
 
         typSelect.setLabel("Typ");
         typSelect.setItems("Wohnung", "Büro", "Lagerhalle", "Gewerbefläche", "Gesamtobjekt");
-        typSelect.setPlaceholder("Typ auswählen");
 
         groesseField.setPlaceholder("z. B. 85");
 
@@ -71,16 +78,8 @@ public class MieteinheitFormView extends Div implements HasPageHeader, BeforeEnt
 
         statusSelect.setLabel("Status");
         statusSelect.setItems("Frei", "Vermietet", "In Renovierung");
-        statusSelect.setValue("Frei");
 
-        form.add(
-                nummerField,
-                typSelect,
-                groesseField,
-                stockwerkField,
-                zimmeranzahlField,
-                statusSelect
-        );
+        form.add(nummerField, typSelect, groesseField, stockwerkField, zimmeranzahlField, statusSelect);
 
         Div actions = new Div();
         actions.addClassName("form-actions");
@@ -91,10 +90,10 @@ public class MieteinheitFormView extends Div implements HasPageHeader, BeforeEnt
                 getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilieId))
         );
 
-        Button speichernButton = new Button("Speichern", VaadinIcon.CHECK.create());
+        Button speichernButton = new Button("Änderungen speichern", VaadinIcon.CHECK.create());
         speichernButton.addClassName("primary-button");
         speichernButton.addClickListener(event -> {
-            Notification.show("Mieteinheit wurde gespeichert");
+            Notification.show("Änderungen wurden gespeichert");
             getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilieId));
         });
 
@@ -105,14 +104,43 @@ public class MieteinheitFormView extends Div implements HasPageHeader, BeforeEnt
         return card;
     }
 
+    private void ladeDummyDaten() {
+        if (mieteinheitId == null) {
+            return;
+        }
+
+        if (mieteinheitId == 1L) {
+            nummerField.setValue("WE-01");
+            typSelect.setValue("Wohnung");
+            groesseField.setValue(85.0);
+            stockwerkField.setValue("EG");
+            zimmeranzahlField.setValue(3.0);
+            statusSelect.setValue("Vermietet");
+        } else if (mieteinheitId == 2L) {
+            nummerField.setValue("WE-02");
+            typSelect.setValue("Wohnung");
+            groesseField.setValue(92.0);
+            stockwerkField.setValue("1. OG");
+            zimmeranzahlField.setValue(4.0);
+            statusSelect.setValue("Vermietet");
+        } else {
+            nummerField.setValue("WE-03");
+            typSelect.setValue("Wohnung");
+            groesseField.setValue(75.0);
+            stockwerkField.setValue("2. OG");
+            zimmeranzahlField.setValue(3.0);
+            statusSelect.setValue("Frei");
+        }
+    }
+
     @Override
     public String getPageTitle() {
-        return "Mieteinheit hinzufügen";
+        return "Mieteinheit bearbeiten";
     }
 
     @Override
     public String getPageSubtitle() {
-        return "Immobilien > Detailansicht > Mieteinheit hinzufügen";
+        return "Immobilien > Mieteinheit bearbeiten";
     }
 
 }

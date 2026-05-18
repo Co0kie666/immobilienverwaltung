@@ -10,12 +10,10 @@
     justify-content: space-between;
     align-items: center;
     gap: 16px;
-
     background: white;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-soft);
-
     padding: 16px;
     margin-bottom: 24px;
 }
@@ -100,7 +98,6 @@
     width: 42px;
     height: 42px;
     border-radius: 50%;
-
     display: flex;
     align-items: center;
     justify-content: center;
@@ -139,89 +136,6 @@
     gap: 24px;
 }
 
-.finance-chart-wrapper {
-    margin-top: 32px;
-}
-
-.finance-chart-area {
-    position: relative;
-    height: 320px;
-    border-bottom: 1px solid var(--color-border);
-    overflow: hidden;
-}
-
-.finance-income-curve {
-    position: absolute;
-    inset: 40px 0 40px 0;
-
-    background: rgba(16, 185, 129, 0.12);
-
-    border-top: 4px solid var(--color-success);
-
-    clip-path: polygon(
-            0% 70%,
-            8% 66%,
-            16% 68%,
-            24% 60%,
-            32% 63%,
-            40% 54%,
-            48% 58%,
-            56% 49%,
-            64% 52%,
-            72% 43%,
-            80% 47%,
-            88% 41%,
-            100% 28%,
-            100% 100%,
-            0% 100%
-    );
-
-    border-radius: 12px;
-}
-
-.finance-expense-curve {
-    position: absolute;
-    inset: 120px 0 40px 0;
-
-    background: rgba(239, 68, 68, 0.08);
-
-    border-top: 4px solid var(--color-danger);
-
-    clip-path: polygon(
-            0% 74%,
-            8% 72%,
-            16% 76%,
-            24% 69%,
-            32% 73%,
-            40% 64%,
-            48% 67%,
-            56% 62%,
-            64% 65%,
-            72% 58%,
-            80% 61%,
-            88% 56%,
-            100% 48%,
-            100% 100%,
-            0% 100%
-    );
-
-    border-radius: 12px;
-}
-
-.finance-chart-labels {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 12px;
-
-    font-size: 12px;
-    color: var(--color-text-muted);
-}
-
-.finance-chart-month span {
-    font-size: 12px;
-    color: var(--color-text-muted);
-}
-
 .finance-card-header {
     display: flex;
     justify-content: space-between;
@@ -238,20 +152,6 @@
 .finance-vacancy-value h2 {
     margin: 0;
     font-size: 30px;
-}
-
-.finance-vacancy-bar {
-    height: 64px;
-    background: #f3f4f6;
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-    margin-bottom: 24px;
-}
-
-.finance-vacancy-fill {
-    width: 24%;
-    height: 100%;
-    background: var(--color-primary);
 }
 
 .finance-mini-grid {
@@ -273,43 +173,6 @@
     margin-bottom: 6px;
 }
 
-.finance-donut-chart {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-
-    margin: 32px auto 24px auto;
-
-    background: conic-gradient(
-            var(--color-primary) 0deg 155deg,
-            var(--color-success) 155deg 263deg,
-            var(--color-warning) 263deg 360deg
-    );
-
-    position: relative;
-}
-
-.finance-donut-chart::after {
-    content: "";
-    position: absolute;
-    inset: 38px;
-    background: white;
-    border-radius: 50%;
-}
-
-.finance-donut-legend {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.finance-legend-item {
-    display: flex;
-    justify-content: space-between;
-    font-size: 13px;
-    color: var(--color-text-muted);
-}
-
 .finance-table-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -325,10 +188,8 @@
     grid-template-columns: 1fr 1.6fr 1.2fr 1fr 1.2fr;
     gap: 16px;
     align-items: center;
-
     padding: 16px 0;
     border-bottom: 1px solid var(--color-border);
-
     font-size: 13px;
 }
 

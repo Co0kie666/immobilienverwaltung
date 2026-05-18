@@ -410,3 +410,222 @@
     font-size: 14px;
     color: var(--color-text-muted);
 }
+
+/* =========================================================
+   Dropdown Anzeige
+   ========================================================= */
+
+.filter-card {
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: 18px;
+    padding: 18px;
+    box-shadow: var(--shadow-soft);
+
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 16px;
+    align-items: end;
+}
+
+/* =========================================================
+   Switch Checkbox
+   ========================================================= */
+
+.switch-checkbox::part(checkbox) {
+    width: 46px;
+    height: 24px;
+    border-radius: 999px;
+    background: #d1d5db;
+    border: none;
+    transition: background 0.2s ease;
+}
+
+.switch-checkbox::part(checkbox)::after {
+    content: "";
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: white;
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    transition: transform 0.2s ease;
+}
+
+.switch-checkbox[checked]::part(checkbox) {
+    background: var(--color-primary);
+}
+
+.switch-checkbox[checked]::part(checkbox)::after {
+    transform: translateX(22px);
+}
+
+/* =========================================================
+   Form Layout Helpers
+   ========================================================= */
+
+.form-page-wrapper {
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+}
+
+.form-grid-two-columns {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px;
+    margin-bottom: 28px;
+}
+
+.form-grid-full-width {
+    width: 100%;
+    margin-bottom: 28px;
+}
+
+.form-bottom-actions {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    margin-top: 28px;
+}
+
+.form-layout-two-columns {
+    width: 100%;
+    --vaadin-form-layout-column-spacing: 24px;
+    --vaadin-form-layout-row-spacing: 18px;
+}
+
+.money-summary-box {
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 18px;
+    box-sizing: border-box;
+}
+
+.money-summary-row {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.money-summary-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.money-summary-value {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--color-text);
+}
+
+/* =========================================================
+   Form Field Styling
+   ========================================================= */
+
+.form-card vaadin-text-field::part(input-field),
+.form-card vaadin-date-picker::part(input-field),
+.form-card vaadin-select::part(input-field) {
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    min-height: 48px;
+    box-shadow: none;
+}
+
+.form-card vaadin-text-field:hover::part(input-field),
+.form-card vaadin-date-picker:hover::part(input-field),
+.form-card vaadin-select:hover::part(input-field) {
+    border-color: #d1d5db;
+}
+
+.form-card vaadin-text-field:focus-within::part(input-field),
+.form-card vaadin-date-picker:focus-within::part(input-field),
+.form-card vaadin-select:focus-within::part(input-field) {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.10);
+}
+
+.form-card vaadin-text-field::part(required-indicator),
+.form-card vaadin-date-picker::part(required-indicator),
+.form-card vaadin-select::part(required-indicator) {
+    color: var(--color-danger);
+}
+
+/* =========================================================
+   Detail Edit Fields
+   ========================================================= */
+
+.detail-edit-row {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
+}
+
+.detail-edit-field {
+    width: 100%;
+    min-width: 0;
+}
+
+.card vaadin-text-field.detail-edit-field::part(input-field) {
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    min-height: 44px;
+    box-shadow: none;
+}
+
+.card vaadin-text-field.detail-edit-field:hover::part(input-field) {
+    border-color: #d1d5db;
+}
+
+.card vaadin-text-field.detail-edit-field:focus-within::part(input-field) {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.10);
+}
+
+/* =========================================================
+   Table Action Buttons
+   Anzeigen, bearbeiten, löschen
+   ========================================================= */
+
+.table-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    opacity: var(--row-actions-opacity, 0);
+    visibility: var(--row-actions-visibility, hidden);
+    pointer-events: var(--row-actions-pointer-events, none);
+    transition: opacity 0.15s ease;
+}
+
+.table-action-button {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    padding: 0 !important;
+
+    background: transparent !important;
+    color: #9ca3af !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+}
+
+.table-action-button:hover {
+    background: #f3f4f6 !important;
+    color: #2563eb !important;
+}
+
+.delete-action:hover {
+    background: #fef2f2 !important;
+    color: #ef4444 !important;
+}

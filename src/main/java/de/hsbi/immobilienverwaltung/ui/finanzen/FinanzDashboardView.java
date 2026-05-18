@@ -1,10 +1,12 @@
 package de.hsbi.immobilienverwaltung.ui.finanzen;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
@@ -13,6 +15,10 @@ import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 public class FinanzDashboardView extends Div implements HasPageHeader {
 
     public FinanzDashboardView() {
+        UI.getCurrent().getPage().addJavaScript(
+                "https://cdn.jsdelivr.net/npm/chart.js"
+        );
+
         addClassName("finance-page");
 
         add(createFilterBar());
@@ -125,34 +131,70 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
     }
 
     private Component createLineChart() {
-
         Div wrapper = new Div();
-        wrapper.addClassName("finance-chart-wrapper");
+        wrapper.setWidthFull();
+        wrapper.getStyle().set("height", "320px");
 
-        Div chart = new Div();
-        chart.addClassName("finance-chart-area");
+        Element canvas = new Element("canvas");
+        canvas.setAttribute("id", "financeLineChart");
+        canvas.getStyle().set("width", "100%");
+        canvas.getStyle().set("height", "320px");
 
-        Div incomeLine = new Div();
-        incomeLine.addClassName("finance-income-curve");
+        wrapper.getElement().appendChild(canvas);
 
-        Div expenseLine = new Div();
-        expenseLine.addClassName("finance-expense-curve");
+        UI.getCurrent().getPage().executeJs("""
+            setTimeout(() => {
+                const ctx = document.getElementById('financeLineChart');
 
-        chart.add(incomeLine, expenseLine);
+                if (!ctx) return;
 
-        Div months = new Div();
-        months.addClassName("finance-chart-labels");
-
-        String[] labels = {
-                "Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
-                "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"
-        };
-
-        for (String label : labels) {
-            months.add(new Span(label));
-        }
-
-        wrapper.add(chart, months);
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [
+                            'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
+                            'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'
+                        ],
+                        datasets: [
+                            {
+                                label: 'Einnahmen',
+                                data: [
+                                    102000, 108000, 112000, 118000,
+                                    121000, 124000, 127000, 129000,
+                                    132000, 135000, 138000, 142000
+                                ],
+                                tension: 0.4,
+                                fill: false
+                            },
+                            {
+                                label: 'Ausgaben',
+                                data: [
+                                    42000, 44000, 43000, 47000,
+                                    46000, 45000, 49000, 52000,
+                                    51000, 53000, 54000, 56000
+                                ],
+                                tension: 0.4,
+                                fill: false
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }, 300);
+        """);
 
         return wrapper;
     }
@@ -181,19 +223,51 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         valueRow.add(value, trend);
 
-        Div bar = new Div();
-        bar.addClassName("finance-vacancy-bar");
+        Div chartWrapper = new Div();
+        chartWrapper.getStyle().set("height", "180px");
 
-        Div filled = new Div();
-        filled.addClassName("finance-vacancy-fill");
-        bar.add(filled);
+        Element canvas = new Element("canvas");
+        canvas.setAttribute("id", "vacancyChart");
+        canvas.getStyle().set("width", "100%");
+        canvas.getStyle().set("height", "180px");
+
+        chartWrapper.getElement().appendChild(canvas);
+
+        UI.getCurrent().getPage().executeJs("""
+            setTimeout(() => {
+                const ctx = document.getElementById('vacancyChart');
+
+                if (!ctx) return;
+
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Vermietet', 'Leerstand'],
+                        datasets: [{
+                            data: [97.6, 2.4],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        },
+                        cutout: '75%'
+                    }
+                });
+            }, 300);
+        """);
 
         Div stats = new Div();
         stats.addClassName("finance-mini-grid");
         stats.add(miniBox("Leerstehend", "12 Einheiten"));
         stats.add(miniBox("Vermietet", "488 Einheiten"));
 
-        card.add(header, valueRow, bar, stats);
+        card.add(header, valueRow, chartWrapper, stats);
         return card;
     }
 
@@ -204,16 +278,50 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         H3 title = new H3("Kostenverteilung");
         title.addClassName("card-title");
 
-        Div donut = new Div();
-        donut.addClassName("finance-donut-chart");
+        Div wrapper = new Div();
+        wrapper.getStyle().set("height", "260px");
 
-        Div legend = new Div();
-        legend.addClassName("finance-donut-legend");
-        legend.add(legendItem("Instandhaltung", "43%"));
-        legend.add(legendItem("Nebenkosten", "30%"));
-        legend.add(legendItem("Verwaltung", "27%"));
+        Element canvas = new Element("canvas");
+        canvas.setAttribute("id", "costDistributionChart");
+        canvas.getStyle().set("width", "100%");
+        canvas.getStyle().set("height", "260px");
 
-        card.add(title, donut, legend);
+        wrapper.getElement().appendChild(canvas);
+
+        UI.getCurrent().getPage().executeJs("""
+            setTimeout(() => {
+                const ctx = document.getElementById('costDistributionChart');
+
+                if (!ctx) return;
+
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: [
+                            'Instandhaltung',
+                            'Nebenkosten',
+                            'Verwaltung'
+                        ],
+                        datasets: [{
+                            data: [43, 30, 27],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        },
+                        cutout: '68%'
+                    }
+                });
+            }, 300);
+        """);
+
+        card.add(title, wrapper);
         return card;
     }
 
@@ -228,17 +336,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         box.add(labelSpan, valueStrong);
         return box;
-    }
-
-    private Component legendItem(String label, String value) {
-        Div item = new Div();
-        item.addClassName("finance-legend-item");
-
-        Span name = new Span(label);
-        Span number = new Span(value);
-
-        item.add(name, number);
-        return item;
     }
 
     private Component createTableGrid() {
@@ -302,7 +399,14 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         Div row = new Div();
         row.addClassNames("finance-table-row", "finance-table-head");
 
-        row.add(new Span("Datum"), new Span("Mieter / Objekt"), new Span("Kategorie"), new Span("Status"), new Span("Betrag"));
+        row.add(
+                new Span("Datum"),
+                new Span("Mieter / Objekt"),
+                new Span("Kategorie"),
+                new Span("Status"),
+                new Span("Betrag")
+        );
+
         return row;
     }
 
@@ -311,9 +415,19 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         row.addClassName("finance-table-row");
 
         Span status = new Span(data[3]);
-        status.addClassNames("status-badge", data[3].equals("Bezahlt") ? "success" : "warning");
+        status.addClassNames(
+                "status-badge",
+                data[3].equals("Bezahlt") ? "success" : "warning"
+        );
 
-        row.add(new Span(data[0]), new Span(data[1]), new Span(data[2]), status, new Span(data[4]));
+        row.add(
+                new Span(data[0]),
+                new Span(data[1]),
+                new Span(data[2]),
+                status,
+                new Span(data[4])
+        );
+
         return row;
     }
 
