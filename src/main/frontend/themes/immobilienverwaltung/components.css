@@ -321,7 +321,6 @@
 }
 
 .form-card-title {
-    display: block;
     font-size: 18px;
     font-weight: 800;
     color: var(--color-text);
@@ -329,7 +328,6 @@
 }
 
 .form-card-subtitle {
-    display: block;
     font-size: 13px;
     color: var(--color-text-muted);
     margin: 4px 0 0 0;
@@ -591,4 +589,42 @@
 .card vaadin-text-field.detail-edit-field:focus-within::part(input-field) {
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.10);
+}
+
+/* =========================================================
+   Table Action Buttons
+   Anzeigen, bearbeiten, löschen
+   ========================================================= */
+
+.table-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    opacity: var(--row-actions-opacity, 0);
+    visibility: var(--row-actions-visibility, hidden);
+    pointer-events: var(--row-actions-pointer-events, none);
+    transition: opacity 0.15s ease;
+}
+
+.table-action-button {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    padding: 0 !important;
+
+    background: transparent !important;
+    color: #9ca3af !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+}
+
+.table-action-button:hover {
+    background: #f3f4f6 !important;
+    color: #2563eb !important;
+}
+
+.delete-action:hover {
+    background: #fef2f2 !important;
+    color: #ef4444 !important;
 }
