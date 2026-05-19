@@ -428,9 +428,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         Div card = new Div();
         card.addClassName("table-card");
 
-        Div header = new Div();
-        header.addClassName("table-card-header");
-
         Div titleBox = new Div();
 
         H3 titleText = new H3(title);
@@ -441,11 +438,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         titleBox.add(titleText, subtitleText);
 
-        Button showAll = new Button("Alle anzeigen");
-        showAll.addClassName("ghost-button");
-
-        header.add(titleBox, showAll);
-
         Div table = new Div();
         table.addClassName("finance-table");
 
@@ -455,7 +447,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
             table.add(tableRow(row));
         }
 
-        card.add(header, table);
+        card.add(table);
         return card;
     }
 
