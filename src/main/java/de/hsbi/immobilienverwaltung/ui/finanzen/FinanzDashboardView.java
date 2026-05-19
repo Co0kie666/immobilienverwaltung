@@ -98,10 +98,8 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 allTenants
         );
 
-        Button addBooking = new Button(
-                "Buchung anlegen",
-                new Icon(VaadinIcon.PLUS)
-        );
+        Button addBooking = new Button("Buchung anlegen",new Icon(VaadinIcon.PLUS));
+        addBooking.addClickListener(e -> UI.getCurrent().navigate("finanzen/buchung-neu"));
 
         addBooking.addClassName("primary-button");
 
