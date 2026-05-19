@@ -11,6 +11,8 @@ import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 
+import java.util.List;
+
 @Route(value = "finanzen", layout = MainLayout.class)
 public class FinanzDashboardView extends Div implements HasPageHeader {
 
@@ -35,32 +37,76 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         left.addClassName("finance-filter-left");
 
         Button oneMonth = new Button("1M");
-        oneMonth.addClassNames("secondary-button", "finance-filter-active");
-
         Button threeMonths = new Button("3M");
-        threeMonths.addClassName("secondary-button");
-
         Button sixMonths = new Button("6M");
-        sixMonths.addClassName("secondary-button");
-
         Button ytd = new Button("YTD");
-        ytd.addClassName("secondary-button");
 
-        Button allProperties = new Button("Alle Immobilien", new Icon(VaadinIcon.CHEVRON_DOWN));
+        List<Button> filterButtons = List.of(
+                oneMonth,
+                threeMonths,
+                sixMonths,
+                ytd
+        );
+
+        // Basis-Style setzen
+        filterButtons.forEach(btn ->
+                btn.addClassName("secondary-button")
+        );
+
+        // Initial aktiv
+        oneMonth.addClassName("finance-filter-active");
+
+        // Click-Listener für alle Buttons
+        filterButtons.forEach(button -> {
+            button.addClickListener(e -> {
+
+                // Aktive Klasse bei allen entfernen
+                filterButtons.forEach(btn ->
+                        btn.removeClassName("finance-filter-active")
+                );
+
+                // Beim geklickten setzen
+                button.addClassName("finance-filter-active");
+            });
+        });
+
+        Button allProperties = new Button(
+                "Alle Immobilien",
+                new Icon(VaadinIcon.CHEVRON_DOWN)
+        );
         allProperties.addClassName("secondary-button");
 
-        Button allUnits = new Button("Alle Einheiten", new Icon(VaadinIcon.CHEVRON_DOWN));
+        Button allUnits = new Button(
+                "Alle Einheiten",
+                new Icon(VaadinIcon.CHEVRON_DOWN)
+        );
         allUnits.addClassName("secondary-button");
 
-        Button allTenants = new Button("Alle Mieter", new Icon(VaadinIcon.CHEVRON_DOWN));
+        Button allTenants = new Button(
+                "Alle Mieter",
+                new Icon(VaadinIcon.CHEVRON_DOWN)
+        );
         allTenants.addClassName("secondary-button");
 
-        left.add(oneMonth, threeMonths, sixMonths, ytd, allProperties, allUnits, allTenants);
+        left.add(
+                oneMonth,
+                threeMonths,
+                sixMonths,
+                ytd,
+                allProperties,
+                allUnits,
+                allTenants
+        );
 
-        Button addBooking = new Button("Buchung anlegen", new Icon(VaadinIcon.PLUS));
+        Button addBooking = new Button(
+                "Buchung anlegen",
+                new Icon(VaadinIcon.PLUS)
+        );
+
         addBooking.addClassName("primary-button");
 
         bar.add(left, addBooking);
+
         return bar;
     }
 
@@ -438,6 +484,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
     @Override
     public String getPageSubtitle() {
-        return "Finanzen › Übersicht";
+        return "Übersicht über Einnahmen, Ausgaben und Cashflow";
     }
 }
