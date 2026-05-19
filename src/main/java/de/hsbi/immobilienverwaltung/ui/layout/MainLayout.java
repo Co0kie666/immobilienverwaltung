@@ -139,20 +139,14 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
         titleArea.add(pageTitle, pageSubtitle);
 
-        // Rechter Bereich: Suchleiste + Benutzerprofil
+        // Rechter Bereich: Benutzerprofil
         HorizontalLayout rightArea = new HorizontalLayout();
         rightArea.addClassName("header-right");
         rightArea.setAlignItems(FlexComponent.Alignment.CENTER);
 
-        TextField searchField = new TextField();
-        searchField.addClassName("search-field");
-        searchField.setPlaceholder("Suchen...");
-        searchField.setPrefixComponent(VaadinIcon.SEARCH.create());
-        searchField.setClearButtonVisible(true);
-
         HorizontalLayout userProfile = createUserProfile();
 
-        rightArea.add(searchField, userProfile);
+        rightArea.add(userProfile);
 
         header.add(titleArea, rightArea);
 
