@@ -75,7 +75,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
         faelligkeitsdatumField.setPlaceholder("dd/mm/yyyy");
         faelligkeitsdatumField.setWidthFull();
 
-        kategorieField = new ComboBox<>("Kategorie / Konto");
+        kategorieField = new ComboBox<>("Kategorie");
         kategorieField.setItems(
                 "Sonstige Einnahmen",
                 "Mieteinnahmen",
