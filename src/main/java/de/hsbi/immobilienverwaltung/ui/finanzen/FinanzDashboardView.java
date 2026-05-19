@@ -6,6 +6,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
@@ -30,8 +31,8 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
     }
 
     private Component createFilterBar() {
-        Div bar = new Div();
-        bar.addClassName("finance-filter-bar");
+        Div filterBar = new Div();
+        filterBar.addClassName("finance-filter-bar");
 
         Div left = new Div();
         left.addClassName("finance-filter-left");
@@ -98,14 +99,33 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 allTenants
         );
 
-        Button addBooking = new Button("Buchung anlegen",new Icon(VaadinIcon.PLUS));
-        addBooking.addClickListener(e -> UI.getCurrent().navigate("finanzen/buchung-neu"));
+        Button addBooking = new Button("Buchung anlegen", new Icon(VaadinIcon.PLUS));
+        Button showBookings = new Button("Alle Buchungen anzeigen", new Icon(VaadinIcon.PLUS));
+
+        addBooking.addClickListener(e ->
+                UI.getCurrent().navigate("finanzen/buchung-neu")
+        );
+//TODO  Add, when the new view is implemented
+//        showBookings.addClickListener(e ->
+//                UI.getCurrent().navigate("finanzen/buchungen")
+//        );
 
         addBooking.addClassName("primary-button");
+        showBookings.addClassName("primary-button");
 
-        bar.add(left, addBooking);
+        // Container für die rechten Buttons
+        HorizontalLayout bookingButtons = new HorizontalLayout(addBooking, showBookings);
+        bookingButtons.setSpacing(true);
 
-        return bar;
+        HorizontalLayout bookingBar = new HorizontalLayout();
+        filterBar.setWidthFull();
+
+        filterBar.add(left, bookingButtons);
+
+        // left nimmt den freien Platz ein -> Buttons wandern nach rechts
+        bookingBar.expand(left);
+
+        return filterBar;
     }
 
     private Component createKpiGrid() {
