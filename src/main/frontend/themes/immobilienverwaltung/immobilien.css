@@ -97,6 +97,10 @@
     width: 280px;
 }
 
+.belegung-card {
+    padding: 1.5rem;
+}
+
 
 /* =========================================================
    Mieteinheiten-Tabelle

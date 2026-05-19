@@ -1,6 +1,7 @@
 package de.hsbi.immobilienverwaltung.ui.immobilien;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
@@ -204,15 +205,85 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         H3 title = new H3("Belegungsstatus");
         title.addClassName("card-title");
 
-        Div chartPlaceholder = new Div();
-        chartPlaceholder.addClassName("donut-placeholder");
-        chartPlaceholder.setText("91.6%");
+        // Canvas für Chart.js
+        Html canvas = new Html("""
+        <div style="width:100%; max-width:280px; margin:auto;">
+            <canvas id="belegungChart"></canvas>
+        </div>
+    """);
 
-        Div legend = new Div();
-        legend.addClassName("belegung-legend");
-        legend.add(new Span("■ Vermietet"), new Span("■ Leerstand"));
+        card.add(title, canvas);
 
-        card.add(title, chartPlaceholder, legend);
+        card.getElement().executeJs("""
+        function renderBelegungChart() {
+            const ctx = document.getElementById('belegungChart');
+
+            // Vorherigen Chart zerstören falls vorhanden
+            if (window.belegungChartInstance) {
+                window.belegungChartInstance.destroy();
+            }
+
+            window.belegungChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Vermietet', 'Leerstand'],
+                    datasets: [{
+                        data: [22, 2],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    cutout: '70%',
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const value = context.raw;
+                                    const percent = ((value / total) * 100).toFixed(1);
+
+                                    return context.label + ': ' + percent + '%';
+                                }
+                            }
+                        }
+                    }
+                },
+                plugins: [{
+                    id: 'centerText',
+                    beforeDraw(chart) {
+                        const { width, height, ctx } = chart;
+                        ctx.restore();
+
+                        const fontSize = (height / 120).toFixed(2);
+                        ctx.font = `bold ${fontSize}em sans-serif`;
+                        ctx.textBaseline = 'middle';
+
+                        const text = '91.6%';
+                        const textX = Math.round((width - ctx.measureText(text).width) / 2);
+                        const textY = height / 2;
+
+                        ctx.fillText(text, textX, textY);
+                        ctx.save();
+                    }
+                }]
+            });
+        }
+
+        if (!window.Chart) {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+
+            script.onload = () => renderBelegungChart();
+
+            document.head.appendChild(script);
+        } else {
+            renderBelegungChart();
+        }
+    """);
 
         return card;
     }
