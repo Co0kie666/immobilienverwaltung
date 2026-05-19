@@ -31,6 +31,8 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
     private BigDecimalField betragField;
     private DatePicker buchungsdatumField;
     private DatePicker faelligkeitsdatumField;
+
+
     private ComboBox<String> kategorieField;
     private TextArea beschreibungField;
 
