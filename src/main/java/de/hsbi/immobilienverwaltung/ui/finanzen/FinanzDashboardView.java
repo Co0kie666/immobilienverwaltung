@@ -201,7 +201,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         Element canvas = new Element("canvas");
         canvas.setAttribute("id", "financeLineChart");
-        canvas.getStyle().set("width", "100%");
+        canvas.getStyle().set("width", "600px");
         canvas.getStyle().set("height", "320px");
 
         wrapper.getElement().appendChild(canvas);
