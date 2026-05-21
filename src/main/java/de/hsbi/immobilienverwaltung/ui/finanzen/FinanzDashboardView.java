@@ -105,10 +105,9 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         addBooking.addClickListener(e ->
                 UI.getCurrent().navigate("finanzen/buchung-neu")
         );
-//TODO  Add, when the new view is implemented
-//        showBookings.addClickListener(e ->
-//                UI.getCurrent().navigate("finanzen/buchungen")
-//        );
+        showBookings.addClickListener(e ->
+                UI.getCurrent().navigate("finanzen/buchungen")
+        );
 
         addBooking.addClassName("primary-button");
         showBookings.addClassName("primary-button");
