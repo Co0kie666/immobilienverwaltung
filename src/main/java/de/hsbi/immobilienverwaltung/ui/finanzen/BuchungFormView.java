@@ -337,7 +337,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
 
         saveButton.addClickListener(event -> {
             Notification.show("Buchung gespeichert");
-            UI.getCurrent().navigate(FinanzDashboardView.class);
+            UI.getCurrent().navigate(BuchungListView.class);
         });
 
         Button cancelButton = new Button("Abbrechen");

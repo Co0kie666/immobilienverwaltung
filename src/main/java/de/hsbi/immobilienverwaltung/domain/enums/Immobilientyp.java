@@ -1,4 +1,8 @@
 package de.hsbi.immobilienverwaltung.domain.enums;
 
 public enum Immobilientyp {
+    MEHRFAMILIENHAUS,
+    WOHNGEBAEUDE,
+    GEWERBEIMMOBILIE
 }
+
