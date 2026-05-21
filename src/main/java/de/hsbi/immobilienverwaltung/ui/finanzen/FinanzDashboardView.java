@@ -198,67 +198,70 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         Div wrapper = new Div();
         wrapper.setWidthFull();
         wrapper.getStyle().set("height", "320px");
+        wrapper.getStyle().set("position", "relative");
 
         Element canvas = new Element("canvas");
         canvas.setAttribute("id", "financeLineChart");
-        canvas.getStyle().set("width", "600px");
-        canvas.getStyle().set("height", "320px");
+
+        // WICHTIG:
+        canvas.getStyle().set("width", "100%");
+        canvas.getStyle().set("height", "100%");
 
         wrapper.getElement().appendChild(canvas);
 
         UI.getCurrent().getPage().executeJs("""
-            setTimeout(() => {
-                const ctx = document.getElementById('financeLineChart');
+        setTimeout(() => {
+            const ctx = document.getElementById('financeLineChart');
 
-                if (!ctx) return;
+            if (!ctx) return;
 
-                new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: [
-                            'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
-                            'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'
-                        ],
-                        datasets: [
-                            {
-                                label: 'Einnahmen',
-                                data: [
-                                    102000, 108000, 112000, 118000,
-                                    121000, 124000, 127000, 129000,
-                                    132000, 135000, 138000, 142000
-                                ],
-                                tension: 0.4,
-                                fill: false
-                            },
-                            {
-                                label: 'Ausgaben',
-                                data: [
-                                    42000, 44000, 43000, 47000,
-                                    46000, 45000, 49000, 52000,
-                                    51000, 53000, 54000, 56000
-                                ],
-                                tension: 0.4,
-                                fill: false
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
-                            }
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [
+                        'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
+                        'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'
+                    ],
+                    datasets: [
+                        {
+                            label: 'Einnahmen',
+                            data: [
+                                102000, 108000, 112000, 118000,
+                                121000, 124000, 127000, 129000,
+                                132000, 135000, 138000, 142000
+                            ],
+                            tension: 0.4,
+                            fill: false
                         },
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
+                        {
+                            label: 'Ausgaben',
+                            data: [
+                                42000, 44000, 43000, 47000,
+                                46000, 45000, 49000, 52000,
+                                51000, 53000, 54000, 56000
+                            ],
+                            tension: 0.4,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
                         }
                     }
-                });
-            }, 300);
-        """);
+                }
+            });
+        }, 300);
+    """);
 
         return wrapper;
     }
