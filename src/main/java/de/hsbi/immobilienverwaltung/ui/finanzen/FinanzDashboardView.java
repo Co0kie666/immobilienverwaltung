@@ -443,6 +443,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         Button showAll = new Button("Alle anzeigen");
         showAll.addClassName("ghost-button");
+        showAll.addClickListener(e -> UI.getCurrent().navigate(BuchungListView.class));
 
         header.add(titleBox, showAll);
 
