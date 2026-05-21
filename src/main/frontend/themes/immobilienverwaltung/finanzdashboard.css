@@ -125,14 +125,14 @@
 
 .finance-dashboard-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: 2fr 1fr;
     gap: 24px;
     margin-bottom: 24px;
 }
 
 .finance-side-column {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 24px;
 }
 
