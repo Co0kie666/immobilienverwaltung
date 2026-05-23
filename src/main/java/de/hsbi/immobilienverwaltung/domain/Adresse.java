@@ -1,12 +1,8 @@
 package de.hsbi.immobilienverwaltung.domain;
 import jakarta.persistence.*;
 
-@Entity
+@Embeddable
 public class Adresse {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
     private String strasse;
     private String hausnummer;
@@ -22,10 +18,6 @@ public class Adresse {
         this.plz = plz;
         this.stadt = stadt;
         this.land = land;
-    }
-
-    public Long getId() {
-        return id;
     }
 
     public String getStrasse() {

@@ -1,7 +1,20 @@
-INSERT INTO immobilie (bezeichnung, typ, baujahr, flaeche)
+INSERT INTO immobilie (bezeichnung, typ, baujahr, flaeche, strasse, hausnummer, plz, stadt, land)
 VALUES
-    ('Parkresidenz Süd', 'Mehrfamilienhaus', 1998, 850),
-    ('Altbau Ensemble Mitte', 'Wohngebaeude', 1965, 850),
-    ('Seeblick Quartier', 'Gewerbeimmobilie', 2012, 850);
-
---SOLL NOCH DIE ADRESSE DAZU!!!
+    ('Parkresidenz Süd', 'Mehrfamilienhaus', 1998, 850,
+     'Parkstraße',
+     '43',
+     '33605',
+     'Bielefeld',
+     'Deutschland'),
+    ('Altbau Ensemble Mitte', 'Wohngebaeude', 1965, 850,
+     'Apfelstraße',
+     '1',
+     '33602',
+     'Bielefeld',
+     'Deutschland'),
+    ('Seeblick Quartier', 'Gewerbeimmobilie', 2012, 850,
+     'Seestraße',
+     '21',
+     '33613',
+     'Bielefeld',
+     'Deutschland');

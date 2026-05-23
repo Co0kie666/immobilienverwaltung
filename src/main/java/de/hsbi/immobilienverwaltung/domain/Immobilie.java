@@ -2,8 +2,6 @@ package de.hsbi.immobilienverwaltung.domain;
 import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
 import jakarta.persistence.*;
 
-import java.time.LocalDate;
-
 @Entity
 public class Immobilie {
 
@@ -18,7 +16,7 @@ public class Immobilie {
     private Integer baujahr;
     private Integer flaeche;
 
-    @OneToOne
+    @Embedded
     private Adresse adresse;
 
     public Immobilie() {}
