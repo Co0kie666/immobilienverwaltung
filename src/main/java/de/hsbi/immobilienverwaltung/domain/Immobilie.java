@@ -18,7 +18,7 @@ public class Immobilie {
     private Integer baujahr;
     private Integer flaeche;
 
-    @OneToOne(cascade = CascadeType.ALL) // stellt Datenkonsistenz sicher
+    @Embedded
     private Adresse adresse;
 
     public Immobilie() {}
