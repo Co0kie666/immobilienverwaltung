@@ -12,16 +12,14 @@ public class Adresse {
     private String hausnummer;
     private String plz;
     private String stadt;
-    private String land;
 
     public Adresse() {}
 
-    public Adresse(String strasse, String hausnummer, String plz, String stadt, String land) {
+    public Adresse(String strasse, String hausnummer, String plz, String stadt) {
         this.strasse = strasse;
         this.hausnummer = hausnummer;
         this.plz = plz;
         this.stadt = stadt;
-        this.land = land;
     }
 
     public Long getId() {
@@ -56,13 +54,5 @@ public class Adresse {
 
     public void setStadt(String stadt) {
         this.stadt = stadt;
-    }
-
-    public String getLand() {
-        return land;
-    }
-
-    public void setLand(String land) {
-        this.land = land;
     }
 }
