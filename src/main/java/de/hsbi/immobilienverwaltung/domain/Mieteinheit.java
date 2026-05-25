@@ -1,5 +1,6 @@
 package de.hsbi.immobilienverwaltung.domain;
 
+import de.hsbi.immobilienverwaltung.domain.enums.MieteinheitTyp;
 import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
 import jakarta.persistence.*;
 
@@ -13,21 +14,28 @@ public class Mieteinheit {
     @Enumerated(EnumType.STRING)
     private Mieteinheitstatus status = Mieteinheitstatus.FREI;
 
+    @Enumerated(EnumType.STRING)
+    private MieteinheitTyp typ;
+
     private String bezeichnung;
-    private Double kaltmiete;
+    private Integer groesse;
+    private Integer zimmerzahl;
+    private Integer stockwerk;
 
     @ManyToOne
+    @JoinColumn(name = "immobilie_id", nullable = false) // foreign key der nicht NULL sein darf
     private Immobilie immobilie;
-
-    @OneToOne
-    private Mieter mieter;
 
     public Mieteinheit() {}
 
-    public Mieteinheit(String bezeichnung, Mieteinheitstatus status, Double kaltmiete) {
+    public Mieteinheit(String bezeichnung, Mieteinheitstatus status, MieteinheitTyp typ, Integer groesse, Integer zimmerzahl, Integer stockwerk, Immobilie immobilie) {
         this.bezeichnung = bezeichnung;
         this.status = status;
-        this.kaltmiete = kaltmiete;
+        this.typ = typ;
+        this.groesse = groesse;
+        this.zimmerzahl = zimmerzahl;
+        this.stockwerk = stockwerk;
+        this.immobilie = immobilie;
     }
 
     public Long getId() {
@@ -42,14 +50,6 @@ public class Mieteinheit {
         this.bezeichnung = bezeichnung;
     }
 
-    public Double getKaltmiete() {
-        return kaltmiete;
-    }
-
-    public void setKaltmiete(Double kaltmiete) {
-        this.kaltmiete = kaltmiete;
-    }
-
     public Immobilie getImmobilie() {
         return immobilie;
     }
@@ -58,15 +58,39 @@ public class Mieteinheit {
         this.immobilie = immobilie;
     }
 
-    public Mieter getMieter() {
-        return mieter;
-    }
-
-    public void setMieter(Mieter mieter) {
-        this.mieter = mieter;
-    }
-
     public Mieteinheitstatus getStatus() {return status;}
 
     public void setStatus(Mieteinheitstatus status) {this.status = status;}
+
+    public Integer getGroesse() {
+        return groesse;
+    }
+
+    public void setGroesse(Integer groesse) {
+        this.groesse = groesse;
+    }
+
+    public Integer getZimmerzahl() {
+        return zimmerzahl;
+    }
+
+    public void setZimmerzahl(Integer zimmerzahl) {
+        this.zimmerzahl = zimmerzahl;
+    }
+
+    public Integer getStockwerk() {
+        return stockwerk;
+    }
+
+    public void setStockwerk(Integer stockwerk) {
+        this.stockwerk = stockwerk;
+    }
+
+    public MieteinheitTyp getTyp() {
+        return typ;
+    }
+
+    public void setTyp(MieteinheitTyp typ) {
+        this.typ = typ;
+    }
 }
