@@ -20,7 +20,7 @@ public class Mieteinheit {
     private String bezeichnung;
     private Integer groesse;
     private Integer zimmerzahl;
-    private Integer stockwerk;
+    private String stockwerk;
 
     @ManyToOne
     @JoinColumn(name = "immobilie_id", nullable = false) // foreign key der nicht NULL sein darf
@@ -28,14 +28,13 @@ public class Mieteinheit {
 
     public Mieteinheit() {}
 
-    public Mieteinheit(String bezeichnung, Mieteinheitstatus status, MieteinheitTyp typ, Integer groesse, Integer zimmerzahl, Integer stockwerk, Immobilie immobilie) {
+    public Mieteinheit(String bezeichnung, Mieteinheitstatus status, MieteinheitTyp typ, Integer groesse, Integer zimmerzahl, String stockwerk) {
         this.bezeichnung = bezeichnung;
         this.status = status;
         this.typ = typ;
         this.groesse = groesse;
         this.zimmerzahl = zimmerzahl;
         this.stockwerk = stockwerk;
-        this.immobilie = immobilie;
     }
 
     public Long getId() {
@@ -78,11 +77,11 @@ public class Mieteinheit {
         this.zimmerzahl = zimmerzahl;
     }
 
-    public Integer getStockwerk() {
+    public String getStockwerk() {
         return stockwerk;
     }
 
-    public void setStockwerk(Integer stockwerk) {
+    public void setStockwerk(String stockwerk) {
         this.stockwerk = stockwerk;
     }
 
