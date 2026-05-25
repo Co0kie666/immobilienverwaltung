@@ -6,6 +6,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
@@ -30,8 +31,8 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
     }
 
     private Component createFilterBar() {
-        Div bar = new Div();
-        bar.addClassName("finance-filter-bar");
+        Div filterBar = new Div();
+        filterBar.addClassName("finance-filter-bar");
 
         Div left = new Div();
         left.addClassName("finance-filter-left");
@@ -98,16 +99,32 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 allTenants
         );
 
-        Button addBooking = new Button(
-                "Buchung anlegen",
-                new Icon(VaadinIcon.PLUS)
+        Button addBooking = new Button("Buchung anlegen", new Icon(VaadinIcon.PLUS));
+        Button showBookings = new Button("Alle Buchungen anzeigen", new Icon(VaadinIcon.PLUS));
+
+        addBooking.addClickListener(e ->
+                UI.getCurrent().navigate("finanzen/buchung-neu")
+        );
+        showBookings.addClickListener(e ->
+                UI.getCurrent().navigate("finanzen/buchungen")
         );
 
         addBooking.addClassName("primary-button");
+        showBookings.addClassName("primary-button");
 
-        bar.add(left, addBooking);
+        // Container für die rechten Buttons
+        HorizontalLayout bookingButtons = new HorizontalLayout(addBooking, showBookings);
+        bookingButtons.setSpacing(true);
 
-        return bar;
+        HorizontalLayout bookingBar = new HorizontalLayout();
+        filterBar.setWidthFull();
+
+        filterBar.add(left, bookingButtons);
+
+        // left nimmt den freien Platz ein -> Buttons wandern nach rechts
+        bookingBar.expand(left);
+
+        return filterBar;
     }
 
     private Component createKpiGrid() {
@@ -180,67 +197,70 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         Div wrapper = new Div();
         wrapper.setWidthFull();
         wrapper.getStyle().set("height", "320px");
+        wrapper.getStyle().set("position", "relative");
 
         Element canvas = new Element("canvas");
         canvas.setAttribute("id", "financeLineChart");
+
+        // WICHTIG:
         canvas.getStyle().set("width", "100%");
-        canvas.getStyle().set("height", "320px");
+        canvas.getStyle().set("height", "100%");
 
         wrapper.getElement().appendChild(canvas);
 
         UI.getCurrent().getPage().executeJs("""
-            setTimeout(() => {
-                const ctx = document.getElementById('financeLineChart');
+        setTimeout(() => {
+            const ctx = document.getElementById('financeLineChart');
 
-                if (!ctx) return;
+            if (!ctx) return;
 
-                new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: [
-                            'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
-                            'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'
-                        ],
-                        datasets: [
-                            {
-                                label: 'Einnahmen',
-                                data: [
-                                    102000, 108000, 112000, 118000,
-                                    121000, 124000, 127000, 129000,
-                                    132000, 135000, 138000, 142000
-                                ],
-                                tension: 0.4,
-                                fill: false
-                            },
-                            {
-                                label: 'Ausgaben',
-                                data: [
-                                    42000, 44000, 43000, 47000,
-                                    46000, 45000, 49000, 52000,
-                                    51000, 53000, 54000, 56000
-                                ],
-                                tension: 0.4,
-                                fill: false
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
-                            }
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [
+                        'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
+                        'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'
+                    ],
+                    datasets: [
+                        {
+                            label: 'Einnahmen',
+                            data: [
+                                102000, 108000, 112000, 118000,
+                                121000, 124000, 127000, 129000,
+                                132000, 135000, 138000, 142000
+                            ],
+                            tension: 0.4,
+                            fill: false
                         },
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
+                        {
+                            label: 'Ausgaben',
+                            data: [
+                                42000, 44000, 43000, 47000,
+                                46000, 45000, 49000, 52000,
+                                51000, 53000, 54000, 56000
+                            ],
+                            tension: 0.4,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
                         }
                     }
-                });
-            }, 300);
-        """);
+                }
+            });
+        }, 300);
+    """);
 
         return wrapper;
     }
@@ -410,9 +430,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         Div card = new Div();
         card.addClassName("table-card");
 
-        Div header = new Div();
-        header.addClassName("table-card-header");
-
         Div titleBox = new Div();
 
         H3 titleText = new H3(title);
@@ -423,11 +440,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         titleBox.add(titleText, subtitleText);
 
-        Button showAll = new Button("Alle anzeigen");
-        showAll.addClassName("ghost-button");
-
-        header.add(titleBox, showAll);
-
         Div table = new Div();
         table.addClassName("finance-table");
 
@@ -437,7 +449,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
             table.add(tableRow(row));
         }
 
-        card.add(header, table);
+        card.add(table);
         return card;
     }
 

@@ -12,7 +12,6 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.RouterLink;
@@ -139,20 +138,14 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
         titleArea.add(pageTitle, pageSubtitle);
 
-        // Rechter Bereich: Suchleiste + Benutzerprofil
+        // Rechter Bereich: Benutzerprofil
         HorizontalLayout rightArea = new HorizontalLayout();
         rightArea.addClassName("header-right");
         rightArea.setAlignItems(FlexComponent.Alignment.CENTER);
 
-        TextField searchField = new TextField();
-        searchField.addClassName("search-field");
-        searchField.setPlaceholder("Suchen...");
-        searchField.setPrefixComponent(VaadinIcon.SEARCH.create());
-        searchField.setClearButtonVisible(true);
-
         HorizontalLayout userProfile = createUserProfile();
 
-        rightArea.add(searchField, userProfile);
+        rightArea.add(userProfile);
 
         header.add(titleArea, rightArea);
 

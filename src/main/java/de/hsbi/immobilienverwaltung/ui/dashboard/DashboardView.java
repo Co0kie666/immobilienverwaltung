@@ -46,11 +46,6 @@ public class DashboardView extends Div implements HasPageHeader {
 
         layout.addClassName("page-section");
 
-        HorizontalLayout filters = new HorizontalLayout(
-                secondaryButton("Dieser Monat", VaadinIcon.CALENDAR),
-                secondaryButton("Alle Objekte", VaadinIcon.BUILDING)
-        );
-
         Button neueImmobilie = primaryButton("Neue Immobilie", VaadinIcon.PLUS);
         neueImmobilie.addClickListener(e ->
                 UI.getCurrent().navigate("immobilien/neu")
@@ -61,8 +56,10 @@ public class DashboardView extends Div implements HasPageHeader {
                 UI.getCurrent().navigate("mieter-anlegen")
         );
 
-        Button neueZahlung = secondaryButton("Neuer Zahlung", VaadinIcon.EURO);
-        // TODO: Add click listener when Zahlung view is implemented
+        Button neueZahlung = secondaryButton("Neue Zahlung", VaadinIcon.EURO);
+        neueZahlung.addClickListener(e ->
+                UI.getCurrent().navigate("finanzen/buchung-neu")
+        );
 
         HorizontalLayout actions = new HorizontalLayout(
                 neueImmobilie,
@@ -70,7 +67,7 @@ public class DashboardView extends Div implements HasPageHeader {
                 neueZahlung
         );
 
-        layout.add(filters, actions);
+        layout.add(actions);
 
         return layout;
     }

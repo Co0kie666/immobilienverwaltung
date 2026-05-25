@@ -6,7 +6,6 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -75,7 +74,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
         faelligkeitsdatumField.setPlaceholder("dd/mm/yyyy");
         faelligkeitsdatumField.setWidthFull();
 
-        kategorieField = new ComboBox<>("Kategorie / Konto");
+        kategorieField = new ComboBox<>("Kategorie");
         kategorieField.setItems(
                 "Sonstige Einnahmen",
                 "Mieteinnahmen",
@@ -338,7 +337,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
 
         saveButton.addClickListener(event -> {
             Notification.show("Buchung gespeichert");
-            UI.getCurrent().navigate(FinanzDashboardView.class);
+            UI.getCurrent().navigate(BuchungListView.class);
         });
 
         Button cancelButton = new Button("Abbrechen");
