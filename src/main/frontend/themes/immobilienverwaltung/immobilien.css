@@ -101,6 +101,17 @@
     padding: 1.5rem;
 }
 
+.detail-overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    width: 100%;
+}
+
+.detail-overview-grid .card {
+    width: 100%;
+    box-sizing: border-box;
+}
 
 /* =========================================================
    Mieteinheiten-Tabelle

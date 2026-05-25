@@ -11,6 +11,10 @@ import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.Route;
+import de.hsbi.immobilienverwaltung.domain.Adresse;
+import de.hsbi.immobilienverwaltung.domain.Immobilie;
+import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
+import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
 import de.hsbi.immobilienverwaltung.ui.components.ConfirmDeleteDialog;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
@@ -20,9 +24,11 @@ import java.util.List;
 @Route(value = "immobilien", layout = MainLayout.class)
 public class ImmobilienListView extends Div implements HasPageHeader {
 
-    private final Grid<ImmobilienRow> grid = new Grid<>(ImmobilienRow.class, false);
+    private final Grid<Immobilie> grid = new Grid<>(Immobilie.class, false);
+    private final ImmobilieService immobilieService;
 
-    public ImmobilienListView() {
+    public ImmobilienListView(ImmobilieService immobilieService) {
+        this.immobilieService = immobilieService;
         addClassName("immobilien-list-view");
         addClassName("page-content");
 
@@ -31,6 +37,37 @@ public class ImmobilienListView extends Div implements HasPageHeader {
                 createFilterCard(),
                 createTableCard()
         );
+
+        ladeImmobilien();
+    }
+
+    private void ladeImmobilien() {
+        grid.setItems(immobilieService.findeAlleImmobilien());
+    }
+
+    private String formatAdresse(Immobilie immobilie) {
+        Adresse adresse = immobilie.getAdresse();
+
+        if (adresse == null) {
+            return "-";
+        }
+
+        return adresse.getStrasse() + " "
+                + adresse.getHausnummer() + ", "
+                + adresse.getPlz() + " "
+                + adresse.getStadt();
+    }
+
+    private String formatTyp(Immobilientyp typ) {
+        if (typ == null) {
+            return "-";
+        }
+
+        return switch (typ) {
+            case WOHNGEBAEUDE -> "Wohngebäude";
+            case MEHRFAMILIENHAUS -> "Mehrfamilienhaus";
+            case GEWERBEIMMOBILIE -> "Gewerbeimmobilie";
+        };
     }
 
     @Override
@@ -105,29 +142,29 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         grid.addClassName("immobilien-grid");
         grid.setAllRowsVisible(true);
 
-        grid.addColumn(ImmobilienRow::name)
+        grid.addColumn(Immobilie::getBezeichnung)
                 .setHeader("Immobilie")
                 .setAutoWidth(true)
                 .setFlexGrow(2);
 
-        grid.addColumn(ImmobilienRow::typ)
+        grid.addColumn(immobilie -> formatTyp(immobilie.getTyp()))
                 .setHeader("Typ")
                 .setAutoWidth(true);
 
-        grid.addColumn(ImmobilienRow::adresse)
+        grid.addColumn(this::formatAdresse)
                 .setHeader("Adresse")
                 .setAutoWidth(true)
                 .setFlexGrow(2);
 
-        grid.addColumn(ImmobilienRow::einheiten)
+        grid.addColumn(immobilie -> "-")
                 .setHeader("Einheiten")
                 .setAutoWidth(true);
 
-        grid.addColumn(ImmobilienRow::leerstand)
+        grid.addColumn(immobilie -> "-")
                 .setHeader("Leerstand")
                 .setAutoWidth(true);
 
-        grid.addColumn(ImmobilienRow::offenePosten)
+        grid.addColumn(immobilie -> "-")
                 .setHeader("Offene Posten")
                 .setAutoWidth(true);
 
@@ -135,39 +172,9 @@ public class ImmobilienListView extends Div implements HasPageHeader {
                 .setHeader("Aktionen")
                 .setAutoWidth(true)
                 .setFlexGrow(0);
-
-        grid.setItems(List.of(
-                new ImmobilienRow(
-                        1L,
-                        "Parkresidenz Süd",
-                        "Mehrfamilienhaus",
-                        "Parkstraße 12, 10115 Berlin",
-                        "24 Mieteinheiten",
-                        "0% (0)",
-                        "€0.00"
-                ),
-                new ImmobilienRow(
-                        2L,
-                        "Altbau Ensemble Mitte",
-                        "Wohngebäude",
-                        "Hauptstraße 45, 80331 München",
-                        "12 Mieteinheiten",
-                        "16% (2)",
-                        "€1,250.00"
-                ),
-                new ImmobilienRow(
-                        3L,
-                        "Seeblick Quartier",
-                        "Gewerbeimmobilie",
-                        "Seestraße 8-10, 20099 Hamburg",
-                        "8 Mieteinheiten",
-                        "0% (0)",
-                        "€0.00"
-                )
-        ));
     }
 
-    private Component createActionButtons(ImmobilienRow immobilie) {
+    private Component createActionButtons(Immobilie immobilie) {
         HorizontalLayout actions = new HorizontalLayout();
         actions.addClassName("table-actions");
         actions.setSpacing(false);
@@ -183,19 +190,19 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         loeschenButton.addClassNames("table-action-button", "delete-action");
 
         anzeigenButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilie.id()))
+                getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilie.getId()))
         );
 
         bearbeitenButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilie.id() + "/bearbeiten"))
+                getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilie.getId() + "/bearbeiten"))
         );
 
         loeschenButton.addClickListener(event -> {
             ConfirmDeleteDialog dialog = new ConfirmDeleteDialog(
                     "Immobilie löschen?",
-                    "Möchtest du die Immobilie \"" + immobilie.name() + "\" wirklich löschen?",
+                    "Möchtest du die Immobilie \"" + immobilie.getBezeichnung() + "\" wirklich löschen?",
                     () -> {
-                        Notification.show("Immobilie würde gelöscht werden: " + immobilie.name());
+                        Notification.show("Immobilie würde gelöscht werden: " + immobilie.getBezeichnung());
 
                         // später:
                         // immobilieService.loescheImmobilie(immobilie.id());
@@ -208,17 +215,5 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         actions.add(anzeigenButton, bearbeitenButton, loeschenButton);
 
         return actions;
-    }
-
-    // Dummy
-    private record ImmobilienRow(
-            Long id,
-            String name,
-            String typ,
-            String adresse,
-            String einheiten,
-            String leerstand,
-            String offenePosten
-    ) {
     }
 }

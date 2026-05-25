@@ -17,28 +17,33 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.ui.components.ConfirmDeleteDialog;
-import de.hsbi.immobilienverwaltung.ui.components.StatusBadge;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
-
-import java.util.List;
+import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
+import de.hsbi.immobilienverwaltung.domain.enums.MieteinheitTyp;
+import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
+import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
+import de.hsbi.immobilienverwaltung.domain.Adresse;
+import de.hsbi.immobilienverwaltung.domain.Immobilie;
+import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
+import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
 
 @Route(value = "immobilien/:immobilieId", layout = MainLayout.class)
 public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnterObserver {
 
     private Long immobilieId;
-    private final Grid<MieteinheitRow> mieteinheitenGrid = new Grid<>(MieteinheitRow.class, false);
+    private final MieteinheitService mieteinheitService;
+    private final Grid<Mieteinheit> mieteinheitenGrid = new Grid<>(Mieteinheit.class, false);
+    private Immobilie immobilie;
+    private final ImmobilieService immobilieService;
 
-    public ImmobilieDetailView() {
+    public ImmobilieDetailView(MieteinheitService mieteinheitService, ImmobilieService immobilieService) {
+        this.mieteinheitService = mieteinheitService;
+        this.immobilieService = immobilieService;
+
         addClassName("page-content");
         addClassName("immobilie-detail-view");
 
-        add(
-                createTopActions(),
-                createKpiSection(),
-                createMieteinheitenCard(),
-                createBelegungCard()
-        );
     }
 
     @Override
@@ -48,17 +53,126 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                 .map(Long::valueOf)
                 .orElse(null);
 
-        // Später: Immobilie anhand der ID aus dem Service laden
+        ladeImmobilie();
+
+        // Vaadin Methode -> verhindert dass Komponenten doppelt angezeigt werden
+        removeAll();
+
+        add(
+                createTopActions(),
+                createKpiSection(),
+                createOverviewSection(),
+                createMieteinheitenCard()
+        );
+
+        ladeMieteinheiten();
+    }
+
+    private void ladeImmobilie() {
+        this.immobilie = immobilieService.findeImmobilieNachId(immobilieId)
+                .orElseThrow(() -> new IllegalArgumentException("Immobilie wurde nicht gefunden."));
+    }
+
+    private void ladeMieteinheiten() {
+        mieteinheitenGrid.setItems(
+                mieteinheitService.findeMieteinheitenNachImmobilie(immobilieId)
+        );
+    }
+
+    // ImmobilienCard und BelegungsCard nebeneinander
+    private Component createOverviewSection() {
+        Div overview = new Div();
+        overview.addClassName("detail-overview-grid");
+
+        overview.add(
+                createImmobilieInfoCard(),
+                createBelegungCard()
+        );
+
+        return overview;
+    }
+
+    private Component createImmobilieInfoCard() {
+        Div card = new Div();
+        card.addClassNames("card", "immobilie-info-card");
+
+        H3 title = new H3("Stammdaten");
+        title.addClassName("card-title");
+
+        card.add(
+                title,
+                createInfoItem("Bezeichnung", immobilie.getBezeichnung()),
+                createInfoItem("Typ", formatImmobilientyp(immobilie.getTyp())),
+                createInfoItem("Baujahr", valueOrDash(immobilie.getBaujahr())),
+                createInfoItem("Fläche", formatFlaeche(immobilie.getFlaeche())),
+                createInfoItem("Adresse", formatAdresse(immobilie))
+        );
+
+        return card;
+    }
+
+    private Component createInfoItem(String label, String value) {
+        Div item = new Div();
+        item.addClassName("info-item");
+
+        Span labelText = new Span(label);
+        labelText.addClassName("info-label");
+
+        Span valueText = new Span(value);
+        valueText.addClassName("info-value");
+
+        item.add(labelText, valueText);
+
+        return item;
+    }
+
+    private String formatAdresse(Immobilie immobilie) {
+        Adresse adresse = immobilie.getAdresse();
+
+        if (adresse == null) {
+            return "-";
+        }
+
+        return adresse.getStrasse() + " "
+                + adresse.getHausnummer() + ", "
+                + adresse.getPlz() + " "
+                + adresse.getStadt();
+    }
+
+    private String formatImmobilientyp(Immobilientyp typ) {
+        if (typ == null) {
+            return "-";
+        }
+
+        return switch (typ) {
+            case WOHNGEBAEUDE -> "Wohngebäude";
+            case MEHRFAMILIENHAUS -> "Mehrfamilienhaus";
+            case GEWERBEIMMOBILIE -> "Gewerbeimmobilie";
+        };
+    }
+
+    private String formatFlaeche(Integer flaeche) {
+        if (flaeche == null) {
+            return "-";
+        }
+
+        return flaeche + " m²";
+    }
+
+    private String valueOrDash(Object value) {
+        return value == null ? "-" : value.toString();
     }
 
     @Override
     public String getPageTitle() {
-        return "Parkresidenz Süd";
+        return immobilie != null ? immobilie.getBezeichnung() : "Immobilie";
     }
 
     @Override
     public String getPageSubtitle() {
-        return "Immobilien > Parkresidenz Süd";
+        return immobilie != null
+                ? "Immobilien > " + immobilie.getBezeichnung()
+                : "Immobilien > Detailansicht";
     }
 
     private Component createTopActions() {
@@ -149,53 +263,64 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
     }
 
     private void configureMieteinheitenGrid() {
+        mieteinheitenGrid.removeAllColumns();
+
         mieteinheitenGrid.addClassName("mieteinheiten-grid");
         mieteinheitenGrid.setAllRowsVisible(true);
 
-        mieteinheitenGrid.addColumn(MieteinheitRow::nummer)
-                .setHeader("Einheit-Nr.")
+        mieteinheitenGrid.addColumn(Mieteinheit::getBezeichnung)
+                .setHeader("Bezeichnung")
                 .setAutoWidth(true);
 
-        mieteinheitenGrid.addColumn(MieteinheitRow::typ)
+        mieteinheitenGrid.addColumn(mieteinheit -> formatTyp(mieteinheit.getTyp()))
                 .setHeader("Typ")
                 .setAutoWidth(true);
 
-        mieteinheitenGrid.addColumn(MieteinheitRow::groesse)
+        mieteinheitenGrid.addColumn(mieteinheit -> mieteinheit.getGroesse() + " m²")
                 .setHeader("Größe")
                 .setAutoWidth(true);
 
-        mieteinheitenGrid.addColumn(MieteinheitRow::miete)
-                .setHeader("Miete (kalt)")
+        mieteinheitenGrid.addColumn(Mieteinheit::getStockwerk)
+                .setHeader("Stockwerk")
                 .setAutoWidth(true);
 
-        mieteinheitenGrid.addColumn(new ComponentRenderer<>(row -> {
-                    if (row.status().equals("Vermietet")) {
-                        return StatusBadge.success("Vermietet");
-                    }
+        mieteinheitenGrid.addColumn(Mieteinheit::getZimmerzahl)
+                .setHeader("Zimmer")
+                .setAutoWidth(true);
 
-                    if (row.status().equals("Frei")) {
-                        return StatusBadge.neutral("Frei");
-                    }
-
-                    if (row.status().equals("In Renovierung")) {
-                        return StatusBadge.warning("In Renovierung");
-                    }
-
-                    return StatusBadge.neutral(row.status());
-                }))
+        mieteinheitenGrid.addColumn(mieteinheit -> formatStatus(mieteinheit.getStatus()))
                 .setHeader("Status")
                 .setAutoWidth(true);
 
         mieteinheitenGrid.addColumn(new ComponentRenderer<>(this::createMieteinheitenActionButtons))
                 .setHeader("Aktionen")
-                .setAutoWidth(true)
-                .setFlexGrow(0);
+                .setAutoWidth(true);
+    }
 
-        mieteinheitenGrid.setItems(List.of(
-                new MieteinheitRow(1L, "WE-01", "Wohnung (EG)", "85 m²", "€ 1.150,00", "Vermietet"),
-                new MieteinheitRow(2L, "WE-02", "Wohnung (1. OG)", "92 m²", "€ 1.250,00", "Vermietet"),
-                new MieteinheitRow(3L, "WE-03", "Wohnung (2. OG)", "75 m²", "€ 950,00", "Frei")
-        ));
+    private Object formatStatus(Mieteinheitstatus status) {
+        if (status == null) {
+            return "-";
+        }
+
+        return switch (status) {
+            case FREI -> "Frei";
+            case VERMIETET -> "Vermietet";
+            case IN_RENOVIERUNG -> "In Renovierung";
+        };
+    }
+
+    private Object formatTyp(MieteinheitTyp typ) {
+        if (typ == null) {
+            return "-";
+        }
+
+        return switch (typ) {
+            case WOHNUNG -> "Wohnung";
+            case BUERO -> "Büro";
+            case LAGERHALLE -> "Lagerhalle";
+            case GEWERBEFLAECHE -> "Gewerbefläche";
+            case GESAMTOBJEKT -> "Gesamtobjekt";
+        };
     }
 
     private Component createBelegungCard() {
@@ -288,7 +413,7 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         return card;
     }
 
-    private Component createMieteinheitenActionButtons(MieteinheitRow mieteinheit) {
+    private Component createMieteinheitenActionButtons(Mieteinheit mieteinheit) {
         HorizontalLayout actions = new HorizontalLayout();
         actions.addClassName("table-actions");
         actions.setSpacing(false);
@@ -305,22 +430,22 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
 
         anzeigenButton.addClickListener(event ->
                 getUI().ifPresent(ui -> ui.navigate(
-                        "immobilien/" + immobilieId + "/einheiten/" + mieteinheit.id() + "/details"
+                        "immobilien/" + immobilieId + "/einheiten/" + mieteinheit.getId() + "/details"
                 ))
         );
 
         bearbeitenButton.addClickListener(event ->
                 getUI().ifPresent(ui -> ui.navigate(
-                        "immobilien/" + immobilieId + "/einheiten/" + mieteinheit.id() + "/bearbeiten"
+                        "immobilien/" + immobilieId + "/einheiten/" + mieteinheit.getId() + "/bearbeiten"
                 ))
         );
 
         loeschenButton.addClickListener(event -> {
             ConfirmDeleteDialog dialog = new ConfirmDeleteDialog(
                     "Mieteinheit löschen?",
-                    "Möchtest du die Mieteinheit \"" + mieteinheit.nummer() + "\" wirklich löschen?",
+                    "Möchtest du die Mieteinheit \"" + mieteinheit.getBezeichnung() + "\" wirklich löschen?",
                     () -> {
-                        Notification.show("Mieteinheit würde gelöscht werden: " + mieteinheit.nummer());
+                        Notification.show("Mieteinheit würde gelöscht werden: " + mieteinheit.getBezeichnung());
 
                         // später:
                         // mieteinheitService.loescheMieteinheit(mieteinheit.id());
@@ -336,13 +461,4 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         return actions;
     }
 
-    private record MieteinheitRow(
-            Long id,
-            String nummer,
-            String typ,
-            String groesse,
-            String miete,
-            String status
-    ) {
-    }
 }

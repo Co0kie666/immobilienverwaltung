@@ -28,7 +28,7 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         add(
                 createTopActions(),
                 createInfoGrid(),
-                createMietvertragCard()
+                createMietvertragHistorieCard()
         );
     }
 
@@ -90,39 +90,85 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
                 createStatusItem("Status", StatusBadge.neutral("Frei"))
         );
 
-        Div finanzCard = new Div();
-        finanzCard.addClassNames("card", "mieteinheit-info-card");
-
-        H3 finanzTitle = new H3("Mietdaten");
-        finanzTitle.addClassName("card-title");
-
-        finanzCard.add(
-                finanzTitle,
-                createInfoItem("Kaltmiete", "€ 950,00"),
-                createInfoItem("Nebenkosten", "€ 180,00"),
-                createInfoItem("Warmmiete", "€ 1.130,00"),
-                createInfoItem("Kaution", "€ 2.850,00")
-        );
-
-        grid.add(stammdatenCard, finanzCard);
+        grid.add(stammdatenCard, createAktuellerMietvertragCard());
 
         return grid;
     }
 
-    private Component createMietvertragCard() {
+    private Component createAktuellerMietvertragCard() {
+        if (hatAktivenMietvertrag()) {
+            return createAktiverMietvertragCard();
+        }
+
+        return createKeinMietvertragCard();
+    }
+
+    private boolean hatAktivenMietvertrag() {
+        // TODO Später: über MietvertragService prüfen
+        return false;
+    }
+
+    private Component createKeinMietvertragCard() {
         Div card = new Div();
-        card.addClassNames("card", "mieteinheit-contract-card");
+        card.addClassNames("card", "mieteinheit-info-card");
 
         H3 title = new H3("Aktueller Mietvertrag");
         title.addClassName("card-title");
 
-        Paragraph text = new Paragraph("Für diese Mieteinheit ist aktuell kein aktiver Mietvertrag vorhanden.");
+        Paragraph text = new Paragraph(
+                "Für diese Mieteinheit ist aktuell kein aktiver Mietvertrag vorhanden. Daher gibt es noch keine verbindlichen Mietdaten."
+        );
         text.addClassName("card-subtitle");
 
         Button createContractButton = new Button("Mietvertrag anlegen", VaadinIcon.PLUS.create());
         createContractButton.addClassName("primary-button");
 
+        // TODO Festlegen dass beim anlegen direkt die jeweilige Immobilie + Mieteinheit ausgewählt ist
+        createContractButton.addClickListener(event ->
+                 getUI().ifPresent(ui -> ui.navigate("mietvertrag-anlegen"))
+        );
+
         card.add(title, text, createContractButton);
+
+        return card;
+    }
+
+    private Component createAktiverMietvertragCard() {
+        Div card = new Div();
+        card.addClassNames("card", "mieteinheit-info-card");
+
+        H3 title = new H3("Aktueller Mietvertrag");
+        title.addClassName("card-title");
+
+        card.add(
+                title,
+                createInfoItem("Mieter", "Max Mustermann"),
+                createStatusItem("Status", StatusBadge.success("Aktiv")),
+                createInfoItem("Vertragsbeginn", "01.10.2021"),
+                createInfoItem("Kaltmiete", "€ 950,00"),
+                createInfoItem("Nebenkosten", "€ 180,00"),
+                createInfoItem("Warmmiete", "€ 1.130,00")
+        );
+
+        Button showContractButton = new Button("Mietvertrag anzeigen", VaadinIcon.EYE.create());
+        showContractButton.addClassName("secondary-button");
+
+        card.add(showContractButton);
+
+        return card;
+    }
+
+    private Component createMietvertragHistorieCard() {
+        Div card = new Div();
+        card.addClassNames("card", "mieteinheit-contract-card");
+
+        H3 title = new H3("Mietvertragshistorie");
+        title.addClassName("card-title");
+
+        Paragraph text = new Paragraph("Bisher sind keine früheren Mietverträge für diese Mieteinheit vorhanden.");
+        text.addClassName("card-subtitle");
+
+        card.add(title, text);
 
         return card;
     }

@@ -9,9 +9,12 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.IntegerField;
-import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
+import de.hsbi.immobilienverwaltung.domain.Adresse;
+import de.hsbi.immobilienverwaltung.domain.Immobilie;
+import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
+import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 
@@ -19,9 +22,9 @@ import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 public class ImmobilieFormView extends Div implements HasPageHeader {
 
     private final TextField bezeichnungField = new TextField("Bezeichnung");
-    private final Select<String> typSelect = new Select<>();
+    private final Select<Immobilientyp> typSelect = new Select<>();
     private final IntegerField baujahrField = new IntegerField("Baujahr");
-    private final NumberField gesamtflaecheField = new NumberField("Gesamtfläche in m²");
+    private final IntegerField gesamtflaecheField = new IntegerField("Gesamtfläche in m²");
 
     private final TextField strasseField = new TextField("Straße");
     private final TextField hausnummerField = new TextField("Hausnummer");
@@ -31,7 +34,11 @@ public class ImmobilieFormView extends Div implements HasPageHeader {
     private final Checkbox gesamtobjektCheckbox =
             new Checkbox("Gesamtobjekt als einzelne Mieteinheit erstellen");
 
-    public ImmobilieFormView() {
+    private final ImmobilieService immobilieService;
+
+    public ImmobilieFormView(ImmobilieService immobilieService) {
+        this.immobilieService = immobilieService;
+
         addClassName("page-content");
         addClassName("immobilie-form-view");
 
@@ -56,12 +63,20 @@ public class ImmobilieFormView extends Div implements HasPageHeader {
         bezeichnungField.setPlaceholder("z. B. Parkresidenz Süd");
 
         typSelect.setLabel("Immobilientyp");
-        typSelect.setItems("Wohngebäude", "Mehrfamilienhaus", "Gewerbeimmobilie");
+        typSelect.setItems(Immobilientyp.values());
         typSelect.setPlaceholder("Typ auswählen");
+        typSelect.setItemLabelGenerator(this::formatImmobilientyp);
 
         baujahrField.setPlaceholder("z. B. 1998");
 
         gesamtflaecheField.setPlaceholder("z. B. 850");
+
+        bezeichnungField.setRequiredIndicatorVisible(true);
+        typSelect.setRequiredIndicatorVisible(true);
+        strasseField.setRequiredIndicatorVisible(true);
+        hausnummerField.setRequiredIndicatorVisible(true);
+        plzField.setRequiredIndicatorVisible(true);
+        ortField.setRequiredIndicatorVisible(true);
 
         form.add(
                 bezeichnungField,
@@ -74,6 +89,12 @@ public class ImmobilieFormView extends Div implements HasPageHeader {
                 ortField,
                 gesamtobjektCheckbox
         );
+
+        baujahrField.setMin(0);
+        baujahrField.setErrorMessage("Baujahr darf nicht negativ sein");
+
+        gesamtflaecheField.setMin(0);
+        gesamtflaecheField.setErrorMessage("Fläche darf nicht negativ sein");
 
         form.setColspan(gesamtobjektCheckbox, 2);
 
@@ -88,16 +109,49 @@ public class ImmobilieFormView extends Div implements HasPageHeader {
 
         Button speichernButton = new Button("Speichern", VaadinIcon.CHECK.create());
         speichernButton.addClassName("primary-button");
-        speichernButton.addClickListener(event -> {
-            Notification.show("Immobilie wurde gespeichert: " + bezeichnungField.getValue());
-            getUI().ifPresent(ui -> ui.navigate(ImmobilienListView.class));
-        });
+        speichernButton.addClickListener(event -> speichereImmobilie());
 
         actions.add(abbrechenButton, speichernButton);
 
         card.add(header, form, actions);
 
         return card;
+    }
+
+    private void speichereImmobilie() {
+        try {
+            Adresse adresse = new Adresse(
+                    strasseField.getValue(),
+                    hausnummerField.getValue(),
+                    plzField.getValue(),
+                    ortField.getValue()
+            );
+
+            Immobilie immobilie = new Immobilie(
+                    bezeichnungField.getValue(),
+                    typSelect.getValue(),
+                    baujahrField.getValue(),
+                    gesamtflaecheField.getValue(),
+                    adresse
+            );
+
+            immobilieService.speichereImmobilie(immobilie);
+
+            Notification.show("Immobilie wurde gespeichert: " + bezeichnungField.getValue());
+
+            getUI().ifPresent(ui -> ui.navigate(ImmobilienListView.class));
+
+        } catch (Exception ex) {
+            Notification.show("Fehler beim Speichern: " + ex.getMessage(), 4000, Notification.Position.MIDDLE);
+        }
+    }
+
+    private String formatImmobilientyp(Immobilientyp typ) {
+        return switch (typ) {
+            case WOHNGEBAEUDE -> "Wohngebäude";
+            case MEHRFAMILIENHAUS -> "Mehrfamilienhaus";
+            case GEWERBEIMMOBILIE -> "Gewerbeimmobilie";
+        };
     }
 
     @Override

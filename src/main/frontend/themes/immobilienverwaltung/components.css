@@ -531,6 +531,8 @@
    ========================================================= */
 
 .form-card vaadin-text-field::part(input-field),
+.form-card vaadin-integer-field::part(input-field),
+.form-card vaadin-number-field::part(input-field),
 .form-card vaadin-date-picker::part(input-field),
 .form-card vaadin-select::part(input-field) {
     background: white;
@@ -541,12 +543,16 @@
 }
 
 .form-card vaadin-text-field:hover::part(input-field),
+.form-card vaadin-integer-field:hover::part(input-field),
+.form-card vaadin-number-field:hover::part(input-field),
 .form-card vaadin-date-picker:hover::part(input-field),
 .form-card vaadin-select:hover::part(input-field) {
     border-color: #d1d5db;
 }
 
 .form-card vaadin-text-field:focus-within::part(input-field),
+.form-card vaadin-integer-field:focus-within::part(input-field),
+.form-card vaadin-number-field:focus-within::part(input-field),
 .form-card vaadin-date-picker:focus-within::part(input-field),
 .form-card vaadin-select:focus-within::part(input-field) {
     border-color: var(--color-primary);
