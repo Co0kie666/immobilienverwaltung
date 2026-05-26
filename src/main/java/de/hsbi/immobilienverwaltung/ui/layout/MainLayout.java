@@ -15,6 +15,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.RouterLink;
+import de.hsbi.immobilienverwaltung.domain.Nutzer;
 import de.hsbi.immobilienverwaltung.service.interfaces.AuthService;
 import de.hsbi.immobilienverwaltung.ui.auth.LogoutView;
 import de.hsbi.immobilienverwaltung.ui.dashboard.DashboardView;
@@ -158,20 +159,29 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
         userProfile.addClassName("user-profile");
         userProfile.setAlignItems(FlexComponent.Alignment.CENTER);
 
-        Avatar avatar = new Avatar("Admin User");
+        Nutzer currentUser = authService.getCurrentUser();
+
+        String fullName = "Unbekannter Nutzer";
+        String userEmail = "";
+
+        if (currentUser != null) {
+            fullName = currentUser.getVorname() + " " + currentUser.getNachname();
+            userEmail = currentUser.getEmail();
+        }
+
+        Avatar avatar = new Avatar(fullName);
         avatar.addClassName("user-avatar");
 
         Div userText = new Div();
         userText.addClassName("user-text");
 
-        Span name = new Span("Admin User");
+        Span name = new Span(fullName);
         name.addClassName("user-name");
 
-        Span email = new Span("admin@immopro.de");
+        Span email = new Span(userEmail);
         email.addClassName("user-email");
 
         userText.add(name, email);
-
         userProfile.add(avatar, userText);
 
         return userProfile;
