@@ -49,24 +49,18 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 ytd
         );
 
-        // Basis-Style setzen
         filterButtons.forEach(btn ->
                 btn.addClassName("secondary-button")
         );
 
-        // Initial aktiv
         oneMonth.addClassName("finance-filter-active");
 
-        // Click-Listener für alle Buttons
         filterButtons.forEach(button -> {
             button.addClickListener(e -> {
-
-                // Aktive Klasse bei allen entfernen
                 filterButtons.forEach(btn ->
                         btn.removeClassName("finance-filter-active")
                 );
 
-                // Beim geklickten setzen
                 button.addClassName("finance-filter-active");
             });
         });
@@ -112,17 +106,12 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         addBooking.addClassName("primary-button");
         showBookings.addClassName("primary-button");
 
-        // Container für die rechten Buttons
         HorizontalLayout bookingButtons = new HorizontalLayout(addBooking, showBookings);
         bookingButtons.setSpacing(true);
 
-        HorizontalLayout bookingBar = new HorizontalLayout();
         filterBar.setWidthFull();
 
         filterBar.add(left, bookingButtons);
-
-        // left nimmt den freien Platz ein -> Buttons wandern nach rechts
-        bookingBar.expand(left);
 
         return filterBar;
     }
@@ -187,7 +176,8 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         Div side = new Div();
         side.addClassName("finance-side-column");
-        side.add(createVacancyCard(), createCostDistributionCard());
+
+        side.add(createPaymentStatusCard(), createCostDistributionCard());
 
         grid.add(chartCard, side);
         return grid;
@@ -202,115 +192,105 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         Element canvas = new Element("canvas");
         canvas.setAttribute("id", "financeLineChart");
 
-        // WICHTIG:
         canvas.getStyle().set("width", "100%");
         canvas.getStyle().set("height", "100%");
 
         wrapper.getElement().appendChild(canvas);
 
         UI.getCurrent().getPage().executeJs("""
-        setTimeout(() => {
-            const ctx = document.getElementById('financeLineChart');
+            setTimeout(() => {
+                const ctx = document.getElementById('financeLineChart');
 
-            if (!ctx) return;
+                if (!ctx) return;
 
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: [
-                        'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
-                        'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'
-                    ],
-                    datasets: [
-                        {
-                            label: 'Einnahmen',
-                            data: [
-                                102000, 108000, 112000, 118000,
-                                121000, 124000, 127000, 129000,
-                                132000, 135000, 138000, 142000
-                            ],
-                            tension: 0.4,
-                            fill: false
-                        },
-                        {
-                            label: 'Ausgaben',
-                            data: [
-                                42000, 44000, 43000, 47000,
-                                46000, 45000, 49000, 52000,
-                                51000, 53000, 54000, 56000
-                            ],
-                            tension: 0.4,
-                            fill: false
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [
+                            'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
+                            'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'
+                        ],
+                        datasets: [
+                            {
+                                label: 'Einnahmen',
+                                data: [
+                                    102000, 108000, 112000, 118000,
+                                    121000, 124000, 127000, 129000,
+                                    132000, 135000, 138000, 142000
+                                ],
+                                tension: 0.4,
+                                fill: false
+                            },
+                            {
+                                label: 'Ausgaben',
+                                data: [
+                                    42000, 44000, 43000, 47000,
+                                    46000, 45000, 49000, 52000,
+                                    51000, 53000, 54000, 56000
+                                ],
+                                tension: 0.4,
+                                fill: false
+                            }
+                        ]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
                         }
                     }
-                }
-            });
-        }, 300);
-    """);
+                });
+            }, 300);
+        """);
 
         return wrapper;
     }
 
-    private Component createVacancyCard() {
+    private Component createPaymentStatusCard() {
         Div card = new Div();
         card.addClassName("card");
 
         Div header = new Div();
         header.addClassName("finance-card-header");
 
-        H3 title = new H3("Leerstandsquote");
+        H3 title = new H3("Zahlungsstatus");
         title.addClassName("card-title");
 
-        Span badge = new Span("Aktuell");
-        badge.addClassNames("status-badge", "neutral");
-
-        header.add(title, badge);
-
-        Div valueRow = new Div();
-        valueRow.addClassName("finance-vacancy-value");
-
-        H2 value = new H2("2.4%");
-        Span trend = new Span("↓ 0.8%");
-        trend.addClassNames("finance-kpi-trend", "success");
-
-        valueRow.add(value, trend);
+        header.add(title);
 
         Div chartWrapper = new Div();
-        chartWrapper.getStyle().set("height", "180px");
+        chartWrapper.getStyle().set("height", "220px");
 
         Element canvas = new Element("canvas");
-        canvas.setAttribute("id", "vacancyChart");
+        canvas.setAttribute("id", "paymentStatusChart");
         canvas.getStyle().set("width", "100%");
-        canvas.getStyle().set("height", "180px");
+        canvas.getStyle().set("height", "220px");
 
         chartWrapper.getElement().appendChild(canvas);
 
         UI.getCurrent().getPage().executeJs("""
             setTimeout(() => {
-                const ctx = document.getElementById('vacancyChart');
+                const ctx = document.getElementById('paymentStatusChart');
 
                 if (!ctx) return;
 
                 new Chart(ctx, {
-                    type: 'doughnut',
+                    type: 'pie',
                     data: {
-                        labels: ['Vermietet', 'Leerstand'],
+                        labels: [
+                            'Bezahlt',
+                            'Offen'
+                        ],
                         datasets: [{
-                            data: [97.6, 2.4],
+                            data: [75, 25],
                             borderWidth: 0
                         }]
                     },
@@ -321,8 +301,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                             legend: {
                                 position: 'bottom'
                             }
-                        },
-                        cutout: '75%'
+                        }
                     }
                 });
             }, 300);
@@ -330,10 +309,11 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         Div stats = new Div();
         stats.addClassName("finance-mini-grid");
-        stats.add(miniBox("Leerstehend", "12 Einheiten"));
-        stats.add(miniBox("Vermietet", "488 Einheiten"));
 
-        card.add(header, valueRow, chartWrapper, stats);
+        stats.add(miniBox("Bezahlt", "75 %"));
+        stats.add(miniBox("Offen", "25 %"));
+
+        card.add(header, chartWrapper, stats);
         return card;
     }
 
@@ -449,7 +429,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
             table.add(tableRow(row));
         }
 
-        card.add(table);
+        card.add(titleBox, table);
         return card;
     }
 

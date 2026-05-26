@@ -255,13 +255,7 @@ public class DashboardView extends Div implements HasPageHeader {
 
         titleText.addClassName("card-title");
 
-        Button menuButton = new Button(
-                new Icon(VaadinIcon.ELLIPSIS_DOTS_H)
-        );
-
-        menuButton.addClassName("icon-button");
-
-        header.add(titleText, menuButton);
+        header.add(titleText);
 
         card.add(header, chart);
 
