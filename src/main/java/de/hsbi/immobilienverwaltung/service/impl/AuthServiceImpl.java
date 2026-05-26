@@ -4,17 +4,51 @@ import com.vaadin.flow.server.VaadinSession;
 import de.hsbi.immobilienverwaltung.domain.Nutzer;
 import de.hsbi.immobilienverwaltung.repository.NutzerRepository;
 import de.hsbi.immobilienverwaltung.service.interfaces.AuthService;
+import jakarta.validation.constraints.Pattern;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.stereotype.Service;
+
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+
+import java.util.Set;
 
 @Service
 public class AuthServiceImpl implements AuthService {
 
     private final NutzerRepository nutzerRepository;
+    private final Validator validator;
 
-    public AuthServiceImpl(NutzerRepository nutzerRepository) {
+    public AuthServiceImpl(NutzerRepository nutzerRepository,
+                           Validator validator) {
         this.nutzerRepository = nutzerRepository;
+        this.validator = validator;
     }
+
+    private void validateEmail(String email) {
+        EmailCheck emailCheck = new EmailCheck(email);
+
+        Set<ConstraintViolation<EmailCheck>> violations =
+                validator.validate(emailCheck);
+
+        if (!violations.isEmpty()) {
+            throw new IllegalArgumentException(
+                    violations.iterator().next().getMessage()
+            );
+        }
+    }
+
+    private record EmailCheck(
+            @NotBlank(message = "E-Mail darf nicht leer sein.")
+            @Email(message = "Bitte gib eine gültige E-Mail-Adresse ein.")
+            @Pattern(
+                    regexp = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+                    message = "Bitte gib eine gültige E-Mail-Adresse ein."
+            )
+            String email
+    ) {}
 
     @Override
     public Nutzer registrieren(String vorname,
@@ -31,9 +65,7 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Nachname darf nicht leer sein.");
         }
 
-        if (email == null || email.isBlank()) {
-            throw new IllegalArgumentException("E-Mail darf nicht leer sein.");
-        }
+        validateEmail(email);
 
         if (passwort == null || passwort.isBlank()) {
             throw new IllegalArgumentException("Passwort darf nicht leer sein.");
@@ -63,9 +95,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public Nutzer anmelden(String email, String passwort) {
 
-        if (email == null || email.isBlank()) {
-            throw new IllegalArgumentException("E-Mail darf nicht leer sein.");
-        }
+        validateEmail(email);
 
         if (passwort == null || passwort.isBlank()) {
             throw new IllegalArgumentException("Passwort darf nicht leer sein.");
