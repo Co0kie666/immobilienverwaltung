@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 public class AuthServiceImpl implements AuthService {
 
     private final NutzerRepository nutzerRepository;
+    private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
 
     public AuthServiceImpl(NutzerRepository nutzerRepository) {
         this.nutzerRepository = nutzerRepository;
@@ -31,9 +32,7 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Nachname darf nicht leer sein.");
         }
 
-        if (email == null || email.isBlank()) {
-            throw new IllegalArgumentException("E-Mail darf nicht leer sein.");
-        }
+        validateEmail(email);
 
         if (passwort == null || passwort.isBlank()) {
             throw new IllegalArgumentException("Passwort darf nicht leer sein.");
@@ -63,9 +62,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public Nutzer anmelden(String email, String passwort) {
 
-        if (email == null || email.isBlank()) {
-            throw new IllegalArgumentException("E-Mail darf nicht leer sein.");
-        }
+        validateEmail(email);
 
         if (passwort == null || passwort.isBlank()) {
             throw new IllegalArgumentException("Passwort darf nicht leer sein.");
@@ -101,5 +98,15 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public Nutzer getCurrentUser() {
         return VaadinSession.getCurrent().getAttribute(Nutzer.class);
+    }
+
+    private void validateEmail(String email) {
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("E-Mail darf nicht leer sein.");
+        }
+
+        if (!email.matches(EMAIL_REGEX)) {
+            throw new IllegalArgumentException("Bitte gib eine gültige E-Mail-Adresse ein.");
+        }
     }
 }
