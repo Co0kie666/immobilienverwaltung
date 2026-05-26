@@ -1,7 +1,6 @@
 package de.hsbi.immobilienverwaltung.ui.auth;
 
-import com.vaadin.flow.server.VaadinSession;
-import de.hsbi.immobilienverwaltung.domain.Nutzer;
+import com.vaadin.flow.component.Key;
 import de.hsbi.immobilienverwaltung.service.interfaces.AuthService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -15,7 +14,6 @@ import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-
 
 
 @Route("")
@@ -123,6 +121,7 @@ public class LoginView extends VerticalLayout {
                 );
             }
         });
+        loginButton.addClickShortcut(Key.ENTER);
 
         Button registerButton = new Button("Noch kein Konto? Registrieren");
         registerButton.setWidthFull();

@@ -1,5 +1,6 @@
 package de.hsbi.immobilienverwaltung.ui.auth;
 
+import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H1;
@@ -128,6 +129,7 @@ public class RegisterView extends VerticalLayout {
                     Notification.show(ex.getMessage());
                 }
             });
+            registerButton.addClickShortcut(Key.ENTER);
 
             Button loginButton = new Button("Bereits registriert? Anmelden");
             loginButton.setWidthFull();
