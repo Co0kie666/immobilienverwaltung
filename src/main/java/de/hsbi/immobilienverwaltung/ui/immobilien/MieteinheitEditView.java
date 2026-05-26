@@ -12,12 +12,11 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
-import de.hsbi.immobilienverwaltung.security.LoginRequired;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 
 @Route(value = "immobilien/:immobilieId/einheiten/:mieteinheitId/bearbeiten", layout = MainLayout.class)
-public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnterObserver, LoginRequired {
+public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnterObserver {
 
     private Long immobilieId;
     private Long mieteinheitId;

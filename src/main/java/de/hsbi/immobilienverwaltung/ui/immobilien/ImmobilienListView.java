@@ -14,7 +14,6 @@ import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.domain.Adresse;
 import de.hsbi.immobilienverwaltung.domain.Immobilie;
 import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
-import de.hsbi.immobilienverwaltung.security.LoginRequired;
 import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
 import de.hsbi.immobilienverwaltung.ui.components.ConfirmDeleteDialog;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
@@ -23,7 +22,7 @@ import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import java.util.List;
 
 @Route(value = "immobilien", layout = MainLayout.class)
-public class ImmobilienListView extends Div implements HasPageHeader, LoginRequired {
+public class ImmobilienListView extends Div implements HasPageHeader {
 
     private final Grid<Immobilie> grid = new Grid<>(Immobilie.class, false);
     private final ImmobilieService immobilieService;

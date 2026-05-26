@@ -15,8 +15,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.RouterLink;
-import de.hsbi.immobilienverwaltung.service.interfaces.AuthService;
-import de.hsbi.immobilienverwaltung.ui.auth.LogoutView;
+import de.hsbi.immobilienverwaltung.ui.auth.LoginView;
 import de.hsbi.immobilienverwaltung.ui.dashboard.DashboardView;
 import de.hsbi.immobilienverwaltung.ui.finanzen.FinanzDashboardView;
 import de.hsbi.immobilienverwaltung.ui.immobilien.ImmobilienListView;
@@ -26,10 +25,8 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
     private final H1 pageTitle = new H1();
     private final Paragraph pageSubtitle = new Paragraph();
-    private final AuthService authService;
 
-    public MainLayout(AuthService authService) {
-        this.authService = authService;
+    public MainLayout() {
         addClassName("main-layout");
 
         setPrimarySection(Section.DRAWER); // Sidebar geht von oben bis unten
@@ -91,15 +88,17 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
         bottomNavigation.setPadding(false);
         bottomNavigation.setSpacing(false);
         bottomNavigation.setAlignItems(FlexComponent.Alignment.STRETCH);
-        RouterLink logoutLink = createNavLink("Logout", VaadinIcon.SIGN_OUT, LogoutView.class);
 
+        RouterLink logoutLink = createNavLink("Logout", VaadinIcon.SIGN_OUT, LoginView.class);
         logoutLink.addClassName("logout-link");
 
         bottomNavigation.add(logoutLink);
+
         sidebar.add(logoArea, menuLabel, navigation, spacer, bottomNavigation);
 
         return sidebar;
     }
+
     // Erstellt einen Navigationslink mit Icon Text
     private RouterLink createNavLink(String text, VaadinIcon icon, Class<? extends Component> target) {
         RouterLink link = new RouterLink();

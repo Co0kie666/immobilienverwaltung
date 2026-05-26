@@ -12,7 +12,6 @@ import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.Route;
-import de.hsbi.immobilienverwaltung.security.LoginRequired;
 import de.hsbi.immobilienverwaltung.ui.components.ConfirmDeleteDialog;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
@@ -20,7 +19,7 @@ import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import java.util.List;
 
 @Route(value = "finanzen/buchungen", layout = MainLayout.class)
-public class BuchungListView extends Div implements HasPageHeader, LoginRequired {
+public class BuchungListView extends Div implements HasPageHeader {
 
     private final Grid<BuchungRow> grid = new Grid<>(BuchungRow.class, false);
 

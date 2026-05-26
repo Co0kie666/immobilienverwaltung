@@ -14,7 +14,6 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.Route;
-import de.hsbi.immobilienverwaltung.security.LoginRequired;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import com.vaadin.flow.component.select.Select;
@@ -27,7 +26,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Route(value = "mieter-details", layout = MainLayout.class)
-public class MieterListView extends Div implements HasPageHeader, HasUrlParameter<String>, LoginRequired {
+public class MieterListView extends Div implements HasPageHeader, HasUrlParameter<String> {
 
     private MieterDummyDaten.MieterRow aktuellerMieter;
     private boolean bearbeitenAktiv = false;

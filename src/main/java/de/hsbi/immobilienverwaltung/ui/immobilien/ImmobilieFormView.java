@@ -14,13 +14,12 @@ import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.domain.Adresse;
 import de.hsbi.immobilienverwaltung.domain.Immobilie;
 import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
-import de.hsbi.immobilienverwaltung.security.LoginRequired;
 import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 
 @Route(value = "immobilien/neu", layout = MainLayout.class)
-public class ImmobilieFormView extends Div implements HasPageHeader, LoginRequired {
+public class ImmobilieFormView extends Div implements HasPageHeader {
 
     private final TextField bezeichnungField = new TextField("Bezeichnung");
     private final Select<Immobilientyp> typSelect = new Select<>();
