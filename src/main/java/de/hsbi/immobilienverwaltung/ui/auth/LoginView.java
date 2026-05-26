@@ -1,22 +1,30 @@
 package de.hsbi.immobilienverwaltung.ui.auth;
 
+import de.hsbi.immobilienverwaltung.service.interfaces.AuthService;
+
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import org.mindrot.jbcrypt.BCrypt;
 
 @Route("")
 @PageTitle("ImmoPro | Anmeldung")
 public class LoginView extends VerticalLayout {
 
-    public LoginView() {
+    private final AuthService authService;
+
+    public LoginView(AuthService authService) {
+        this.authService = authService;
 
         setSizeFull();
         setPadding(false);
@@ -73,9 +81,11 @@ public class LoginView extends VerticalLayout {
         EmailField email = new EmailField("E-Mail");
         email.setWidthFull();
         email.setPlaceholder("example@mail.com");
+        email.setRequiredIndicatorVisible(true);
 
         PasswordField password = new PasswordField("Passwort");
         password.setWidthFull();
+        password.setRequiredIndicatorVisible(true);
 
         Button loginButton = new Button("Anmelden");
         loginButton.setWidthFull();
@@ -86,11 +96,33 @@ public class LoginView extends VerticalLayout {
                 .set("font-weight", "700")
                 .set("border", "none")
                 .set("box-shadow", "0 4px 14px rgba(37, 99, 235, 0.25)")
-                .set("margin-top", "14px");
+                .set("margin-top", "8px");
 
-        loginButton.addClickListener(event ->
-                UI.getCurrent().navigate("dashboard")
-        );
+        loginButton.addClickListener(event -> {
+            try {
+                authService.anmelden(
+                        email.getValue(),
+                        password.getValue()
+                );
+
+                Notification notification = Notification.show(
+                        "Anmeldung erfolgreich!",
+                        2000,
+                        Notification.Position.TOP_CENTER
+                );
+
+                UI.getCurrent().navigate("dashboard");
+
+            } catch (IllegalArgumentException ex) {
+
+                Notification notification = Notification.show(
+                        ex.getMessage(),
+                        3000,
+                        Notification.Position.TOP_CENTER
+                );
+            }
+        });
+
         Button registerButton = new Button("Noch kein Konto? Registrieren");
         registerButton.setWidthFull();
         registerButton.getStyle()

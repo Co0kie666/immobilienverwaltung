@@ -7,7 +7,6 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.EmailField;
@@ -15,136 +14,145 @@ import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import de.hsbi.immobilienverwaltung.service.interfaces.AuthService;
 
 @Route("register")
 @PageTitle("ImmoPro | Registrierung")
 public class RegisterView extends VerticalLayout {
 
-    public RegisterView() {
+    private final AuthService authService;
 
-        setSizeFull();
-        setPadding(false);
-        setSpacing(false);
-        setAlignItems(Alignment.CENTER);
-        setJustifyContentMode(JustifyContentMode.CENTER);
+    public RegisterView(AuthService authService) {
+        this.authService = authService;
 
-        getStyle()
-                .set("position", "relative")
-                .set("overflow", "hidden")
-                .set("background", "#f8fafc");
+            setSizeFull();
+            setPadding(false);
+            setSpacing(false);
+            setAlignItems(Alignment.CENTER);
+            setJustifyContentMode(JustifyContentMode.CENTER);
 
-        Icon backgroundIcon = VaadinIcon.BUILDING.create();
-        backgroundIcon.getStyle()
-                .set("position", "absolute")
-                .set("width", "520px")
-                .set("height", "100%")
-                .set("right", "50%")
-                .set("bottom", "15px")
-                .set("color", "#2563eb")
-                .set("opacity", "0.06")
-                .set("z-index", "0")
-                .set("pointer-events", "none");
+            getStyle()
+                    .set("position", "relative")
+                    .set("overflow", "hidden")
+                    .set("background", "#f8fafc");
 
-        VerticalLayout card = new VerticalLayout();
-        card.setWidth("460px");
-        card.setPadding(false);
-        card.setSpacing(false);
+            Icon backgroundIcon = VaadinIcon.BUILDING.create();
+            backgroundIcon.getStyle()
+                    .set("position", "absolute")
+                    .set("width", "520px")
+                    .set("height", "100%")
+                    .set("right", "50%")
+                    .set("bottom", "15px")
+                    .set("color", "#2563eb")
+                    .set("opacity", "0.06")
+                    .set("z-index", "0")
+                    .set("pointer-events", "none");
 
-        card.getStyle()
-                .set("position", "relative")
-                .set("z-index", "1")
-                .set("background", "white")
-                .set("border", "1px solid #e5e7eb")
-                .set("border-radius", "20px")
-                .set("padding", "38px")
-                .set("box-shadow", "0 10px 40px -10px rgba(0, 0, 0, 0.08)")
-                .set("box-sizing", "border-box");
+            VerticalLayout card = new VerticalLayout();
+            card.setWidth("460px");
+            card.setPadding(false);
+            card.setSpacing(false);
 
-        H1 logo = new H1("ImmoPro");
-        logo.getStyle()
-                .set("font-size", "34px")
-                .set("font-weight", "900")
-                .set("color", "#2563eb")
-                .set("margin", "0");
+            card.getStyle()
+                    .set("position", "relative")
+                    .set("z-index", "1")
+                    .set("background", "white")
+                    .set("border", "1px solid #e5e7eb")
+                    .set("border-radius", "20px")
+                    .set("padding", "38px")
+                    .set("box-shadow", "0 10px 40px -10px rgba(0, 0, 0, 0.08)")
+                    .set("box-sizing", "border-box");
 
-        Span subtitle = new Span("Erstelle dein Konto");
-        subtitle.getStyle()
-                .set("font-size", "14px")
-                .set("color", "#6b7280")
-                .set("margin-top", "6px")
-                .set("margin-bottom", "28px");
+            H1 logo = new H1("ImmoPro");
+            logo.getStyle()
+                    .set("font-size", "34px")
+                    .set("font-weight", "900")
+                    .set("color", "#2563eb")
+                    .set("margin", "0");
 
-        TextField firstName = new TextField("Vorname");
-        firstName.setWidthFull();
+            Span subtitle = new Span("Erstelle dein Konto");
+            subtitle.getStyle()
+                    .set("font-size", "14px")
+                    .set("color", "#6b7280")
+                    .set("margin-top", "6px")
+                    .set("margin-bottom", "28px");
 
-        TextField lastName = new TextField("Nachname");
-        lastName.setWidthFull();
+            TextField firstName = new TextField("Vorname");
+            firstName.setWidthFull();
 
-        HorizontalLayout nameRow = new HorizontalLayout(firstName, lastName);
-        nameRow.setWidthFull();
-        nameRow.setSpacing(true);
-        nameRow.getStyle()
-                .set("gap", "16px")
-                .set("margin-bottom", "0");
+            TextField lastName = new TextField("Nachname");
+            lastName.setWidthFull();
 
-        EmailField email = new EmailField("E-Mail");
-        email.setWidthFull();
-        email.setPlaceholder("example@mail.com");
+            HorizontalLayout nameRow = new HorizontalLayout(firstName, lastName);
+            nameRow.setWidthFull();
+            nameRow.setSpacing(true);
+            nameRow.getStyle()
+                    .set("gap", "16px")
+                    .set("margin-bottom", "0");
 
-        PasswordField password = new PasswordField("Passwort");
-        password.setWidthFull();
+            EmailField email = new EmailField("E-Mail");
+            email.setWidthFull();
+            email.setPlaceholder("example@mail.com");
 
-        PasswordField repeatPassword = new PasswordField("Passwort wiederholen");
-        repeatPassword.setWidthFull();
+            PasswordField password = new PasswordField("Passwort");
+            password.setWidthFull();
 
-        Button registerButton = new Button("Registrieren");
-        registerButton.setWidthFull();
-        registerButton.getStyle()
-                .set("background", "#2563eb")
-                .set("color", "white")
-                .set("border-radius", "12px")
-                .set("font-weight", "700")
-                .set("border", "none")
-                .set("box-shadow", "0 4px 14px rgba(37, 99, 235, 0.25)")
-                .set("margin-top", "14px");
+            PasswordField repeatPassword = new PasswordField("Passwort wiederholen");
+            repeatPassword.setWidthFull();
 
-        registerButton.addClickListener(event -> {
+            Button registerButton = new Button("Registrieren");
+            registerButton.setWidthFull();
+            registerButton.getStyle()
+                    .set("background", "#2563eb")
+                    .set("color", "white")
+                    .set("border-radius", "12px")
+                    .set("font-weight", "700")
+                    .set("border", "none")
+                    .set("box-shadow", "0 4px 14px rgba(37, 99, 235, 0.25)")
+                    .set("margin-top", "14px");
 
-            Notification notification = Notification.show(
-                    "Registrierung erfolgreich!",
-                    2500,
-                    Notification.Position.TOP_CENTER
+            registerButton.addClickListener(event -> {
+                try {
+                    authService.registrieren(
+                            firstName.getValue(),
+                            lastName.getValue(),
+                            email.getValue(),
+                            password.getValue(),
+                            repeatPassword.getValue()
+                    );
+
+                    Notification.show("Registrierung erfolgreich!", 2500, Notification.Position.TOP_CENTER);
+                    UI.getCurrent().navigate("");
+
+                } catch (IllegalArgumentException ex) {
+                    Notification.show(ex.getMessage());
+                }
+            });
+
+            Button loginButton = new Button("Bereits registriert? Anmelden");
+            loginButton.setWidthFull();
+            loginButton.getStyle()
+                    .set("background", "transparent")
+                    .set("color", "#2563eb")
+                    .set("font-weight", "700")
+                    .set("box-shadow", "none")
+                    .set("margin-top", "14px");
+
+            loginButton.addClickListener(event ->
+                    UI.getCurrent().navigate("")
             );
 
-            notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+            card.add(
+                    logo,
+                    subtitle,
+                    nameRow,
+                    email,
+                    password,
+                    repeatPassword,
+                    registerButton,
+                    loginButton
+            );
 
-            UI.getCurrent().navigate("");
-        });
-
-        Button loginButton = new Button("Bereits registriert? Anmelden");
-        loginButton.setWidthFull();
-        loginButton.getStyle()
-                .set("background", "transparent")
-                .set("color", "#2563eb")
-                .set("font-weight", "700")
-                .set("box-shadow", "none")
-                .set("margin-top", "14px");
-
-        loginButton.addClickListener(event ->
-                UI.getCurrent().navigate("")
-        );
-
-        card.add(
-                logo,
-                subtitle,
-                nameRow,
-                email,
-                password,
-                repeatPassword,
-                registerButton,
-                loginButton
-        );
-
-        add(backgroundIcon, card);
+            add(backgroundIcon, card);
+        }
     }
-}

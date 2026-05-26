@@ -10,8 +10,9 @@ public class Nutzer {
 
     private String vorname;
     private String nachname;
-    @Column(unique = true)
+    @Column(nullable = false, unique = true)
     private String email;
+    @Column(nullable = false)
     private String passwort;
 
     public Nutzer() {}

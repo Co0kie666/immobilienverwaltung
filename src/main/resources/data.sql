@@ -8,3 +8,12 @@ VALUES
 
     ('Seeblick Quartier', 'GEWERBEIMMOBILIE', 2012, 850,
      'Seestraße', '21', '33613', 'Bielefeld');
+
+INSERT INTO nutzer (vorname, nachname, email, passwort)
+VALUES (
+           'Test',
+           'User',
+           'test@immopro.de',
+           '$2a$10$3W7jwY/gaIDV/LzwG1vJie9tZfeDwk2lMtXhlnXwI.IvM5mJoOZRC'
+    --passwort: test
+       );
