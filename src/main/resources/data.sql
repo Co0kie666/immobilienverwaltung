@@ -10,13 +10,21 @@ VALUES
      'Seestraße', '21', '33613', 'Bielefeld');
 
 INSERT INTO nutzer (vorname, nachname, email, passwort)
-VALUES (
-           'Test',
-           'User',
-           'test@immopro.de',
-           '$2a$10$3W7jwY/gaIDV/LzwG1vJie9tZfeDwk2lMtXhlnXwI.IvM5mJoOZRC'
-    --passwort: test
-       );
+VALUES
+    (
+        'Test',
+        'User',
+        'test@immopro.de',
+        '$2a$10$3W7jwY/gaIDV/LzwG1vJie9tZfeDwk2lMtXhlnXwI.IvM5mJoOZRC'
+        -- passwort: test
+    ),
+    (
+        'Max',
+        'Mustermann',
+        'test@test.com',
+        '$2a$10$3W7jwY/gaIDV/LzwG1vJie9tZfeDwk2lMtXhlnXwI.IvM5mJoOZRC'
+        -- passwort: test
+    );
 
 INSERT INTO mieteinheit (groesse, zimmerzahl, immobilie_id, bezeichnung, stockwerk, status, typ)
 VALUES

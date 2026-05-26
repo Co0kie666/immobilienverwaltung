@@ -19,15 +19,12 @@ import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 @Route(value = "dashboard", layout = MainLayout.class)
 public class DashboardView extends Div implements HasPageHeader, LoginRequired {
 
-    private final GesamtAuswertungService gesamtAuswertungService;
-
     private final double leerstandsquote;
     private final long gesamtMieteinheiten;
     private final long leerstehendeMieteinheiten;
     private final long vermieteteMieteinheiten;
 
     public DashboardView(GesamtAuswertungService gesamtAuswertungService) {
-        this.gesamtAuswertungService = gesamtAuswertungService;
 
         this.gesamtMieteinheiten =
                 gesamtAuswertungService.berechneAnzahlMieteinheiten();
@@ -41,7 +38,6 @@ public class DashboardView extends Div implements HasPageHeader, LoginRequired {
         this.leerstandsquote =
                 gesamtAuswertungService.berechneLeerstandsquote();
 
-        // Chart.js laden
         UI.getCurrent().getPage().addJavaScript(
                 "https://cdn.jsdelivr.net/npm/chart.js"
         );
@@ -114,9 +110,12 @@ public class DashboardView extends Div implements HasPageHeader, LoginRequired {
 
                 kpiCard(
                         "Leerstandsquote",
-                        "4.2%",
-                        "-2.4%",
-                        "3 Einheiten leerstehend",
+                        String.format("%.2f %%", leerstandsquote),
+                        "",
+                        leerstehendeMieteinheiten
+                                + " von "
+                                + gesamtMieteinheiten
+                                + " Mieteinheiten frei oder in Renovierung",
                         VaadinIcon.HOME,
                         "danger"
                 ),
@@ -161,7 +160,7 @@ public class DashboardView extends Div implements HasPageHeader, LoginRequired {
         );
 
         Div pieChart = chartCard(
-                "Leerstand Übersicht",
+                "Vermietet vs Leerstand",
                 createPieChart()
         );
 
@@ -283,7 +282,6 @@ public class DashboardView extends Div implements HasPageHeader, LoginRequired {
 
         return card;
     }
-
 
     // Bar chart
     private Component createBarChart() {
@@ -427,7 +425,7 @@ public class DashboardView extends Div implements HasPageHeader, LoginRequired {
                         ],
 
                         datasets: [{
-                            data: [95.8, 4.2],
+                            data: [$0, $1],
                             borderWidth: 0
                         }]
                     },
@@ -439,8 +437,40 @@ public class DashboardView extends Div implements HasPageHeader, LoginRequired {
                         maintainAspectRatio: false,
 
                         plugins: {
+
                             legend: {
                                 position: 'bottom'
+                            },
+
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label =
+                                            context.label || '';
+
+                                        const value =
+                                            context.raw || 0;
+
+                                        const total =
+                                            context.dataset.data.reduce(
+                                                (sum, current) => sum + current,
+                                                0
+                                            );
+
+                                        const percentage =
+                                            total === 0
+                                                    ? 0
+                                                    : (value / total * 100)
+                                                        .toFixed(2);
+
+                                        return label
+                                                + ': '
+                                                + value
+                                                + ' Mieteinheiten ('
+                                                + percentage
+                                                + ' %)';
+                                    }
+                                }
                             }
                         },
 
@@ -449,7 +479,7 @@ public class DashboardView extends Div implements HasPageHeader, LoginRequired {
                 });
 
             }, 300);
-        """);
+        """, vermieteteMieteinheiten, leerstehendeMieteinheiten);
 
         return wrapper;
     }
