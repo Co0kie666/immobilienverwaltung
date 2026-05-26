@@ -13,6 +13,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.Route;
+import de.hsbi.immobilienverwaltung.security.LoginRequired;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -22,7 +23,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Route(value = "mietvertrag-details", layout = MainLayout.class)
-public class MietvertragListView extends Div implements HasPageHeader, HasUrlParameter<String> {
+public class MietvertragListView extends Div implements HasPageHeader, HasUrlParameter<String>, LoginRequired {
 
     private final List<TextField> editierbareFelder = new ArrayList<>();
     private final List<Select<String>> editierbareSelects = new ArrayList<>();

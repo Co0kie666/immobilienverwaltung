@@ -18,11 +18,12 @@ import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.textfield.BigDecimalField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.Route;
+import de.hsbi.immobilienverwaltung.security.LoginRequired;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 
 @Route(value = "finanzen/buchung-neu", layout = MainLayout.class)
-public class BuchungFormView extends VerticalLayout implements HasPageHeader {
+public class BuchungFormView extends VerticalLayout implements HasPageHeader, LoginRequired {
 
     private RadioButtonGroup<String> buchungstypGroup;
     private RadioButtonGroup<String> statusGroup;
