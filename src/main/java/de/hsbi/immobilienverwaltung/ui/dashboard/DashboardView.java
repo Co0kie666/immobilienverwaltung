@@ -11,11 +11,12 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.router.Route;
 
+import de.hsbi.immobilienverwaltung.security.LoginRequired;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 
 @Route(value = "dashboard", layout = MainLayout.class)
-public class DashboardView extends Div implements HasPageHeader {
+public class DashboardView extends Div implements HasPageHeader, LoginRequired {
 
     public DashboardView() {
 

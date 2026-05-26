@@ -16,6 +16,7 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
+import de.hsbi.immobilienverwaltung.security.LoginRequired;
 import de.hsbi.immobilienverwaltung.ui.components.ConfirmDeleteDialog;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
@@ -29,7 +30,7 @@ import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
 import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
 
 @Route(value = "immobilien/:immobilieId", layout = MainLayout.class)
-public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnterObserver {
+public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnterObserver, LoginRequired {
 
     private Long immobilieId;
     private final MieteinheitService mieteinheitService;
