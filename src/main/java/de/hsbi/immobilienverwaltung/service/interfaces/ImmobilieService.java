@@ -11,6 +11,7 @@ public interface ImmobilieService {
 
     List<Immobilie> findeAlleImmobilien();
 
+    // fuer ImmobilieDetailView
     Optional<Immobilie> findeImmobilieNachId(Long id);
 
     void loescheImmobilie(Long id);

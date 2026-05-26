@@ -2,7 +2,8 @@ package de.hsbi.immobilienverwaltung.domain;
 import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
 import jakarta.persistence.*;
 
-import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 public class Immobilie {
@@ -20,6 +21,10 @@ public class Immobilie {
 
     @Embedded
     private Adresse adresse;
+
+    // orphanRemoval löscht Mieteinheiten, die zu keiner Immobilie gehören aus der DB
+    @OneToMany(mappedBy = "immobilie", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Mieteinheit> mieteinheiten = new ArrayList<>();
 
     public Immobilie() {}
 
