@@ -9,13 +9,14 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.router.Route;
+import de.hsbi.immobilienverwaltung.security.LoginRequired;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 
 import java.util.List;
 
 @Route(value = "finanzen", layout = MainLayout.class)
-public class FinanzDashboardView extends Div implements HasPageHeader {
+public class FinanzDashboardView extends Div implements HasPageHeader, LoginRequired {
 
     public FinanzDashboardView() {
         UI.getCurrent().getPage().addJavaScript(

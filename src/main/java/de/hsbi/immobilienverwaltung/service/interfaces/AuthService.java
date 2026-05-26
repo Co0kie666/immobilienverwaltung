@@ -1,4 +1,5 @@
 package de.hsbi.immobilienverwaltung.service.interfaces;
+
 import de.hsbi.immobilienverwaltung.domain.Nutzer;
 
 public interface AuthService {
@@ -15,4 +16,8 @@ public interface AuthService {
             String email,
             String passwort
     );
+
+    void logout();
+    boolean isLoggedIn();
+    Nutzer getCurrentUser();
 }
