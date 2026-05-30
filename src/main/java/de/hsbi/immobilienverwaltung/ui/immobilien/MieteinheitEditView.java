@@ -15,21 +15,28 @@ import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.security.LoginRequired;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
+import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
+import de.hsbi.immobilienverwaltung.domain.enums.MieteinheitTyp;
+import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
+import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
 
 @Route(value = "immobilien/:immobilieId/einheiten/:mieteinheitId/bearbeiten", layout = MainLayout.class)
 public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnterObserver, LoginRequired {
 
+    private final MieteinheitService mieteinheitService;
+    private Mieteinheit mieteinheit;
     private Long immobilieId;
     private Long mieteinheitId;
 
     private final TextField nummerField = new TextField("Einheit-Nr.");
-    private final Select<String> typSelect = new Select<>();
+    private final Select<MieteinheitTyp> typSelect = new Select<>();
     private final NumberField groesseField = new NumberField("Größe in m²");
     private final TextField stockwerkField = new TextField("Stockwerk");
     private final NumberField zimmeranzahlField = new NumberField("Zimmeranzahl");
-    private final Select<String> statusSelect = new Select<>();
+    private final Select<Mieteinheitstatus> statusSelect = new Select<>();
 
-    public MieteinheitEditView() {
+    public MieteinheitEditView(MieteinheitService mieteinheitService) {
+        this.mieteinheitService = mieteinheitService;
         addClassName("page-content");
         addClassName("mieteinheit-edit-view");
 
@@ -48,8 +55,21 @@ public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnt
                 .map(Long::valueOf)
                 .orElse(null);
 
-        ladeDummyDaten();
+        this.mieteinheit = mieteinheitService.findeMieteinheitNachId(mieteinheitId)
+                .orElseThrow(() -> new IllegalArgumentException("Mieteinheit wurde nicht gefunden."));
+
+        fuelleFelder();
     }
+
+    private void fuelleFelder() {
+        nummerField.setValue(mieteinheit.getBezeichnung());
+        typSelect.setValue(mieteinheit.getTyp());
+        groesseField.setValue(mieteinheit.getGroesse() != null ? mieteinheit.getGroesse().doubleValue() : null);
+        stockwerkField.setValue(mieteinheit.getStockwerk());
+        zimmeranzahlField.setValue(mieteinheit.getZimmerzahl() != null ? mieteinheit.getZimmerzahl().doubleValue() : null);
+        statusSelect.setValue(mieteinheit.getStatus());
+    }
+
 
     private Div createFormCard() {
         Div card = new Div();
@@ -69,7 +89,8 @@ public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnt
         nummerField.setPlaceholder("z. B. WE-01, Büro EG, Gesamtobjekt");
 
         typSelect.setLabel("Typ");
-        typSelect.setItems("Wohnung", "Büro", "Lagerhalle", "Gewerbefläche", "Gesamtobjekt");
+        typSelect.setItems(MieteinheitTyp.values());
+        typSelect.setItemLabelGenerator(this::formatTyp);
 
         groesseField.setPlaceholder("z. B. 85");
 
@@ -78,7 +99,8 @@ public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnt
         zimmeranzahlField.setPlaceholder("z. B. 3");
 
         statusSelect.setLabel("Status");
-        statusSelect.setItems("Frei", "Vermietet", "In Renovierung");
+        statusSelect.setItems(Mieteinheitstatus.values());
+        statusSelect.setItemLabelGenerator(this::formatStatus);
 
         form.add(nummerField, typSelect, groesseField, stockwerkField, zimmeranzahlField, statusSelect);
 
@@ -88,15 +110,16 @@ public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnt
         Button abbrechenButton = new Button("Abbrechen");
         abbrechenButton.addClassName("secondary-button");
         abbrechenButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilieId))
+                getUI().ifPresent(ui -> ui.navigate(
+                        "immobilien/" + immobilieId + "/einheiten/" + mieteinheitId + "/details"
+                ))
         );
 
         Button speichernButton = new Button("Änderungen speichern", VaadinIcon.CHECK.create());
         speichernButton.addClassName("primary-button");
-        speichernButton.addClickListener(event -> {
-            Notification.show("Änderungen wurden gespeichert");
-            getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilieId));
-        });
+        speichernButton.addClickListener(event -> speichereAenderungen());
+
+
 
         actions.add(abbrechenButton, speichernButton);
 
@@ -105,33 +128,52 @@ public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnt
         return card;
     }
 
-    private void ladeDummyDaten() {
-        if (mieteinheitId == null) {
-            return;
-        }
+    private void speichereAenderungen() {
+        try {
+            mieteinheit.setBezeichnung(nummerField.getValue());
+            mieteinheit.setTyp(typSelect.getValue());
+            mieteinheit.setGroesse(toInteger(groesseField.getValue()));
+            mieteinheit.setStockwerk(stockwerkField.getValue());
+            mieteinheit.setZimmerzahl(toInteger(zimmeranzahlField.getValue()));
+            mieteinheit.setStatus(statusSelect.getValue());
 
-        if (mieteinheitId == 1L) {
-            nummerField.setValue("WE-01");
-            typSelect.setValue("Wohnung");
-            groesseField.setValue(85.0);
-            stockwerkField.setValue("EG");
-            zimmeranzahlField.setValue(3.0);
-            statusSelect.setValue("Vermietet");
-        } else if (mieteinheitId == 2L) {
-            nummerField.setValue("WE-02");
-            typSelect.setValue("Wohnung");
-            groesseField.setValue(92.0);
-            stockwerkField.setValue("1. OG");
-            zimmeranzahlField.setValue(4.0);
-            statusSelect.setValue("Vermietet");
-        } else {
-            nummerField.setValue("WE-03");
-            typSelect.setValue("Wohnung");
-            groesseField.setValue(75.0);
-            stockwerkField.setValue("2. OG");
-            zimmeranzahlField.setValue(3.0);
-            statusSelect.setValue("Frei");
+            mieteinheitService.speichereMieteinheit(immobilieId, mieteinheit);
+
+            Notification.show("Mieteinheit wurde aktualisiert");
+
+            getUI().ifPresent(ui -> ui.navigate(
+                    "immobilien/" + immobilieId + "/einheiten/" + mieteinheitId + "/details"
+            ));
+
+        } catch (Exception ex) {
+            Notification.show("Fehler beim Speichern: " + ex.getMessage(), 4000, Notification.Position.MIDDLE);
         }
+    }
+
+    private Integer toInteger(Double value) {
+        return value == null ? null : value.intValue();
+    }
+
+    private String formatTyp(MieteinheitTyp typ) {
+        if (typ == null) return null;
+
+        return switch (typ) {
+            case WOHNUNG -> "Wohnung";
+            case BUERO -> "Büro";
+            case LAGERHALLE -> "Lagerhalle";
+            case GEWERBEFLAECHE -> "Gewerbefläche";
+            case GESAMTOBJEKT -> "Gesamtobjekt";
+        };
+    }
+
+    private String formatStatus(Mieteinheitstatus status) {
+        if (status == null) return null;
+
+        return switch (status) {
+            case FREI -> "Frei";
+            case VERMIETET -> "Vermietet";
+            case IN_RENOVIERUNG -> "In Renovierung";
+        };
     }
 
     @Override

@@ -18,18 +18,13 @@
     width: 100%;
 }
 
-/* Hover-Effekt + Aktionen nur bei Hover anzeigen */
+/* Hover-Effekt*/
 .immobilien-grid::part(body-cell) {
-    background: var(--vaadin-grid-cell-background);
-    transition: background-color 0.15s ease;
+    cursor: pointer;
 }
 
 .immobilien-grid::part(row):hover {
     --vaadin-grid-cell-background: #f9fafb;
-
-    --row-actions-opacity: 1;
-    --row-actions-visibility: visible;
-    --row-actions-pointer-events: auto;
 }
 
 
@@ -123,17 +118,13 @@
 
 /* Hover-Effekt + Aktionen nur bei Hover anzeigen */
 .mieteinheiten-grid::part(body-cell) {
-    background: var(--vaadin-grid-cell-background);
-    transition: background-color 0.15s ease;
+    cursor: pointer;
 }
 
 .mieteinheiten-grid::part(row):hover {
     --vaadin-grid-cell-background: #f9fafb;
-
-    --row-actions-opacity: 1;
-    --row-actions-visibility: visible;
-    --row-actions-pointer-events: auto;
 }
+
 
 
 /* =========================================================

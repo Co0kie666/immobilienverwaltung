@@ -9,31 +9,38 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.IntegerField;
-import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
+import de.hsbi.immobilienverwaltung.domain.Adresse;
+import de.hsbi.immobilienverwaltung.domain.Immobilie;
+import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
 import de.hsbi.immobilienverwaltung.security.LoginRequired;
+import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 
 @Route(value = "immobilien/:immobilieId/bearbeiten", layout = MainLayout.class)
 public class ImmobilieEditView extends Div implements HasPageHeader, BeforeEnterObserver, LoginRequired {
 
+    private final ImmobilieService immobilieService;
+    private Immobilie immobilie;
+
     private Long immobilieId;
 
     private final TextField bezeichnungField = new TextField("Bezeichnung");
-    private final Select<String> typSelect = new Select<>();
+    private final Select<Immobilientyp> typSelect = new Select<>();
     private final IntegerField baujahrField = new IntegerField("Baujahr");
-    private final NumberField gesamtflaecheField = new NumberField("Gesamtfläche in m²");
+    private final IntegerField gesamtflaecheField = new IntegerField("Gesamtfläche in m²");
 
     private final TextField strasseField = new TextField("Straße");
     private final TextField hausnummerField = new TextField("Hausnummer");
     private final TextField plzField = new TextField("PLZ");
     private final TextField ortField = new TextField("Ort");
 
-    public ImmobilieEditView() {
+    public ImmobilieEditView(ImmobilieService immobilieService) {
+        this.immobilieService = immobilieService;
         addClassName("page-content");
         addClassName("immobilie-edit-view");
 
@@ -47,7 +54,25 @@ public class ImmobilieEditView extends Div implements HasPageHeader, BeforeEnter
                 .map(Long::valueOf)
                 .orElse(null);
 
-        ladeDummyDaten();
+        // Immobilie  laden
+        this.immobilie = immobilieService.findeImmobilieNachId(immobilieId)
+                .orElseThrow(() -> new IllegalArgumentException("Immobilie wurde nicht gefunden."));
+
+        fuelleFelder();
+    }
+
+    private void fuelleFelder() {
+        bezeichnungField.setValue(immobilie.getBezeichnung());
+        typSelect.setValue(immobilie.getTyp());
+        baujahrField.setValue(immobilie.getBaujahr());
+        gesamtflaecheField.setValue(immobilie.getFlaeche());
+
+        if (immobilie.getAdresse() != null) {
+            strasseField.setValue(immobilie.getAdresse().getStrasse());
+            hausnummerField.setValue(immobilie.getAdresse().getHausnummer());
+            plzField.setValue(immobilie.getAdresse().getPlz());
+            ortField.setValue(immobilie.getAdresse().getStadt());
+        }
     }
 
     private Component createFormCard() {
@@ -68,7 +93,8 @@ public class ImmobilieEditView extends Div implements HasPageHeader, BeforeEnter
         bezeichnungField.setPlaceholder("z. B. Parkresidenz Süd");
 
         typSelect.setLabel("Immobilientyp");
-        typSelect.setItems("Wohngebäude", "Mehrfamilienhaus", "Gewerbeimmobilie");
+        typSelect.setItems(Immobilientyp.values());
+        typSelect.setItemLabelGenerator(this::formatImmobilientyp);
 
         baujahrField.setPlaceholder("z. B. 1998");
 
@@ -91,15 +117,12 @@ public class ImmobilieEditView extends Div implements HasPageHeader, BeforeEnter
         Button abbrechenButton = new Button("Abbrechen");
         abbrechenButton.addClassName("secondary-button");
         abbrechenButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate(ImmobilienListView.class))
+                getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilieId))
         );
 
         Button speichernButton = new Button("Änderungen speichern", VaadinIcon.CHECK.create());
         speichernButton.addClassName("primary-button");
-        speichernButton.addClickListener(event -> {
-            Notification.show("Änderungen wurden gespeichert");
-            getUI().ifPresent(ui -> ui.navigate(ImmobilienListView.class));
-        });
+        speichernButton.addClickListener(event -> speichereAenderungen());
 
         actions.add(abbrechenButton, speichernButton);
 
@@ -108,45 +131,42 @@ public class ImmobilieEditView extends Div implements HasPageHeader, BeforeEnter
         return card;
     }
 
-    private void ladeDummyDaten() {
-        // Später wird hier aus dem ImmobilieService geladen.
-        // Aktuell nur Dummy-Daten zum Testen.
+    private void speichereAenderungen() {
+        try {
+            immobilie.setBezeichnung(bezeichnungField.getValue());
+            immobilie.setTyp(typSelect.getValue());
+            immobilie.setBaujahr(baujahrField.getValue());
+            immobilie.setFlaeche(gesamtflaecheField.getValue());
 
-        if (immobilieId == null) {
-            return;
+            Adresse adresse = immobilie.getAdresse();
+
+            if (adresse == null) {
+                adresse = new Adresse();
+                immobilie.setAdresse(adresse);
+            }
+
+            adresse.setStrasse(strasseField.getValue());
+            adresse.setHausnummer(hausnummerField.getValue());
+            adresse.setPlz(plzField.getValue());
+            adresse.setStadt(ortField.getValue());
+
+            immobilieService.speichereImmobilie(immobilie);
+
+            Notification.show("Immobilie wurde aktualisiert");
+
+            getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilieId));
+
+        } catch (Exception ex) {
+            Notification.show("Fehler beim Speichern: " + ex.getMessage(), 4000, Notification.Position.MIDDLE);
         }
+    }
 
-        if (immobilieId == 1L) {
-            bezeichnungField.setValue("Parkresidenz Süd");
-            typSelect.setValue("Mehrfamilienhaus");
-            baujahrField.setValue(1998);
-            gesamtflaecheField.setValue(1850.0);
-
-            strasseField.setValue("Parkstraße");
-            hausnummerField.setValue("12");
-            plzField.setValue("10115");
-            ortField.setValue("Berlin");
-        } else if (immobilieId == 2L) {
-            bezeichnungField.setValue("Altbau Ensemble Mitte");
-            typSelect.setValue("Wohngebäude");
-            baujahrField.setValue(1965);
-            gesamtflaecheField.setValue(980.0);
-
-            strasseField.setValue("Hauptstraße");
-            hausnummerField.setValue("45");
-            plzField.setValue("80331");
-            ortField.setValue("München");
-        } else {
-            bezeichnungField.setValue("Seeblick Quartier");
-            typSelect.setValue("Gewerbeimmobilie");
-            baujahrField.setValue(2012);
-            gesamtflaecheField.setValue(2200.0);
-
-            strasseField.setValue("Seestraße");
-            hausnummerField.setValue("8-10");
-            plzField.setValue("20099");
-            ortField.setValue("Hamburg");
-        }
+    private String formatImmobilientyp(Immobilientyp typ) {
+        return switch (typ) {
+            case WOHNGEBAEUDE -> "Wohngebäude";
+            case MEHRFAMILIENHAUS -> "Mehrfamilienhaus";
+            case GEWERBEIMMOBILIE -> "Gewerbeimmobilie";
+        };
     }
 
     @Override

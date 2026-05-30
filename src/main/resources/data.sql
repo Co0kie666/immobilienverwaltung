@@ -26,9 +26,17 @@ VALUES
         -- passwort: test
     );
 
-INSERT INTO mieteinheit (groesse, zimmerzahl, immobilie_id, bezeichnung, stockwerk, status, typ)
+INSERT INTO mieteinheit (bezeichnung, status, typ, groesse, zimmerzahl, stockwerk, immobilie_id)
 VALUES
-    (50, 3, 3, 'Testbüro 1', 1, 'FREI', 'BUERO'),
-    (55, 2, 3, 'Testbüro 2', 1, 'FREI', 'BUERO'),
-    (70, 4, 3, 'Testbüro 3', 2, 'VERMIETET', 'BUERO'),
-    (45, 1, 3, 'Testbüro 4', 3, 'IN_RENOVIERUNG', 'BUERO');
+    ('WE-01', 'VERMIETET', 'WOHNUNG', 85, 3, 'EG', 1),
+    ('WE-02', 'VERMIETET', 'WOHNUNG', 92, 4, '1. OG', 1),
+    ('WE-03', 'FREI', 'WOHNUNG', 75, 3, '2. OG', 1),
+    ('WE-04', 'IN_RENOVIERUNG', 'WOHNUNG', 68, 2, '3. OG', 1),
+
+    ('WE-01', 'VERMIETET', 'WOHNUNG', 70, 2, 'EG', 2),
+    ('WE-02', 'FREI', 'WOHNUNG', 88, 3, '1. OG', 2),
+    ('WE-03', 'VERMIETET', 'WOHNUNG', 96, 4, '2. OG', 2),
+
+    ('Büro EG', 'VERMIETET', 'BUERO', 120, 5, 'EG', 3),
+    ('Lager A', 'FREI', 'LAGERHALLE', 200, 1, 'UG', 3),
+    ('Gewerbefläche 1', 'VERMIETET', 'GEWERBEFLAECHE', 150, 3, '1. OG', 3);

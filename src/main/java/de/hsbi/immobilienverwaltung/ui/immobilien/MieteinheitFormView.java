@@ -166,5 +166,4 @@ public class MieteinheitFormView extends Div implements HasPageHeader, BeforeEnt
     public String getPageSubtitle() {
         return "Immobilien > Detailansicht > Mieteinheit hinzufügen";
     }
-
 }

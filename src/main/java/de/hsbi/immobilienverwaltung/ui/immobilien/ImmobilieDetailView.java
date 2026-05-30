@@ -12,7 +12,6 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
@@ -192,13 +191,29 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                 getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilieId + "/bearbeiten"))
         );
 
+        Button deleteButton = new Button("Löschen", VaadinIcon.TRASH.create());
+        deleteButton.addClassName("danger-button");
+        deleteButton.addClickListener(event -> {
+            ConfirmDeleteDialog dialog = new ConfirmDeleteDialog(
+                    "Immobilie löschen?",
+                    "Möchtest du die Immobilie \"" + immobilie.getBezeichnung() + "\" wirklich löschen?",
+                    () -> {
+                        immobilieService.loescheImmobilie(immobilieId);
+                        Notification.show("Immobilie wurde gelöscht: " + immobilie.getBezeichnung());
+                        getUI().ifPresent(ui -> ui.navigate(ImmobilienListView.class));
+                    }
+            );
+
+            dialog.open();
+        });
+
         Button addUnitButton = new Button("Einheit hinzufügen", VaadinIcon.PLUS.create());
         addUnitButton.addClassName("primary-button");
         addUnitButton.addClickListener(event ->
                 getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilieId + "/einheiten/neu"))
         );
 
-        actionRow.add(backButton, editButton, addUnitButton);
+        actionRow.add(backButton, editButton, deleteButton, addUnitButton);
 
         return actionRow;
     }
@@ -293,9 +308,11 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                 .setHeader("Status")
                 .setAutoWidth(true);
 
-        mieteinheitenGrid.addColumn(new ComponentRenderer<>(this::createMieteinheitenActionButtons))
-                .setHeader("Aktionen")
-                .setAutoWidth(true);
+        mieteinheitenGrid.addItemClickListener(event ->
+                getUI().ifPresent(ui -> ui.navigate(
+                        "immobilien/" + immobilieId + "/einheiten/" + event.getItem().getId() + "/details"
+                ))
+        );
     }
 
     private Object formatStatus(Mieteinheitstatus status) {
@@ -412,54 +429,6 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
     """);
 
         return card;
-    }
-
-    private Component createMieteinheitenActionButtons(Mieteinheit mieteinheit) {
-        HorizontalLayout actions = new HorizontalLayout();
-        actions.addClassName("table-actions");
-        actions.setSpacing(false);
-        actions.setPadding(false);
-
-        Button anzeigenButton = new Button(VaadinIcon.EYE.create());
-        anzeigenButton.addClassNames("table-action-button", "view-action");
-
-        Button bearbeitenButton = new Button(VaadinIcon.EDIT.create());
-        bearbeitenButton.addClassNames("table-action-button", "edit-action");
-
-        Button loeschenButton = new Button(VaadinIcon.TRASH.create());
-        loeschenButton.addClassNames("table-action-button", "delete-action");
-
-        anzeigenButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate(
-                        "immobilien/" + immobilieId + "/einheiten/" + mieteinheit.getId() + "/details"
-                ))
-        );
-
-        bearbeitenButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate(
-                        "immobilien/" + immobilieId + "/einheiten/" + mieteinheit.getId() + "/bearbeiten"
-                ))
-        );
-
-        loeschenButton.addClickListener(event -> {
-            ConfirmDeleteDialog dialog = new ConfirmDeleteDialog(
-                    "Mieteinheit löschen?",
-                    "Möchtest du die Mieteinheit \"" + mieteinheit.getBezeichnung() + "\" wirklich löschen?",
-                    () -> {
-                        Notification.show("Mieteinheit würde gelöscht werden: " + mieteinheit.getBezeichnung());
-
-                        // später:
-                        // mieteinheitService.loescheMieteinheit(mieteinheit.id());
-                        // reloadMieteinheitenGrid();
-                    }
-            );
-
-            dialog.open();
-        });
-
-        actions.add(anzeigenButton, bearbeitenButton, loeschenButton);
-
-        return actions;
     }
 
 }

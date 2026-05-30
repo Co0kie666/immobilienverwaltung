@@ -1,22 +1,17 @@
 package de.hsbi.immobilienverwaltung.ui.immobilien;
 
-import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.domain.Adresse;
 import de.hsbi.immobilienverwaltung.domain.Immobilie;
 import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
 import de.hsbi.immobilienverwaltung.security.LoginRequired;
 import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
-import de.hsbi.immobilienverwaltung.ui.components.ConfirmDeleteDialog;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 
@@ -169,52 +164,8 @@ public class ImmobilienListView extends Div implements HasPageHeader, LoginRequi
                 .setHeader("Offene Posten")
                 .setAutoWidth(true);
 
-        grid.addColumn(new ComponentRenderer<>(this::createActionButtons))
-                .setHeader("Aktionen")
-                .setAutoWidth(true)
-                .setFlexGrow(0);
-    }
-
-    private Component createActionButtons(Immobilie immobilie) {
-        HorizontalLayout actions = new HorizontalLayout();
-        actions.addClassName("table-actions");
-        actions.setSpacing(false);
-        actions.setPadding(false);
-
-        Button anzeigenButton = new Button(VaadinIcon.EYE.create());
-        anzeigenButton.addClassNames("table-action-button", "view-action");
-
-        Button bearbeitenButton = new Button(VaadinIcon.EDIT.create());
-        bearbeitenButton.addClassNames("table-action-button", "edit-action");
-
-        Button loeschenButton = new Button(VaadinIcon.TRASH.create());
-        loeschenButton.addClassNames("table-action-button", "delete-action");
-
-        anzeigenButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilie.getId()))
+        grid.addItemClickListener(event ->
+                getUI().ifPresent(ui -> ui.navigate("immobilien/" + event.getItem().getId()))
         );
-
-        bearbeitenButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilie.getId() + "/bearbeiten"))
-        );
-
-        loeschenButton.addClickListener(event -> {
-            ConfirmDeleteDialog dialog = new ConfirmDeleteDialog(
-                    "Immobilie löschen?",
-                    "Möchtest du die Immobilie \"" + immobilie.getBezeichnung() + "\" wirklich löschen?",
-                    () -> {
-                        Notification.show("Immobilie würde gelöscht werden: " + immobilie.getBezeichnung());
-
-                        // später:
-                        // immobilieService.loescheImmobilie(immobilie.id());
-                        // grid.setItems(immobilieService.findeImmobilienUebersicht());
-                    }
-            );
-
-            dialog.open();
-        });
-        actions.add(anzeigenButton, bearbeitenButton, loeschenButton);
-
-        return actions;
     }
 }
