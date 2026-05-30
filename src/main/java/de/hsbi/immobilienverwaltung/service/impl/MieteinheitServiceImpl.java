@@ -2,6 +2,7 @@ package de.hsbi.immobilienverwaltung.service.impl;
 
 import de.hsbi.immobilienverwaltung.domain.Immobilie;
 import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
+import de.hsbi.immobilienverwaltung.domain.enums.MieteinheitTyp;
 import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
 import de.hsbi.immobilienverwaltung.repository.ImmobilieRepository;
 import de.hsbi.immobilienverwaltung.repository.MieteinheitRepository;
@@ -49,9 +50,33 @@ public class MieteinheitServiceImpl implements MieteinheitService {
             mieteinheit.setStatus(Mieteinheitstatus.FREI);
         }
 
+        pruefeGesamtobjektRegel(immobilieId, mieteinheit);
         mieteinheit.setImmobilie(immobilie);
 
         return mieteinheitRepository.save(mieteinheit);
+    }
+
+    // Prüfen, ob für diese Immobilie bereits Mieteinheiten existieren.
+    private void pruefeGesamtobjektRegel(Long immobilieId, Mieteinheit mieteinheit) {
+        List<Mieteinheit> vorhandeneEinheiten = mieteinheitRepository.findByImmobilieId(immobilieId);
+
+        for (Mieteinheit e : vorhandeneEinheiten) {
+
+            // Beim Bearbeiten soll die aktuelle Mieteinheit nicht gegen sich selbst geprüft werden.
+            if (mieteinheit.getId() != null && mieteinheit.getId().equals(e.getId())) {
+                continue;
+            }
+
+            // Wenn bereits ein Gesamtobjekt existiert, dürfen keine weiteren Mieteinheiten angelegt werden.
+            if (e.getTyp() == MieteinheitTyp.GESAMTOBJEKT) {
+                throw new IllegalArgumentException("Diese Immobilie ist bereits als Gesamtobjekt angelegt.");
+            }
+
+            // Ein Gesamtobjekt darf nur angelegt werden, wenn noch keine anderen Mieteinheiten existieren.
+            if (mieteinheit.getTyp() == MieteinheitTyp.GESAMTOBJEKT) {
+                throw new IllegalArgumentException("Ein Gesamtobjekt kann nur angelegt werden, wenn keine anderen Mieteinheiten existieren.");
+            }
+        }
     }
 
     @Override

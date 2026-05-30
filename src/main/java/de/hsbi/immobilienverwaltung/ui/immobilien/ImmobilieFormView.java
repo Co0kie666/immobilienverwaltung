@@ -13,9 +13,13 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.domain.Adresse;
 import de.hsbi.immobilienverwaltung.domain.Immobilie;
+import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
 import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
+import de.hsbi.immobilienverwaltung.domain.enums.MieteinheitTyp;
+import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
 import de.hsbi.immobilienverwaltung.security.LoginRequired;
 import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
+import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 
@@ -36,9 +40,11 @@ public class ImmobilieFormView extends Div implements HasPageHeader, LoginRequir
             new Checkbox("Gesamtobjekt als einzelne Mieteinheit erstellen");
 
     private final ImmobilieService immobilieService;
+    private final MieteinheitService mieteinheitService;
 
-    public ImmobilieFormView(ImmobilieService immobilieService) {
+    public ImmobilieFormView(ImmobilieService immobilieService, MieteinheitService mieteinheitService) {
         this.immobilieService = immobilieService;
+        this.mieteinheitService = mieteinheitService;
 
         addClassName("page-content");
         addClassName("immobilie-form-view");
@@ -136,8 +142,23 @@ public class ImmobilieFormView extends Div implements HasPageHeader, LoginRequir
                     adresse
             );
 
-            immobilieService.speichereImmobilie(immobilie);
+            Immobilie gespeicherteImmobilie = immobilieService.speichereImmobilie(immobilie);
 
+            // Wenn die Immobilie nicht in einzelne Einheiten aufgeteilt werden soll,
+            // wird automatisch eine einzelne Mieteinheit vom Typ "Gesamtobjekt" erstellt.
+            if (gesamtobjektCheckbox.getValue()) {
+                Mieteinheit gesamtobjekt = new Mieteinheit(
+                        "Gesamtobjekt",
+                        Mieteinheitstatus.FREI,
+                        MieteinheitTyp.GESAMTOBJEKT,
+                        gesamtflaecheField.getValue(),
+                        null,
+                        "Gesamtobjekt"
+                );
+
+                // Gesamtobjekt-Mieteinheit mit der gerade gespeicherten Immobilie verknüpfen.
+                mieteinheitService.speichereMieteinheit(gespeicherteImmobilie.getId(), gesamtobjekt);
+            }
             Notification.show("Immobilie wurde gespeichert: " + bezeichnungField.getValue());
 
             getUI().ifPresent(ui -> ui.navigate(ImmobilienListView.class));
