@@ -222,16 +222,41 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         Div kpiGrid = new Div();
         kpiGrid.addClassName("detail-kpi-grid");
 
+        long einheitenGesamt = mieteinheitService.zaehleMieteinheiten(immobilieId);
+        long leerstand = mieteinheitService.zaehleFreieMieteinheiten(immobilieId);
+        long vermietet = mieteinheitService.zaehleVermieteteMieteinheiten(immobilieId);
+        long inRenovierung = mieteinheitService.zaehleMieteinheitenInRenovierung(immobilieId);
+
+        double leerstandsquote = mieteinheitService.berechneLeerstandsquote(immobilieId);
+
         kpiGrid.add(
-                createKpiCard("Einheiten Gesamt", "24", "18 Wohnungen, 6 Gewerbe", "primary"),
-                createKpiCard("Leerstand", "2", "8.3% Leerstandsquote", "warning"),
-                createKpiCard("Offene Zahlungen", "€ 1.250", "2 Mieter im Verzug", "danger")
+                createKpiCard(
+                        "Einheiten Gesamt",
+                        String.valueOf(einheitenGesamt),
+                        vermietet + " vermietet, " + inRenovierung + " in Renovierung",
+                        "primary",
+                        VaadinIcon.BUILDING
+                ),
+                createKpiCard(
+                        "Leerstand",
+                        String.valueOf(leerstand),
+                        String.format("%.1f%% Leerstandsquote", leerstandsquote),
+                        "warning",
+                        VaadinIcon.HOME
+                ),
+                createKpiCard(
+                        "Offene Zahlungen",
+                        "-",
+                        "Julian mach schneller",
+                        "danger",
+                        VaadinIcon.WARNING
+                )
         );
 
         return kpiGrid;
     }
 
-    private Component createKpiCard(String title, String value, String subtitle, String type) {
+    private Component createKpiCard(String title, String value, String subtitle, String type, VaadinIcon icon) {
         Div card = new Div();
         card.addClassNames("card", "detail-kpi-card");
 
@@ -246,7 +271,7 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
 
         Div iconBox = new Div();
         iconBox.addClassNames("kpi-icon-box", type);
-        iconBox.add(VaadinIcon.BUILDING.create());
+        iconBox.add(icon.create());
 
         card.add(titleText, valueText, subtitleText, iconBox);
 
@@ -345,10 +370,15 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         Div card = new Div();
         card.addClassNames("card", "belegung-card");
 
-        H3 title = new H3("Belegungsstatus");
+        H3 title = new H3("Leerstandsquote");
         title.addClassName("card-title");
 
-        // Canvas für Chart.js
+        long vermietet = mieteinheitService.zaehleVermieteteMieteinheiten(immobilieId);
+        long leerstand = mieteinheitService.zaehleFreieMieteinheiten(immobilieId);
+        double leerstandsquote = mieteinheitService.berechneLeerstandsquote(immobilieId);
+
+        String centerText = String.format("%.1f%%", leerstandsquote);
+
         Html canvas = new Html("""
         <div style="width:100%; max-width:280px; margin:auto;">
             <canvas id="belegungChart"></canvas>
@@ -358,10 +388,13 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         card.add(title, canvas);
 
         card.getElement().executeJs("""
+        const vermietet = Number($0);
+        const leerstand = Number($1);
+        const centerText = $2;
+
         function renderBelegungChart() {
             const ctx = document.getElementById('belegungChart');
 
-            // Vorherigen Chart zerstören falls vorhanden
             if (window.belegungChartInstance) {
                 window.belegungChartInstance.destroy();
             }
@@ -371,7 +404,7 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                 data: {
                     labels: ['Vermietet', 'Leerstand'],
                     datasets: [{
-                        data: [22, 2],
+                        data: [vermietet, leerstand],
                         borderWidth: 0
                     }]
                 },
@@ -386,10 +419,15 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                             callbacks: {
                                 label: function(context) {
                                     const total = context.dataset.data.reduce((a, b) => a + b, 0);
+    
+                                    if (total === 0) {
+                                        return context.label + ': 0%';
+                                    }
+
                                     const value = context.raw;
                                     const percent = ((value / total) * 100).toFixed(1);
 
-                                    return context.label + ': ' + percent + '%';
+                                    return context.label + ': ' + value + ' Einheit(en), ' + percent + '%';
                                 }
                             }
                         }
@@ -405,11 +443,15 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                         ctx.font = `bold ${fontSize}em sans-serif`;
                         ctx.textBaseline = 'middle';
 
-                        const text = '91.6%';
-                        const textX = Math.round((width - ctx.measureText(text).width) / 2);
-                        const textY = height / 2;
-
-                        ctx.fillText(text, textX, textY);
+                        const text = centerText;
+   
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+    
+                        const centerX = (chart.chartArea.left + chart.chartArea.right) / 2;
+                        const centerY = (chart.chartArea.top + chart.chartArea.bottom) / 2;
+    
+                        ctx.fillText(text, centerX, centerY);
                         ctx.save();
                     }
                 }]
@@ -419,14 +461,12 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         if (!window.Chart) {
             const script = document.createElement('script');
             script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-
             script.onload = () => renderBelegungChart();
-
             document.head.appendChild(script);
         } else {
             renderBelegungChart();
         }
-    """);
+    """, vermietet, leerstand, centerText);
 
         return card;
     }

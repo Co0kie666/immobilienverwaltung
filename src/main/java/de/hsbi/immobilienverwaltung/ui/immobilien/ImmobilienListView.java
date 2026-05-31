@@ -15,8 +15,6 @@ import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 
-import java.util.List;
-
 @Route(value = "immobilien", layout = MainLayout.class)
 public class ImmobilienListView extends Div implements HasPageHeader, LoginRequired {
 

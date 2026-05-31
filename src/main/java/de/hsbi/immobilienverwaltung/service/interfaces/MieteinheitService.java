@@ -11,8 +11,18 @@ public interface MieteinheitService {
 
     List<Mieteinheit> findeMieteinheitenNachImmobilie(Long immobilieId);
 
-    // fuer MieteinheitDetailView
     Optional<Mieteinheit> findeMieteinheitNachId(Long id);
 
     void loescheMieteinheit(Long id);
+
+    long zaehleMieteinheiten(Long immobilieId);
+
+    long zaehleFreieMieteinheiten(Long immobilieId);
+
+    long zaehleVermieteteMieteinheiten(Long immobilieId);
+
+    double berechneLeerstandsquote(Long immobilieId);
+
+    long zaehleMieteinheitenInRenovierung(Long immobilieId);
+
 }

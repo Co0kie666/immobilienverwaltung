@@ -13,4 +13,7 @@ public interface MieteinheitRepository extends JpaRepository<Mieteinheit, Long> 
 
     long countByStatusIn(Collection<Mieteinheitstatus> status);
 
+    long countByImmobilieId(Long immobilieId);
+
+    long countByImmobilieIdAndStatus(Long immobilieId, Mieteinheitstatus status);
 }

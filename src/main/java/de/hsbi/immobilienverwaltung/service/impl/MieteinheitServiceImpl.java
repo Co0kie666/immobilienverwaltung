@@ -94,4 +94,40 @@ public class MieteinheitServiceImpl implements MieteinheitService {
     public void loescheMieteinheit(Long id) {
         mieteinheitRepository.deleteById(id);
     }
+
+    @Override
+    public long zaehleMieteinheiten(Long immobilieId) {
+        return mieteinheitRepository.countByImmobilieId(immobilieId);
+    }
+
+    @Override
+    public long zaehleFreieMieteinheiten(Long immobilieId) {
+        long freieEinheiten = mieteinheitRepository.countByImmobilieIdAndStatus(immobilieId, Mieteinheitstatus.FREI);
+        long einheitenInRenovierung = mieteinheitRepository.countByImmobilieIdAndStatus(
+                immobilieId, Mieteinheitstatus.IN_RENOVIERUNG);
+        return freieEinheiten + einheitenInRenovierung;
+    }
+
+    @Override
+    public long zaehleVermieteteMieteinheiten(Long immobilieId) {
+        return mieteinheitRepository.countByImmobilieIdAndStatus(immobilieId, Mieteinheitstatus.VERMIETET);
+    }
+
+    @Override
+    public double berechneLeerstandsquote(Long immobilieId) {
+        long gesamt = zaehleMieteinheiten(immobilieId);
+
+        if (gesamt == 0) {
+            return 0;
+        }
+
+        long leerstand = zaehleFreieMieteinheiten(immobilieId);
+
+        return leerstand * 100.0 / gesamt;
+    }
+
+    @Override
+    public long zaehleMieteinheitenInRenovierung(Long immobilieId) {
+        return mieteinheitRepository.countByImmobilieIdAndStatus(immobilieId, Mieteinheitstatus.IN_RENOVIERUNG);
+    }
 }
