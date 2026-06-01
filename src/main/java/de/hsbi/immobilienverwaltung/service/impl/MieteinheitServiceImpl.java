@@ -10,6 +10,7 @@ import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -129,5 +130,69 @@ public class MieteinheitServiceImpl implements MieteinheitService {
     @Override
     public long zaehleMieteinheitenInRenovierung(Long immobilieId) {
         return mieteinheitRepository.countByImmobilieIdAndStatus(immobilieId, Mieteinheitstatus.IN_RENOVIERUNG);
+    }
+
+    @Override
+    public List<Mieteinheit> sucheMieteinheitenDerImmobilie(Long immobilieId, String suchtext) {
+        List<Mieteinheit> mieteinheiten =
+                mieteinheitRepository.findByImmobilieId(immobilieId);
+
+        if (suchtext == null || suchtext.isBlank()) {
+            return mieteinheiten;
+        }
+
+        String suchtextKlein = suchtext.trim().toLowerCase();
+        List<Mieteinheit> gefilterteMieteinheiten = new ArrayList<>();
+
+        for (Mieteinheit mieteinheit : mieteinheiten) {
+            if (passtZurSuche(mieteinheit, suchtextKlein)) {
+                gefilterteMieteinheiten.add(mieteinheit);
+            }
+        }
+
+        return gefilterteMieteinheiten;
+    }
+
+    private boolean passtZurSuche(Mieteinheit mieteinheit, String suchtext) {
+        return enthaelt(mieteinheit.getBezeichnung(), suchtext)
+                || enthaelt(formatTyp(mieteinheit.getTyp()), suchtext)
+                || enthaelt(formatStatus(mieteinheit.getStatus()), suchtext)
+                || enthaelt(mieteinheit.getStockwerk(), suchtext)
+                || enthaelt(mieteinheit.getGroesse(), suchtext)
+                || enthaelt(mieteinheit.getZimmerzahl(), suchtext);
+    }
+
+    private boolean enthaelt(Object wert, String suchtext) {
+        if (wert == null) {
+            return false;
+        }
+
+        return wert.toString().toLowerCase().contains(suchtext);
+    }
+
+    private String formatTyp(MieteinheitTyp typ) {
+        if (typ == null) {
+            return "";
+        }
+
+        return switch (typ) {
+            case WOHNUNG -> "Wohnung";
+            case BUERO -> "Büro";
+            case LAGERHALLE -> "Lagerhalle";
+            case GEWERBEFLAECHE -> "Gewerbefläche";
+            case GESAMTOBJEKT -> "Gesamtobjekt";
+        };
+    }
+
+    private String formatStatus(Mieteinheitstatus status) {
+        if (status == null) {
+            return "";
+        }
+
+        return switch (status) {
+            case FREI -> "Frei";
+            case VERMIETET -> "Vermietet";
+            case IN_RENOVIERUNG -> "In Renovierung";
+        };
     }
 }

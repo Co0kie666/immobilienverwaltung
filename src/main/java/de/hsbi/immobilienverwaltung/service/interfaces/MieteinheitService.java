@@ -25,4 +25,5 @@ public interface MieteinheitService {
 
     long zaehleMieteinheitenInRenovierung(Long immobilieId);
 
+    List<Mieteinheit> sucheMieteinheitenDerImmobilie(Long immobilieId, String suchtext);
 }

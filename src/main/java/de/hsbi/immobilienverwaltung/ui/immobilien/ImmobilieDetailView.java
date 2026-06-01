@@ -27,6 +27,9 @@ import de.hsbi.immobilienverwaltung.domain.Adresse;
 import de.hsbi.immobilienverwaltung.domain.Immobilie;
 import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
 import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
+import com.vaadin.flow.data.value.ValueChangeMode;
+import java.util.ArrayList;
+import java.util.List;
 
 @Route(value = "immobilien/:immobilieId", layout = MainLayout.class)
 public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnterObserver, LoginRequired {
@@ -37,6 +40,8 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
     private Immobilie immobilie;
     private final ImmobilieService immobilieService;
 
+    private final TextField mieteinheitenSearchField = new TextField();
+
     public ImmobilieDetailView(MieteinheitService mieteinheitService, ImmobilieService immobilieService) {
         this.mieteinheitService = mieteinheitService;
         this.immobilieService = immobilieService;
@@ -44,6 +49,7 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         addClassName("page-content");
         addClassName("immobilie-detail-view");
 
+        konfiguriereMieteinheitenSuchfeld();
     }
 
     @Override
@@ -73,10 +79,20 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                 .orElseThrow(() -> new IllegalArgumentException("Immobilie wurde nicht gefunden."));
     }
 
-    private void ladeMieteinheiten() {
-        mieteinheitenGrid.setItems(
-                mieteinheitService.findeMieteinheitenNachImmobilie(immobilieId)
+    private void wendeMieteinheitenSucheAn() {
+        if (immobilieId == null) {
+            return;
+        }
+
+        mieteinheitenGrid.setItems(mieteinheitService.sucheMieteinheitenDerImmobilie(
+                        immobilieId,
+                        mieteinheitenSearchField.getValue()
+                )
         );
+    }
+
+    private void ladeMieteinheiten() {
+        wendeMieteinheitenSucheAn();
     }
 
     // ImmobilienCard und BelegungsCard nebeneinander
@@ -278,6 +294,16 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         return card;
     }
 
+    private void konfiguriereMieteinheitenSuchfeld() {
+        mieteinheitenSearchField.addClassName("detail-table-search");
+        mieteinheitenSearchField.setPlaceholder("Suchen...");
+        mieteinheitenSearchField.setPrefixComponent(VaadinIcon.SEARCH.create());
+        mieteinheitenSearchField.setClearButtonVisible(true);
+        mieteinheitenSearchField.setValueChangeMode(ValueChangeMode.LAZY);
+
+        mieteinheitenSearchField.addValueChangeListener(event -> wendeMieteinheitenSucheAn());
+    }
+
     private Component createMieteinheitenCard() {
         Div card = new Div();
         card.addClassName("table-card");
@@ -288,13 +314,7 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         H3 title = new H3("Mieteinheiten");
         title.addClassName("card-title");
 
-        TextField searchField = new TextField();
-        searchField.addClassName("detail-table-search");
-        searchField.setPlaceholder("Suchen...");
-        searchField.setPrefixComponent(VaadinIcon.SEARCH.create());
-        searchField.setClearButtonVisible(true);
-
-        header.add(title, searchField);
+        header.add(title, mieteinheitenSearchField);
 
         configureMieteinheitenGrid();
 

@@ -2,11 +2,16 @@ package de.hsbi.immobilienverwaltung.service.impl;
 
 import de.hsbi.immobilienverwaltung.domain.Adresse;
 import de.hsbi.immobilienverwaltung.domain.Immobilie;
+import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
+import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
+import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
 import de.hsbi.immobilienverwaltung.repository.ImmobilieRepository;
+import de.hsbi.immobilienverwaltung.repository.MieteinheitRepository;
 import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,9 +19,11 @@ import java.util.Optional;
 public class ImmobilieServiceImpl implements ImmobilieService {
 
     private final ImmobilieRepository immobilieRepository;
+    private final MieteinheitRepository mieteinheitRepository;
 
-    public ImmobilieServiceImpl(ImmobilieRepository immobilieRepository) {
+    public ImmobilieServiceImpl(ImmobilieRepository immobilieRepository, MieteinheitRepository mieteinheitRepository) {
         this.immobilieRepository = immobilieRepository;
+        this.mieteinheitRepository = mieteinheitRepository;
     }
 
     @Override
@@ -78,5 +85,109 @@ public class ImmobilieServiceImpl implements ImmobilieService {
     @Transactional
     public void loescheImmobilie(Long id) {
         immobilieRepository.deleteById(id);
+    }
+
+    @Override
+    public List<Immobilie> findeGefilterteImmobilien(String ortOderPlz, Immobilientyp typ, String einheitenFilter, String leerstandFilter) {
+        List<Immobilie> alleImmobilien = immobilieRepository.findAll();
+        List<Immobilie> gefilterteImmobilien = new ArrayList<>();
+
+        for (Immobilie immobilie : alleImmobilien) {
+
+            if (!passtOrtOderPlzFilter(immobilie, ortOderPlz)) {
+                continue;
+            }
+
+            if (!passtTypFilter(immobilie, typ)) {
+                continue;
+            }
+
+            List<Mieteinheit> mieteinheiten = mieteinheitRepository.findByImmobilieId(immobilie.getId());
+
+            if (!passtEinheitenFilter(mieteinheiten.size(), einheitenFilter)) {
+                continue;
+            }
+
+            if (!passtLeerstandFilter(mieteinheiten, leerstandFilter)) {
+                continue;
+            }
+
+            gefilterteImmobilien.add(immobilie);
+        }
+
+        return gefilterteImmobilien;
+    }
+
+    private boolean passtOrtOderPlzFilter(Immobilie immobilie, String ortOderPlz) {
+        if (ortOderPlz == null || ortOderPlz.isBlank()) {
+            return true;
+        }
+
+        if (immobilie.getAdresse() == null) {
+            return false;
+        }
+
+        String suchtext = ortOderPlz.trim().toLowerCase();
+
+        String stadt = immobilie.getAdresse().getStadt();
+        String plz = immobilie.getAdresse().getPlz();
+
+        boolean stadtPasst = stadt != null && stadt.toLowerCase().contains(suchtext);
+        boolean plzPasst = plz != null && plz.contains(suchtext);
+
+        return stadtPasst || plzPasst;
+    }
+
+    private boolean passtTypFilter(Immobilie immobilie, Immobilientyp typ) {
+        if (typ == null) {
+            return true;
+        }
+
+        return immobilie.getTyp() == typ;
+    }
+
+    private boolean passtEinheitenFilter(int anzahlEinheiten, String einheitenFilter) {
+        if (einheitenFilter == null || einheitenFilter.equals("Alle Größen")) {
+            return true;
+        }
+
+        if (einheitenFilter.equals("1-5 Einheiten")) {
+            return anzahlEinheiten >= 1 && anzahlEinheiten <= 5;
+        }
+
+        if (einheitenFilter.equals("6-20 Einheiten")) {
+            return anzahlEinheiten >= 6 && anzahlEinheiten <= 20;
+        }
+
+        if (einheitenFilter.equals("20+ Einheiten")) {
+            return anzahlEinheiten > 20;
+        }
+
+        return true;
+    }
+
+    private boolean passtLeerstandFilter(List<Mieteinheit> mieteinheiten, String leerstandFilter) {
+        if (leerstandFilter == null || leerstandFilter.equals("Alle anzeigen")) {
+            return true;
+        }
+
+        int leerstand = 0;
+
+        for (Mieteinheit mieteinheit : mieteinheiten) {
+            if (mieteinheit.getStatus() == Mieteinheitstatus.FREI || mieteinheit.getStatus() ==
+                    Mieteinheitstatus.IN_RENOVIERUNG) {
+                leerstand++;
+            }
+        }
+
+        if (leerstandFilter.equals("Mit Leerstand")) {
+            return leerstand > 0;
+        }
+
+        if (leerstandFilter.equals("Ohne Leerstand")) {
+            return leerstand == 0;
+        }
+
+        return true;
     }
 }
