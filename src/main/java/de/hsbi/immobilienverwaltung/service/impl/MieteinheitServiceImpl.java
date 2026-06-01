@@ -103,10 +103,7 @@ public class MieteinheitServiceImpl implements MieteinheitService {
 
     @Override
     public long zaehleFreieMieteinheiten(Long immobilieId) {
-        long freieEinheiten = mieteinheitRepository.countByImmobilieIdAndStatus(immobilieId, Mieteinheitstatus.FREI);
-        long einheitenInRenovierung = mieteinheitRepository.countByImmobilieIdAndStatus(
-                immobilieId, Mieteinheitstatus.IN_RENOVIERUNG);
-        return freieEinheiten + einheitenInRenovierung;
+        return mieteinheitRepository.countByImmobilieIdAndStatus(immobilieId, Mieteinheitstatus.FREI);
     }
 
     @Override
@@ -122,7 +119,7 @@ public class MieteinheitServiceImpl implements MieteinheitService {
             return 0;
         }
 
-        long leerstand = zaehleFreieMieteinheiten(immobilieId);
+        long leerstand = zaehleFreieMieteinheiten(immobilieId) + zaehleMieteinheitenInRenovierung(immobilieId);
 
         return leerstand * 100.0 / gesamt;
     }
@@ -155,8 +152,8 @@ public class MieteinheitServiceImpl implements MieteinheitService {
 
     private boolean passtZurSuche(Mieteinheit mieteinheit, String suchtext) {
         return enthaelt(mieteinheit.getBezeichnung(), suchtext)
-                || enthaelt(formatTyp(mieteinheit.getTyp()), suchtext)
-                || enthaelt(formatStatus(mieteinheit.getStatus()), suchtext)
+                || enthaelt(mieteinheit.getTyp().getLabel(), suchtext)
+                || enthaelt(mieteinheit.getStatus().getLabel(), suchtext)
                 || enthaelt(mieteinheit.getStockwerk(), suchtext)
                 || enthaelt(mieteinheit.getGroesse(), suchtext)
                 || enthaelt(mieteinheit.getZimmerzahl(), suchtext);
@@ -168,31 +165,5 @@ public class MieteinheitServiceImpl implements MieteinheitService {
         }
 
         return wert.toString().toLowerCase().contains(suchtext);
-    }
-
-    private String formatTyp(MieteinheitTyp typ) {
-        if (typ == null) {
-            return "";
-        }
-
-        return switch (typ) {
-            case WOHNUNG -> "Wohnung";
-            case BUERO -> "Büro";
-            case LAGERHALLE -> "Lagerhalle";
-            case GEWERBEFLAECHE -> "Gewerbefläche";
-            case GESAMTOBJEKT -> "Gesamtobjekt";
-        };
-    }
-
-    private String formatStatus(Mieteinheitstatus status) {
-        if (status == null) {
-            return "";
-        }
-
-        return switch (status) {
-            case FREI -> "Frei";
-            case VERMIETET -> "Vermietet";
-            case IN_RENOVIERUNG -> "In Renovierung";
-        };
     }
 }

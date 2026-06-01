@@ -13,8 +13,6 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
-import de.hsbi.immobilienverwaltung.domain.enums.MieteinheitTyp;
-import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
 import de.hsbi.immobilienverwaltung.security.LoginRequired;
 import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
 import de.hsbi.immobilienverwaltung.ui.components.ConfirmDeleteDialog;
@@ -112,12 +110,12 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
 
         stammdatenCard.add(
                 stammdatenTitle,
-                createInfoItem("Einheit-Nr.", mieteinheit.getBezeichnung()),
-                createInfoItem("Typ", formatMieteinheitTyp(mieteinheit.getTyp())),
-                createInfoItem("Größe", valueOrDash(mieteinheit.getGroesse()) + " m²"),
+                createInfoItem("Einheit-Nr.", valueOrDash(mieteinheit.getBezeichnung())),
+                createInfoItem("Typ", valueOrDash(mieteinheit.getTyp().getLabel())),
+                createInfoItem("Größe", mieteinheit.getGroesse() == null ? "-" : mieteinheit.getGroesse() + " m²"),
                 createInfoItem("Stockwerk", valueOrDash(mieteinheit.getStockwerk())),
                 createInfoItem("Zimmeranzahl", valueOrDash(mieteinheit.getZimmerzahl())),
-                createStatusItem("Status", StatusBadge.neutral(formatStatus(mieteinheit.getStatus())))
+                createStatusItem("Status", StatusBadge.neutral(mieteinheit.getStatus().getLabel()))
         );
 
         grid.add(stammdatenCard, createAktuellerMietvertragCard());
@@ -127,30 +125,6 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
 
     private String valueOrDash(Object value) {
         return value == null ? "-" : value.toString();
-    }
-
-    private String formatStatus(Mieteinheitstatus status) {
-        if (status == null) return null;
-
-        return switch (status) {
-            case FREI -> "Frei";
-            case VERMIETET -> "Vermietet";
-            case IN_RENOVIERUNG -> "In Renovierung";
-        };
-    }
-
-    private String formatMieteinheitTyp(MieteinheitTyp typ) {
-        if (typ == null) {
-            return "-";
-        }
-
-        return switch (typ) {
-            case WOHNUNG -> "Wohnung";
-            case BUERO -> "Büro";
-            case LAGERHALLE ->  "Lagerhalle";
-            case GEWERBEFLAECHE -> "Gewerbeflaeche";
-            case GESAMTOBJEKT ->  "Gesamtobjekt";
-        };
     }
 
     private Component createAktuellerMietvertragCard() {

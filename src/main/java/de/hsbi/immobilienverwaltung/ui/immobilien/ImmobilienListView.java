@@ -74,27 +74,6 @@ public class ImmobilienListView extends Div implements HasPageHeader, LoginRequi
                 + adresse.getStadt();
     }
 
-    private String formatTyp(Immobilientyp typ) {
-        if (typ == null) {
-            return "-";
-        }
-
-        return switch (typ) {
-            case WOHNGEBAEUDE -> "Wohngebäude";
-            case MEHRFAMILIENHAUS -> "Mehrfamilienhaus";
-            case GEWERBEIMMOBILIE -> "Gewerbeimmobilie";
-        };
-    }
-
-    // Damit bei der SelectBox kein Bindestrich angezeigt wird
-    private String formatTypFilter(Immobilientyp typ) {
-        if (typ == null) {
-            return "Alle Typen";
-        }
-
-        return formatTyp(typ);
-    }
-
     @Override
     public String getPageTitle() {
         return "Immobilienübersicht";
@@ -135,7 +114,7 @@ public class ImmobilienListView extends Div implements HasPageHeader, LoginRequi
 
         typSelect.setLabel("Immobilientyp");
         typSelect.setItems(Immobilientyp.values());
-        typSelect.setItemLabelGenerator(this::formatTypFilter);
+        typSelect.setItemLabelGenerator(typ -> typ == null ? "Alle Typen" : typ.getLabel());
         typSelect.setEmptySelectionAllowed(true);
         typSelect.setEmptySelectionCaption("Alle Typen");
 
@@ -249,7 +228,7 @@ public class ImmobilienListView extends Div implements HasPageHeader, LoginRequi
             .setAutoWidth(true)
             .setFlexGrow(2);
 
-        grid.addColumn(immobilie -> formatTyp(immobilie.getTyp()))
+        grid.addColumn(immobilie -> immobilie.getTyp() == null ? "-" : immobilie.getTyp().getLabel())
             .setHeader("Typ")
             .setAutoWidth(true);
 
@@ -263,7 +242,9 @@ public class ImmobilienListView extends Div implements HasPageHeader, LoginRequi
             .setAutoWidth(true);
 
         grid.addColumn(immobilie -> {
-            long leerstand = mieteinheitService.zaehleFreieMieteinheiten(immobilie.getId());
+            long frei = mieteinheitService.zaehleFreieMieteinheiten(immobilie.getId());
+            long inRenovierung = mieteinheitService.zaehleMieteinheitenInRenovierung(immobilie.getId());
+            long leerstand = frei + inRenovierung;
             double leerstandsquote = mieteinheitService.berechneLeerstandsquote(immobilie.getId());
 
             return leerstand + " (" + String.format("%.1f%%", leerstandsquote) + ")";

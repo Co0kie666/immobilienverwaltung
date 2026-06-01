@@ -90,7 +90,7 @@ public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnt
 
         typSelect.setLabel("Typ");
         typSelect.setItems(MieteinheitTyp.values());
-        typSelect.setItemLabelGenerator(this::formatTyp);
+        typSelect.setItemLabelGenerator(MieteinheitTyp::getLabel);
 
         groesseField.setPlaceholder("z. B. 85");
 
@@ -100,7 +100,7 @@ public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnt
 
         statusSelect.setLabel("Status");
         statusSelect.setItems(Mieteinheitstatus.values());
-        statusSelect.setItemLabelGenerator(this::formatStatus);
+        statusSelect.setItemLabelGenerator(Mieteinheitstatus::getLabel);
 
         form.add(nummerField, typSelect, groesseField, stockwerkField, zimmeranzahlField, statusSelect);
 
@@ -152,28 +152,6 @@ public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnt
 
     private Integer toInteger(Double value) {
         return value == null ? null : value.intValue();
-    }
-
-    private String formatTyp(MieteinheitTyp typ) {
-        if (typ == null) return null;
-
-        return switch (typ) {
-            case WOHNUNG -> "Wohnung";
-            case BUERO -> "Büro";
-            case LAGERHALLE -> "Lagerhalle";
-            case GEWERBEFLAECHE -> "Gewerbefläche";
-            case GESAMTOBJEKT -> "Gesamtobjekt";
-        };
-    }
-
-    private String formatStatus(Mieteinheitstatus status) {
-        if (status == null) return null;
-
-        return switch (status) {
-            case FREI -> "Frei";
-            case VERMIETET -> "Vermietet";
-            case IN_RENOVIERUNG -> "In Renovierung";
-        };
     }
 
     @Override

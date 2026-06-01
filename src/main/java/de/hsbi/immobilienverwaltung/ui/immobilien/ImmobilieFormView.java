@@ -72,7 +72,7 @@ public class ImmobilieFormView extends Div implements HasPageHeader, LoginRequir
         typSelect.setLabel("Immobilientyp");
         typSelect.setItems(Immobilientyp.values());
         typSelect.setPlaceholder("Typ auswählen");
-        typSelect.setItemLabelGenerator(this::formatImmobilientyp);
+        typSelect.setItemLabelGenerator(Immobilientyp::getLabel);
 
         baujahrField.setPlaceholder("z. B. 1998");
 
@@ -166,14 +166,6 @@ public class ImmobilieFormView extends Div implements HasPageHeader, LoginRequir
         } catch (Exception ex) {
             Notification.show("Fehler beim Speichern: " + ex.getMessage(), 4000, Notification.Position.MIDDLE);
         }
-    }
-
-    private String formatImmobilientyp(Immobilientyp typ) {
-        return switch (typ) {
-            case WOHNGEBAEUDE -> "Wohngebäude";
-            case MEHRFAMILIENHAUS -> "Mehrfamilienhaus";
-            case GEWERBEIMMOBILIE -> "Gewerbeimmobilie";
-        };
     }
 
     @Override

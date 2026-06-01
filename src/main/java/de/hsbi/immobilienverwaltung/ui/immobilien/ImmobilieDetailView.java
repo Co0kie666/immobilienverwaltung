@@ -20,16 +20,11 @@ import de.hsbi.immobilienverwaltung.ui.components.ConfirmDeleteDialog;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
-import de.hsbi.immobilienverwaltung.domain.enums.MieteinheitTyp;
-import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
 import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
 import de.hsbi.immobilienverwaltung.domain.Adresse;
 import de.hsbi.immobilienverwaltung.domain.Immobilie;
-import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
 import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
 import com.vaadin.flow.data.value.ValueChangeMode;
-import java.util.ArrayList;
-import java.util.List;
 
 @Route(value = "immobilien/:immobilieId", layout = MainLayout.class)
 public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnterObserver, LoginRequired {
@@ -117,8 +112,8 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
 
         card.add(
                 title,
-                createInfoItem("Bezeichnung", immobilie.getBezeichnung()),
-                createInfoItem("Typ", formatImmobilientyp(immobilie.getTyp())),
+                createInfoItem("Bezeichnung", valueOrDash(immobilie.getBezeichnung())),
+                createInfoItem("Typ",valueOrDash(immobilie.getTyp().getLabel())),
                 createInfoItem("Baujahr", valueOrDash(immobilie.getBaujahr())),
                 createInfoItem("Fläche", formatFlaeche(immobilie.getFlaeche())),
                 createInfoItem("Adresse", formatAdresse(immobilie))
@@ -153,18 +148,6 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                 + adresse.getHausnummer() + ", "
                 + adresse.getPlz() + " "
                 + adresse.getStadt();
-    }
-
-    private String formatImmobilientyp(Immobilientyp typ) {
-        if (typ == null) {
-            return "-";
-        }
-
-        return switch (typ) {
-            case WOHNGEBAEUDE -> "Wohngebäude";
-            case MEHRFAMILIENHAUS -> "Mehrfamilienhaus";
-            case GEWERBEIMMOBILIE -> "Gewerbeimmobilie";
-        };
     }
 
     private String formatFlaeche(Integer flaeche) {
@@ -239,9 +222,10 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         kpiGrid.addClassName("detail-kpi-grid");
 
         long einheitenGesamt = mieteinheitService.zaehleMieteinheiten(immobilieId);
-        long leerstand = mieteinheitService.zaehleFreieMieteinheiten(immobilieId);
-        long vermietet = mieteinheitService.zaehleVermieteteMieteinheiten(immobilieId);
+        long frei = mieteinheitService.zaehleFreieMieteinheiten(immobilieId);
         long inRenovierung = mieteinheitService.zaehleMieteinheitenInRenovierung(immobilieId);
+        long leerstand = frei + inRenovierung;
+        long vermietet = mieteinheitService.zaehleVermieteteMieteinheiten(immobilieId);
 
         double leerstandsquote = mieteinheitService.berechneLeerstandsquote(immobilieId);
 
@@ -333,7 +317,7 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                 .setHeader("Bezeichnung")
                 .setAutoWidth(true);
 
-        mieteinheitenGrid.addColumn(mieteinheit -> formatTyp(mieteinheit.getTyp()))
+        mieteinheitenGrid.addColumn(mieteinheit -> mieteinheit.getTyp().getLabel())
                 .setHeader("Typ")
                 .setAutoWidth(true);
 
@@ -349,7 +333,7 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                 .setHeader("Zimmer")
                 .setAutoWidth(true);
 
-        mieteinheitenGrid.addColumn(mieteinheit -> formatStatus(mieteinheit.getStatus()))
+        mieteinheitenGrid.addColumn(mieteinheit -> mieteinheit.getStatus().getLabel())
                 .setHeader("Status")
                 .setAutoWidth(true);
 
@@ -360,32 +344,6 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         );
     }
 
-    private Object formatStatus(Mieteinheitstatus status) {
-        if (status == null) {
-            return "-";
-        }
-
-        return switch (status) {
-            case FREI -> "Frei";
-            case VERMIETET -> "Vermietet";
-            case IN_RENOVIERUNG -> "In Renovierung";
-        };
-    }
-
-    private Object formatTyp(MieteinheitTyp typ) {
-        if (typ == null) {
-            return "-";
-        }
-
-        return switch (typ) {
-            case WOHNUNG -> "Wohnung";
-            case BUERO -> "Büro";
-            case LAGERHALLE -> "Lagerhalle";
-            case GEWERBEFLAECHE -> "Gewerbefläche";
-            case GESAMTOBJEKT -> "Gesamtobjekt";
-        };
-    }
-
     private Component createBelegungCard() {
         Div card = new Div();
         card.addClassNames("card", "belegung-card");
@@ -394,7 +352,9 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         title.addClassName("card-title");
 
         long vermietet = mieteinheitService.zaehleVermieteteMieteinheiten(immobilieId);
-        long leerstand = mieteinheitService.zaehleFreieMieteinheiten(immobilieId);
+        long frei = mieteinheitService.zaehleFreieMieteinheiten(immobilie.getId());
+        long inRenovierung = mieteinheitService.zaehleMieteinheitenInRenovierung(immobilie.getId());
+        long leerstand = frei + inRenovierung;
         double leerstandsquote = mieteinheitService.berechneLeerstandsquote(immobilieId);
 
         String centerText = String.format("%.1f%%", leerstandsquote);

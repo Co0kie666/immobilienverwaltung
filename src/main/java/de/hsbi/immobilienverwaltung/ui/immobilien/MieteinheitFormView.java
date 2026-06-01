@@ -70,12 +70,12 @@ public class MieteinheitFormView extends Div implements HasPageHeader, BeforeEnt
 
         typSelect.setLabel("Typ");
         typSelect.setItems(MieteinheitTyp.values());
-        typSelect.setItemLabelGenerator(this::formatTyp);
+        typSelect.setItemLabelGenerator(MieteinheitTyp::getLabel);
 
         statusSelect.setLabel("Status");
         statusSelect.setItems(Mieteinheitstatus.values());
         statusSelect.setValue(Mieteinheitstatus.FREI);
-        statusSelect.setItemLabelGenerator(this::formatStatus);
+        statusSelect.setItemLabelGenerator(Mieteinheitstatus::getLabel);
 
         groesseField.setPlaceholder("z. B. 85");
         stockwerkField.setPlaceholder("z. B. EG, 1. OG");
@@ -137,24 +137,6 @@ public class MieteinheitFormView extends Div implements HasPageHeader, BeforeEnt
         } catch (Exception ex) {
             Notification.show("Fehler beim Speichern: " + ex.getMessage(), 4000, Notification.Position.MIDDLE);
         }
-    }
-
-    private String formatStatus(Mieteinheitstatus status) {
-        return switch (status) {
-            case FREI -> "Frei";
-            case VERMIETET -> "Vermietet";
-            case IN_RENOVIERUNG -> "In Renovierung";
-        };
-    }
-
-    private String formatTyp(MieteinheitTyp typ) {
-        return switch (typ) {
-            case WOHNUNG -> "Wohnung";
-            case BUERO -> "Büro";
-            case LAGERHALLE -> "Lagerhalle";
-            case GEWERBEFLAECHE -> "Gewerbefläche";
-            case GESAMTOBJEKT -> "Gesamtobjekt";
-        };
     }
 
     @Override
