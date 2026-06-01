@@ -15,7 +15,9 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.RouterLink;
-import de.hsbi.immobilienverwaltung.ui.auth.LoginView;
+import de.hsbi.immobilienverwaltung.domain.Nutzer;
+import de.hsbi.immobilienverwaltung.service.interfaces.AuthService;
+import de.hsbi.immobilienverwaltung.ui.auth.LogoutView;
 import de.hsbi.immobilienverwaltung.ui.dashboard.DashboardView;
 import de.hsbi.immobilienverwaltung.ui.finanzen.FinanzDashboardView;
 import de.hsbi.immobilienverwaltung.ui.immobilien.ImmobilienListView;
@@ -25,8 +27,10 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
     private final H1 pageTitle = new H1();
     private final Paragraph pageSubtitle = new Paragraph();
+    private final AuthService authService;
 
-    public MainLayout() {
+    public MainLayout(AuthService authService) {
+        this.authService = authService;
         addClassName("main-layout");
 
         setPrimarySection(Section.DRAWER); // Sidebar geht von oben bis unten
@@ -88,17 +92,15 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
         bottomNavigation.setPadding(false);
         bottomNavigation.setSpacing(false);
         bottomNavigation.setAlignItems(FlexComponent.Alignment.STRETCH);
+        RouterLink logoutLink = createNavLink("Logout", VaadinIcon.SIGN_OUT, LogoutView.class);
 
-        RouterLink logoutLink = createNavLink("Logout", VaadinIcon.SIGN_OUT, LoginView.class);
         logoutLink.addClassName("logout-link");
 
         bottomNavigation.add(logoutLink);
-
         sidebar.add(logoArea, menuLabel, navigation, spacer, bottomNavigation);
 
         return sidebar;
     }
-
     // Erstellt einen Navigationslink mit Icon Text
     private RouterLink createNavLink(String text, VaadinIcon icon, Class<? extends Component> target) {
         RouterLink link = new RouterLink();
@@ -157,20 +159,29 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
         userProfile.addClassName("user-profile");
         userProfile.setAlignItems(FlexComponent.Alignment.CENTER);
 
-        Avatar avatar = new Avatar("Admin User");
+        Nutzer currentUser = authService.getCurrentUser();
+
+        String fullName = "Unbekannter Nutzer";
+        String userEmail = "";
+
+        if (currentUser != null) {
+            fullName = currentUser.getVorname() + " " + currentUser.getNachname();
+            userEmail = currentUser.getEmail();
+        }
+
+        Avatar avatar = new Avatar(fullName);
         avatar.addClassName("user-avatar");
 
         Div userText = new Div();
         userText.addClassName("user-text");
 
-        Span name = new Span("Admin User");
+        Span name = new Span(fullName);
         name.addClassName("user-name");
 
-        Span email = new Span("admin@immopro.de");
+        Span email = new Span(userEmail);
         email.addClassName("user-email");
 
         userText.add(name, email);
-
         userProfile.add(avatar, userText);
 
         return userProfile;

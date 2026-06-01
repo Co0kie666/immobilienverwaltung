@@ -12,6 +12,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
+import de.hsbi.immobilienverwaltung.security.LoginRequired;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import com.vaadin.flow.data.value.ValueChangeMode;
@@ -20,7 +21,7 @@ import java.text.NumberFormat;
 import java.util.Locale;
 
 @Route(value = "mietvertrag-anlegen", layout = MainLayout.class)
-public class MietvertragFormView extends Div implements HasPageHeader {
+public class MietvertragFormView extends Div implements HasPageHeader, LoginRequired {
 
     public MietvertragFormView() {
         addClassName("page-content");

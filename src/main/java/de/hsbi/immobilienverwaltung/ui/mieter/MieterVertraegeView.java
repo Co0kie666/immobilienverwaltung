@@ -11,6 +11,7 @@ import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
+import de.hsbi.immobilienverwaltung.security.LoginRequired;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import com.vaadin.flow.component.grid.Grid;
@@ -22,7 +23,7 @@ import com.vaadin.flow.router.AfterNavigationObserver;
 
 
 @Route(value = "mieter-vertraege", layout = MainLayout.class)
-public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavigationObserver {
+public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavigationObserver, LoginRequired {
 
     // Speichert, welcher Bereich gerade ausgewählt ist
     private TabellenModus aktiverModus = TabellenModus.MIETER;

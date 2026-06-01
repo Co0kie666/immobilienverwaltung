@@ -12,10 +12,10 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
+import de.hsbi.immobilienverwaltung.security.LoginRequired;
 import de.hsbi.immobilienverwaltung.ui.components.ConfirmDeleteDialog;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
@@ -27,15 +27,20 @@ import de.hsbi.immobilienverwaltung.domain.Adresse;
 import de.hsbi.immobilienverwaltung.domain.Immobilie;
 import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
 import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
+import com.vaadin.flow.data.value.ValueChangeMode;
+import java.util.ArrayList;
+import java.util.List;
 
 @Route(value = "immobilien/:immobilieId", layout = MainLayout.class)
-public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnterObserver {
+public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnterObserver, LoginRequired {
 
     private Long immobilieId;
     private final MieteinheitService mieteinheitService;
     private final Grid<Mieteinheit> mieteinheitenGrid = new Grid<>(Mieteinheit.class, false);
     private Immobilie immobilie;
     private final ImmobilieService immobilieService;
+
+    private final TextField mieteinheitenSearchField = new TextField();
 
     public ImmobilieDetailView(MieteinheitService mieteinheitService, ImmobilieService immobilieService) {
         this.mieteinheitService = mieteinheitService;
@@ -44,6 +49,7 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         addClassName("page-content");
         addClassName("immobilie-detail-view");
 
+        konfiguriereMieteinheitenSuchfeld();
     }
 
     @Override
@@ -73,10 +79,20 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                 .orElseThrow(() -> new IllegalArgumentException("Immobilie wurde nicht gefunden."));
     }
 
-    private void ladeMieteinheiten() {
-        mieteinheitenGrid.setItems(
-                mieteinheitService.findeMieteinheitenNachImmobilie(immobilieId)
+    private void wendeMieteinheitenSucheAn() {
+        if (immobilieId == null) {
+            return;
+        }
+
+        mieteinheitenGrid.setItems(mieteinheitService.sucheMieteinheitenDerImmobilie(
+                        immobilieId,
+                        mieteinheitenSearchField.getValue()
+                )
         );
+    }
+
+    private void ladeMieteinheiten() {
+        wendeMieteinheitenSucheAn();
     }
 
     // ImmobilienCard und BelegungsCard nebeneinander
@@ -191,13 +207,29 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                 getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilieId + "/bearbeiten"))
         );
 
+        Button deleteButton = new Button("Löschen", VaadinIcon.TRASH.create());
+        deleteButton.addClassName("danger-button");
+        deleteButton.addClickListener(event -> {
+            ConfirmDeleteDialog dialog = new ConfirmDeleteDialog(
+                    "Immobilie löschen?",
+                    "Möchtest du die Immobilie \"" + immobilie.getBezeichnung() + "\" wirklich löschen?",
+                    () -> {
+                        immobilieService.loescheImmobilie(immobilieId);
+                        Notification.show("Immobilie wurde gelöscht: " + immobilie.getBezeichnung());
+                        getUI().ifPresent(ui -> ui.navigate(ImmobilienListView.class));
+                    }
+            );
+
+            dialog.open();
+        });
+
         Button addUnitButton = new Button("Einheit hinzufügen", VaadinIcon.PLUS.create());
         addUnitButton.addClassName("primary-button");
         addUnitButton.addClickListener(event ->
                 getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilieId + "/einheiten/neu"))
         );
 
-        actionRow.add(backButton, editButton, addUnitButton);
+        actionRow.add(backButton, editButton, deleteButton, addUnitButton);
 
         return actionRow;
     }
@@ -206,16 +238,41 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         Div kpiGrid = new Div();
         kpiGrid.addClassName("detail-kpi-grid");
 
+        long einheitenGesamt = mieteinheitService.zaehleMieteinheiten(immobilieId);
+        long leerstand = mieteinheitService.zaehleFreieMieteinheiten(immobilieId);
+        long vermietet = mieteinheitService.zaehleVermieteteMieteinheiten(immobilieId);
+        long inRenovierung = mieteinheitService.zaehleMieteinheitenInRenovierung(immobilieId);
+
+        double leerstandsquote = mieteinheitService.berechneLeerstandsquote(immobilieId);
+
         kpiGrid.add(
-                createKpiCard("Einheiten Gesamt", "24", "18 Wohnungen, 6 Gewerbe", "primary"),
-                createKpiCard("Leerstand", "2", "8.3% Leerstandsquote", "warning"),
-                createKpiCard("Offene Zahlungen", "€ 1.250", "2 Mieter im Verzug", "danger")
+                createKpiCard(
+                        "Einheiten Gesamt",
+                        String.valueOf(einheitenGesamt),
+                        vermietet + " vermietet, " + inRenovierung + " in Renovierung",
+                        "primary",
+                        VaadinIcon.BUILDING
+                ),
+                createKpiCard(
+                        "Leerstand",
+                        String.valueOf(leerstand),
+                        String.format("%.1f%% Leerstandsquote", leerstandsquote),
+                        "warning",
+                        VaadinIcon.HOME
+                ),
+                createKpiCard(
+                        "Offene Zahlungen",
+                        "-",
+                        "Julian mach schneller",
+                        "danger",
+                        VaadinIcon.WARNING
+                )
         );
 
         return kpiGrid;
     }
 
-    private Component createKpiCard(String title, String value, String subtitle, String type) {
+    private Component createKpiCard(String title, String value, String subtitle, String type, VaadinIcon icon) {
         Div card = new Div();
         card.addClassNames("card", "detail-kpi-card");
 
@@ -230,11 +287,21 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
 
         Div iconBox = new Div();
         iconBox.addClassNames("kpi-icon-box", type);
-        iconBox.add(VaadinIcon.BUILDING.create());
+        iconBox.add(icon.create());
 
         card.add(titleText, valueText, subtitleText, iconBox);
 
         return card;
+    }
+
+    private void konfiguriereMieteinheitenSuchfeld() {
+        mieteinheitenSearchField.addClassName("detail-table-search");
+        mieteinheitenSearchField.setPlaceholder("Suchen...");
+        mieteinheitenSearchField.setPrefixComponent(VaadinIcon.SEARCH.create());
+        mieteinheitenSearchField.setClearButtonVisible(true);
+        mieteinheitenSearchField.setValueChangeMode(ValueChangeMode.LAZY);
+
+        mieteinheitenSearchField.addValueChangeListener(event -> wendeMieteinheitenSucheAn());
     }
 
     private Component createMieteinheitenCard() {
@@ -247,13 +314,7 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         H3 title = new H3("Mieteinheiten");
         title.addClassName("card-title");
 
-        TextField searchField = new TextField();
-        searchField.addClassName("detail-table-search");
-        searchField.setPlaceholder("Suchen...");
-        searchField.setPrefixComponent(VaadinIcon.SEARCH.create());
-        searchField.setClearButtonVisible(true);
-
-        header.add(title, searchField);
+        header.add(title, mieteinheitenSearchField);
 
         configureMieteinheitenGrid();
 
@@ -292,9 +353,11 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                 .setHeader("Status")
                 .setAutoWidth(true);
 
-        mieteinheitenGrid.addColumn(new ComponentRenderer<>(this::createMieteinheitenActionButtons))
-                .setHeader("Aktionen")
-                .setAutoWidth(true);
+        mieteinheitenGrid.addItemClickListener(event ->
+                getUI().ifPresent(ui -> ui.navigate(
+                        "immobilien/" + immobilieId + "/einheiten/" + event.getItem().getId() + "/details"
+                ))
+        );
     }
 
     private Object formatStatus(Mieteinheitstatus status) {
@@ -327,10 +390,15 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         Div card = new Div();
         card.addClassNames("card", "belegung-card");
 
-        H3 title = new H3("Belegungsstatus");
+        H3 title = new H3("Leerstandsquote");
         title.addClassName("card-title");
 
-        // Canvas für Chart.js
+        long vermietet = mieteinheitService.zaehleVermieteteMieteinheiten(immobilieId);
+        long leerstand = mieteinheitService.zaehleFreieMieteinheiten(immobilieId);
+        double leerstandsquote = mieteinheitService.berechneLeerstandsquote(immobilieId);
+
+        String centerText = String.format("%.1f%%", leerstandsquote);
+
         Html canvas = new Html("""
         <div style="width:100%; max-width:280px; margin:auto;">
             <canvas id="belegungChart"></canvas>
@@ -340,10 +408,13 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         card.add(title, canvas);
 
         card.getElement().executeJs("""
+        const vermietet = Number($0);
+        const leerstand = Number($1);
+        const centerText = $2;
+
         function renderBelegungChart() {
             const ctx = document.getElementById('belegungChart');
 
-            // Vorherigen Chart zerstören falls vorhanden
             if (window.belegungChartInstance) {
                 window.belegungChartInstance.destroy();
             }
@@ -353,7 +424,7 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                 data: {
                     labels: ['Vermietet', 'Leerstand'],
                     datasets: [{
-                        data: [22, 2],
+                        data: [vermietet, leerstand],
                         borderWidth: 0
                     }]
                 },
@@ -368,10 +439,15 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                             callbacks: {
                                 label: function(context) {
                                     const total = context.dataset.data.reduce((a, b) => a + b, 0);
+    
+                                    if (total === 0) {
+                                        return context.label + ': 0%';
+                                    }
+
                                     const value = context.raw;
                                     const percent = ((value / total) * 100).toFixed(1);
 
-                                    return context.label + ': ' + percent + '%';
+                                    return context.label + ': ' + value + ' Einheit(en), ' + percent + '%';
                                 }
                             }
                         }
@@ -387,11 +463,15 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                         ctx.font = `bold ${fontSize}em sans-serif`;
                         ctx.textBaseline = 'middle';
 
-                        const text = '91.6%';
-                        const textX = Math.round((width - ctx.measureText(text).width) / 2);
-                        const textY = height / 2;
-
-                        ctx.fillText(text, textX, textY);
+                        const text = centerText;
+   
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+    
+                        const centerX = (chart.chartArea.left + chart.chartArea.right) / 2;
+                        const centerY = (chart.chartArea.top + chart.chartArea.bottom) / 2;
+    
+                        ctx.fillText(text, centerX, centerY);
                         ctx.save();
                     }
                 }]
@@ -401,64 +481,14 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         if (!window.Chart) {
             const script = document.createElement('script');
             script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-
             script.onload = () => renderBelegungChart();
-
             document.head.appendChild(script);
         } else {
             renderBelegungChart();
         }
-    """);
+    """, vermietet, leerstand, centerText);
 
         return card;
-    }
-
-    private Component createMieteinheitenActionButtons(Mieteinheit mieteinheit) {
-        HorizontalLayout actions = new HorizontalLayout();
-        actions.addClassName("table-actions");
-        actions.setSpacing(false);
-        actions.setPadding(false);
-
-        Button anzeigenButton = new Button(VaadinIcon.EYE.create());
-        anzeigenButton.addClassNames("table-action-button", "view-action");
-
-        Button bearbeitenButton = new Button(VaadinIcon.EDIT.create());
-        bearbeitenButton.addClassNames("table-action-button", "edit-action");
-
-        Button loeschenButton = new Button(VaadinIcon.TRASH.create());
-        loeschenButton.addClassNames("table-action-button", "delete-action");
-
-        anzeigenButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate(
-                        "immobilien/" + immobilieId + "/einheiten/" + mieteinheit.getId() + "/details"
-                ))
-        );
-
-        bearbeitenButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate(
-                        "immobilien/" + immobilieId + "/einheiten/" + mieteinheit.getId() + "/bearbeiten"
-                ))
-        );
-
-        loeschenButton.addClickListener(event -> {
-            ConfirmDeleteDialog dialog = new ConfirmDeleteDialog(
-                    "Mieteinheit löschen?",
-                    "Möchtest du die Mieteinheit \"" + mieteinheit.getBezeichnung() + "\" wirklich löschen?",
-                    () -> {
-                        Notification.show("Mieteinheit würde gelöscht werden: " + mieteinheit.getBezeichnung());
-
-                        // später:
-                        // mieteinheitService.loescheMieteinheit(mieteinheit.id());
-                        // reloadMieteinheitenGrid();
-                    }
-            );
-
-            dialog.open();
-        });
-
-        actions.add(anzeigenButton, bearbeitenButton, loeschenButton);
-
-        return actions;
     }
 
 }
