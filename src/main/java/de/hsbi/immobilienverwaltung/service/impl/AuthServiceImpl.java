@@ -1,54 +1,34 @@
 package de.hsbi.immobilienverwaltung.service.impl;
 
-import com.vaadin.flow.server.VaadinSession;
 import de.hsbi.immobilienverwaltung.domain.Nutzer;
 import de.hsbi.immobilienverwaltung.repository.NutzerRepository;
 import de.hsbi.immobilienverwaltung.service.interfaces.AuthService;
-import jakarta.validation.constraints.Pattern;
-import org.mindrot.jbcrypt.BCrypt;
-import org.springframework.stereotype.Service;
-
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.Set;
 
 @Service
 public class AuthServiceImpl implements AuthService {
 
     private final NutzerRepository nutzerRepository;
+    private final PasswordEncoder passwordEncoder;
     private final Validator validator;
 
     public AuthServiceImpl(NutzerRepository nutzerRepository,
+                           PasswordEncoder passwordEncoder,
                            Validator validator) {
         this.nutzerRepository = nutzerRepository;
+        this.passwordEncoder = passwordEncoder;
         this.validator = validator;
     }
-
-    private void validateEmail(String email) {
-        EmailCheck emailCheck = new EmailCheck(email);
-
-        Set<ConstraintViolation<EmailCheck>> violations =
-                validator.validate(emailCheck);
-
-        if (!violations.isEmpty()) {
-            throw new IllegalArgumentException(
-                    violations.iterator().next().getMessage()
-            );
-        }
-    }
-
-    private record EmailCheck(
-            @NotBlank(message = "E-Mail darf nicht leer sein.")
-            @Email(message = "Bitte gib eine gültige E-Mail-Adresse ein.")
-            @Pattern(
-                    regexp = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
-                    message = "Bitte gib eine gültige E-Mail-Adresse ein."
-            )
-            String email
-    ) {}
 
     @Override
     public Nutzer registrieren(String vorname,
@@ -81,55 +61,51 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Diese E-Mail ist bereits registriert.");
         }
 
-        String hashedPassword = BCrypt.hashpw(passwort, BCrypt.gensalt());
-
         Nutzer nutzer = new Nutzer();
         nutzer.setVorname(vorname.trim());
         nutzer.setNachname(nachname.trim());
         nutzer.setEmail(normalizedEmail);
-        nutzer.setPasswort(hashedPassword);
+        nutzer.setPasswort(passwordEncoder.encode(passwort));
+        nutzer.setRolle("USER");
 
         return nutzerRepository.save(nutzer);
     }
 
     @Override
-    public Nutzer anmelden(String email, String passwort) {
+    public Optional<Nutzer> getCurrentUser() {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
 
-        validateEmail(email);
-
-        if (passwort == null || passwort.isBlank()) {
-            throw new IllegalArgumentException("Passwort darf nicht leer sein.");
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return Optional.empty();
         }
 
-        String normalizedEmail = email.trim().toLowerCase();
+        String email = authentication.getName();
 
-        Nutzer nutzer = nutzerRepository.findByEmail(normalizedEmail)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("E-Mail oder Passwort ist falsch.")
-                );
-
-        if (!BCrypt.checkpw(passwort, nutzer.getPasswort())) {
-            throw new IllegalArgumentException("E-Mail oder Passwort ist falsch.");
+        if (email == null || email.equals("anonymousUser")) {
+            return Optional.empty();
         }
 
-        VaadinSession.getCurrent().setAttribute(Nutzer.class, nutzer);
-
-        return nutzer;
+        return nutzerRepository.findByEmail(email);
     }
 
-    @Override
-    public void logout() {
-        VaadinSession.getCurrent().setAttribute(Nutzer.class, null);
-        VaadinSession.getCurrent().close();
+    private void validateEmail(String email) {
+        EmailCheck emailCheck = new EmailCheck(email);
+
+        Set<ConstraintViolation<EmailCheck>> violations =
+                validator.validate(emailCheck);
+
+        if (!violations.isEmpty()) {
+            throw new IllegalArgumentException(
+                    violations.iterator().next().getMessage()
+            );
+        }
     }
 
-    @Override
-    public boolean isLoggedIn() {
-        return getCurrentUser() != null;
-    }
-
-    @Override
-    public Nutzer getCurrentUser() {
-        return VaadinSession.getCurrent().getAttribute(Nutzer.class);
+    private record EmailCheck(
+            @NotBlank(message = "E-Mail darf nicht leer sein.")
+            @Email(message = "Bitte gib eine gültige E-Mail-Adresse ein.")
+            String email
+    ) {
     }
 }

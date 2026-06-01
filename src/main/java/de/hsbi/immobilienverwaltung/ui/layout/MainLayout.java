@@ -22,7 +22,9 @@ import de.hsbi.immobilienverwaltung.ui.dashboard.DashboardView;
 import de.hsbi.immobilienverwaltung.ui.finanzen.FinanzDashboardView;
 import de.hsbi.immobilienverwaltung.ui.immobilien.ImmobilienListView;
 import de.hsbi.immobilienverwaltung.ui.mieter.MieterVertraegeView;
+import jakarta.annotation.security.PermitAll;
 
+@PermitAll
 public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
     private final H1 pageTitle = new H1();
@@ -159,7 +161,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
         userProfile.addClassName("user-profile");
         userProfile.setAlignItems(FlexComponent.Alignment.CENTER);
 
-        Nutzer currentUser = authService.getCurrentUser();
+        Nutzer currentUser = authService.getCurrentUser().orElse(null);
 
         String fullName = "Unbekannter Nutzer";
         String userEmail = "";

@@ -10,14 +10,15 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.router.Route;
+import jakarta.annotation.security.PermitAll;
 
 import de.hsbi.immobilienverwaltung.service.interfaces.GesamtAuswertungService;
-import de.hsbi.immobilienverwaltung.security.LoginRequired;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 
 @Route(value = "dashboard", layout = MainLayout.class)
-public class DashboardView extends Div implements HasPageHeader, LoginRequired {
+@PermitAll
+public class DashboardView extends Div implements HasPageHeader {
 
     private final double leerstandsquote;
     private final long gesamtMieteinheiten;

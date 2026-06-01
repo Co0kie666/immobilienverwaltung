@@ -17,14 +17,15 @@ import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
 import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
 import de.hsbi.immobilienverwaltung.domain.enums.MieteinheitTyp;
 import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
-import de.hsbi.immobilienverwaltung.security.LoginRequired;
 import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
 import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
+import jakarta.annotation.security.PermitAll;
 
 @Route(value = "immobilien/neu", layout = MainLayout.class)
-public class ImmobilieFormView extends Div implements HasPageHeader, LoginRequired {
+@PermitAll
+public class ImmobilieFormView extends Div implements HasPageHeader {
 
     private final TextField bezeichnungField = new TextField("Bezeichnung");
     private final Select<Immobilientyp> typSelect = new Select<>();

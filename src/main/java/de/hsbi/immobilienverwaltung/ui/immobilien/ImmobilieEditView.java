@@ -16,13 +16,14 @@ import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.domain.Adresse;
 import de.hsbi.immobilienverwaltung.domain.Immobilie;
 import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
-import de.hsbi.immobilienverwaltung.security.LoginRequired;
 import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
+import jakarta.annotation.security.PermitAll;
 
 @Route(value = "immobilien/:immobilieId/bearbeiten", layout = MainLayout.class)
-public class ImmobilieEditView extends Div implements HasPageHeader, BeforeEnterObserver, LoginRequired {
+@PermitAll
+public class ImmobilieEditView extends Div implements HasPageHeader, BeforeEnterObserver {
 
     private final ImmobilieService immobilieService;
     private Immobilie immobilie;

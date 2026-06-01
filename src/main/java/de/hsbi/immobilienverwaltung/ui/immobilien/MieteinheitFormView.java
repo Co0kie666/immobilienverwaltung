@@ -12,7 +12,6 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
-import de.hsbi.immobilienverwaltung.security.LoginRequired;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 
@@ -20,9 +19,11 @@ import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
 import de.hsbi.immobilienverwaltung.domain.enums.MieteinheitTyp;
 import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
 import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
+import jakarta.annotation.security.PermitAll;
 
 @Route(value = "immobilien/:immobilieId/einheiten/neu", layout = MainLayout.class)
-public class MieteinheitFormView extends Div implements HasPageHeader, BeforeEnterObserver, LoginRequired {
+@PermitAll
+public class MieteinheitFormView extends Div implements HasPageHeader, BeforeEnterObserver {
 
     private Long immobilieId;
     private final MieteinheitService mieteinheitService;

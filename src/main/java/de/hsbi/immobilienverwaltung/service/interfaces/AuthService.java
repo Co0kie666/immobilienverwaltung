@@ -2,6 +2,8 @@ package de.hsbi.immobilienverwaltung.service.interfaces;
 
 import de.hsbi.immobilienverwaltung.domain.Nutzer;
 
+import java.util.Optional;
+
 public interface AuthService {
 
     Nutzer registrieren(
@@ -12,12 +14,5 @@ public interface AuthService {
             String passwortWiederholen
     );
 
-    Nutzer anmelden(
-            String email,
-            String passwort
-    );
-
-    void logout();
-    boolean isLoggedIn();
-    Nutzer getCurrentUser();
+    Optional<Nutzer> getCurrentUser();
 }

@@ -4,21 +4,21 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
-import de.hsbi.immobilienverwaltung.service.interfaces.AuthService;
-import de.hsbi.immobilienverwaltung.ui.auth.LoginView;
+import com.vaadin.flow.spring.security.AuthenticationContext;
+import jakarta.annotation.security.PermitAll;
 
 @Route("logout")
+@PermitAll
 public class LogoutView extends Div implements BeforeEnterObserver {
 
-    private final AuthService authService;
+    private final transient AuthenticationContext authenticationContext;
 
-    public LogoutView(AuthService authService) {
-        this.authService = authService;
+    public LogoutView(AuthenticationContext authenticationContext) {
+        this.authenticationContext = authenticationContext;
     }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
-        authService.logout();
-        event.forwardTo(LoginView.class);
+        authenticationContext.logout();
     }
 }

@@ -13,14 +13,15 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
-import de.hsbi.immobilienverwaltung.security.LoginRequired;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
+import jakarta.annotation.security.PermitAll;
 
 import java.util.List;
 
 @Route(value = "mieter-anlegen", layout = MainLayout.class)
-public class MieterFormView extends Div implements HasPageHeader, LoginRequired {
+@PermitAll
+public class MieterFormView extends Div implements HasPageHeader {
 
     public MieterFormView() {
         addClassName("page-content");
