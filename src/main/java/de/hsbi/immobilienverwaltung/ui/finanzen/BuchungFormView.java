@@ -18,12 +18,23 @@ import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.textfield.BigDecimalField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.Route;
+import de.hsbi.immobilienverwaltung.domain.Ausgabe;
+import de.hsbi.immobilienverwaltung.domain.Immobilie;
+import de.hsbi.immobilienverwaltung.domain.enums.Ausgabenkategorie;
 import de.hsbi.immobilienverwaltung.security.LoginRequired;
+import de.hsbi.immobilienverwaltung.service.interfaces.AusgabeService;
+import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
+import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
+import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
 
 @Route(value = "finanzen/buchung-neu", layout = MainLayout.class)
 public class BuchungFormView extends VerticalLayout implements HasPageHeader, LoginRequired {
+
+    private final AusgabeService ausgabeService;
+    private final ImmobilieService immobilieService;
+    private final MieteinheitService mieteinheitService;
 
     private RadioButtonGroup<String> buchungstypGroup;
     private RadioButtonGroup<String> statusGroup;
@@ -32,15 +43,20 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader, Lo
     private DatePicker buchungsdatumField;
     private DatePicker faelligkeitsdatumField;
 
-
     private ComboBox<String> kategorieField;
     private TextArea beschreibungField;
 
-    private ComboBox<String> immobilieField;
-    private ComboBox<String> mieteinheitField;
+    private ComboBox<Immobilie> immobilieField;
+    private ComboBox<Mieteinheit> mieteinheitField;
     private ComboBox<String> mieterVertragField;
 
-    public BuchungFormView() {
+    public BuchungFormView(AusgabeService ausgabeService,
+                           ImmobilieService immobilieService,
+                           MieteinheitService mieteinheitService) {
+        this.ausgabeService = ausgabeService;
+        this.immobilieService = immobilieService;
+        this.mieteinheitService = mieteinheitService;
+
         addClassName("buchung-form-view");
         setSizeFull();
         setPadding(false);
@@ -86,6 +102,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader, Lo
                 "Verwaltungskosten"
         );
         kategorieField.setValue("Sonstige Einnahmen");
+        kategorieField.setAllowCustomValue(false);
         kategorieField.setWidthFull();
         kategorieField.setRequiredIndicatorVisible(true);
 
@@ -95,24 +112,27 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader, Lo
         beschreibungField.setHeight("120px");
 
         immobilieField = new ComboBox<>("Immobilie");
-        immobilieField.setItems(
-                "Keine Zuordnung (Global)",
-                "Wohnhaus Bielefeld",
-                "Apartment Münster",
-                "Gewerbeeinheit Dortmund"
-        );
-        immobilieField.setValue("Keine Zuordnung (Global)");
+        immobilieField.setItems(immobilieService.findeAlleImmobilien());
+        immobilieField.setItemLabelGenerator(Immobilie::getBezeichnung);
+        immobilieField.setAllowCustomValue(false);
         immobilieField.setWidthFull();
+        immobilieField.setRequiredIndicatorVisible(false);
 
         mieteinheitField = new ComboBox<>("Mieteinheit");
-        mieteinheitField.setItems(
-                "Bitte zuerst Immobilie wählen",
-                "Wohnung 1A",
-                "Wohnung 2B",
-                "Garage 3"
-        );
-        mieteinheitField.setValue("Bitte zuerst Immobilie wählen");
+        mieteinheitField.setItemLabelGenerator(Mieteinheit::getBezeichnung);
+        mieteinheitField.setAllowCustomValue(false);
         mieteinheitField.setWidthFull();
+        immobilieField.addValueChangeListener(event -> {
+            Immobilie selectedImmobilie = event.getValue();
+
+            mieteinheitField.clear();
+
+            if (selectedImmobilie != null) {
+                mieteinheitField.setItems(
+                        mieteinheitService.findeMieteinheitenNachImmobilie(selectedImmobilie.getId())
+                );
+            }
+        });
 
         mieterVertragField = new ComboBox<>("Mieter / Vertrag (optional)");
         mieterVertragField.setItems(
@@ -122,6 +142,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader, Lo
                 "Vertrag #2024-001"
         );
         mieterVertragField.setValue("Kein Mieter zugeordnet");
+        mieterVertragField.setAllowCustomValue(false);
         mieterVertragField.setWidthFull();
     }
 
@@ -163,7 +184,6 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader, Lo
 
         return content;
     }
-
     private Component createBuchungstypSection() {
         Div card = createCard("Buchungstyp");
 
@@ -191,12 +211,17 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader, Lo
             buchungstypGroup.setValue("Einnahme");
             incomeCard.addClassName("selected");
             expenseCard.removeClassName("selected");
+
+            mieterVertragField.setEnabled(true);
         });
 
         expenseCard.addClickListener(event -> {
             buchungstypGroup.setValue("Ausgabe");
             expenseCard.addClassName("selected");
             incomeCard.removeClassName("selected");
+
+            mieterVertragField.clear();
+            mieterVertragField.setEnabled(false);
         });
 
         options.add(incomeCard, expenseCard);
@@ -337,8 +362,28 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader, Lo
         saveButton.setWidthFull();
 
         saveButton.addClickListener(event -> {
-            Notification.show("Buchung gespeichert");
-            UI.getCurrent().navigate(BuchungListView.class);
+            try {
+                if ("Ausgabe".equals(buchungstypGroup.getValue())) {
+                    Ausgabe ausgabe = new Ausgabe();
+
+                    ausgabe.setKategorie(Ausgabenkategorie.SONSTIGES);
+                    ausgabe.setBetrag(betragField.getValue());
+                    ausgabe.setDatum(buchungsdatumField.getValue());
+                    ausgabe.setFaelligkeitsdatum(faelligkeitsdatumField.getValue());
+                    ausgabe.setBeschreibung(beschreibungField.getValue());
+                    ausgabe.setImmobilie(immobilieField.getValue());
+                    ausgabe.setImmobilie(immobilieField.getValue());
+
+                    ausgabeService.speichereAusgabe(ausgabe);
+
+                    Notification.show("Ausgabe gespeichert");
+                    UI.getCurrent().navigate(BuchungListView.class);
+                } else {
+                    Notification.show("Zahlungseingang ist noch nicht verbunden.");
+                }
+            } catch (IllegalArgumentException e) {
+                Notification.show(e.getMessage());
+            }
         });
 
         Button cancelButton = new Button("Abbrechen");
