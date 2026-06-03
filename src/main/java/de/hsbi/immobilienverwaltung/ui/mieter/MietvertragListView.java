@@ -2,78 +2,87 @@ package de.hsbi.immobilienverwaltung.ui.mieter;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.select.Select;
-import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.Route;
+import de.hsbi.immobilienverwaltung.domain.Mietvertrag;
+import de.hsbi.immobilienverwaltung.domain.enums.Vertragsstatus;
+import de.hsbi.immobilienverwaltung.service.interfaces.MietvertragService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
-import com.vaadin.flow.component.formlayout.FormLayout;
 import jakarta.annotation.security.PermitAll;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.text.NumberFormat;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 @Route(value = "mietvertrag-details", layout = MainLayout.class)
 @PermitAll
 public class MietvertragListView extends Div implements HasPageHeader, HasUrlParameter<String> {
 
-    private final List<TextField> editierbareFelder = new ArrayList<>();
-    private final List<Select<String>> editierbareSelects = new ArrayList<>();
+    private final MietvertragService mietvertragService;
 
-    private Button speichernButton;
-    private Button kuendigenButton;
-    private MieterDummyDaten.MietvertragRow aktuellerMietvertrag;
+    private Mietvertrag aktuellerMietvertrag;
+    private boolean bearbeitenAktiv = false;
 
-    public MietvertragListView() {
+    private final DatePicker startdatumField = new DatePicker("Vertragsbeginn");
+    private final DatePicker enddatumField = new DatePicker("Vertragsende");
+    private final DatePicker kuendigungsfristField = new DatePicker("Kündigungsfrist bis");
+
+    private final NumberField kaltmieteField = new NumberField("Kaltmiete");
+    private final NumberField nebenkostenField = new NumberField("Nebenkosten");
+    private final NumberField kautionField = new NumberField("Kaution");
+
+    public MietvertragListView(MietvertragService mietvertragService) {
+        this.mietvertragService = mietvertragService;
         addClassName("page-content");
     }
 
-    // Holt die Mietvertrag-ID aus der URL
     @Override
     public void setParameter(BeforeEvent event, String mietvertragId) {
-        removeAll();
+        try {
+            Long id = Long.valueOf(mietvertragId);
 
-        editierbareFelder.clear();
-        editierbareSelects.clear();
-        speichernButton = null;
-        kuendigenButton = null;
-        aktuellerMietvertrag = null;
+            aktuellerMietvertrag = mietvertragService.findeMietvertragNachId(id)
+                    .orElse(null);
 
-        Optional<MieterDummyDaten.MietvertragRow> optionalMietvertrag =
-                MieterDummyDaten.findMietvertragById(mietvertragId);
+            if (aktuellerMietvertrag == null) {
+                removeAll();
+                add(createNotFoundCard());
+                return;
+            }
 
-        if (optionalMietvertrag.isEmpty()) {
+            bearbeitenAktiv = false;
+            renderView();
+
+        } catch (NumberFormatException ex) {
+            removeAll();
             add(createNotFoundCard());
-            return;
         }
-
-        MieterDummyDaten.MietvertragRow mietvertrag = optionalMietvertrag.get();
-        aktuellerMietvertrag = mietvertrag;
-
-        add(
-                createMietvertragHeader(mietvertrag),
-                createContentLayout(mietvertrag)
-        );
-
-        setBearbeitenModus(false);
     }
 
-    // Oberer Bereich mit Titel, Status und Aktionen
-    private Component createMietvertragHeader(MieterDummyDaten.MietvertragRow mietvertrag) {
+    private void renderView() {
+        removeAll();
+
+        add(
+                createMietvertragHeader(),
+                createContentLayout()
+        );
+    }
+
+    private Component createMietvertragHeader() {
         Div headerCard = new Div();
         headerCard.addClassName("card");
         headerCard.addClassName("page-section");
-
-        boolean istGekuendigt = "Gekündigt".equals(mietvertrag.status());
 
         HorizontalLayout header = new HorizontalLayout();
         header.setWidthFull();
@@ -82,8 +91,6 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
 
         Button backButton = new Button(VaadinIcon.ARROW_LEFT.create());
         backButton.addClassName("icon-button");
-
-        // Navigiert auf zurück zum Tab Verträge
         backButton.addClickListener(event ->
                 getUI().ifPresent(ui -> ui.navigate("mieter-vertraege?tab=vertraege"))
         );
@@ -96,15 +103,15 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         titleRow.setAlignItems(FlexComponent.Alignment.CENTER);
         titleRow.setSpacing(true);
 
-        Span title = new Span("Mietvertrag " + mietvertrag.id());
+        Span title = new Span("Mietvertrag MV-" + aktuellerMietvertrag.getId());
         title.addClassName("card-title");
 
-        Span statusBadge = new Span(mietvertrag.status());
-        statusBadge.addClassNames("status-badge", mietvertrag.statusStyle());
+        Span statusBadge = new Span(formatStatus());
+        statusBadge.addClassNames("status-badge", getStatusStyle());
 
         titleRow.add(title, statusBadge);
 
-        Span subtitle = new Span(mietvertrag.mieter() + " • " + mietvertrag.mietobjektName());
+        Span subtitle = new Span(formatMieter() + " • " + formatImmobilie() + " / " + formatMieteinheitKurz());
         subtitle.addClassName("card-subtitle");
 
         titleArea.add(titleRow, subtitle);
@@ -114,59 +121,44 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         leftArea.setSpacing(true);
         leftArea.add(backButton, titleArea);
 
-        header.add(leftArea);
+        HorizontalLayout rightArea = new HorizontalLayout();
+        rightArea.setAlignItems(FlexComponent.Alignment.CENTER);
+        rightArea.setSpacing(true);
 
-        // Gekündigte Verträge sind nur noch reine Ansicht
-        if (!istGekuendigt) {
-            Button ansichtButton = new Button("Ansicht");
-            ansichtButton.addClassName("primary-button");
+        Button ansichtButton = new Button("Ansicht");
+        ansichtButton.addClassName(bearbeitenAktiv ? "secondary-button" : "primary-button");
+        ansichtButton.addClickListener(event -> {
+            bearbeitenAktiv = false;
+            renderView();
+        });
 
-            Button bearbeitenButton = new Button("Bearbeiten");
-            bearbeitenButton.addClassName("secondary-button");
+        Button bearbeitenButton = new Button("Bearbeiten");
+        bearbeitenButton.addClassName(bearbeitenAktiv ? "primary-button" : "secondary-button");
+        bearbeitenButton.setEnabled(aktuellerMietvertrag.getStatus() != Vertragsstatus.BEENDET);
+        bearbeitenButton.addClickListener(event -> {
+            bearbeitenAktiv = true;
+            renderView();
+        });
 
-            ansichtButton.addClickListener(event -> {
-                setBearbeitenModus(false);
+        Button kuendigenButton = new Button("Kündigen", VaadinIcon.TRASH.create());
+        kuendigenButton.addClassName("danger-button");
+        kuendigenButton.setEnabled(bearbeitenAktiv && aktuellerMietvertrag.getStatus() == Vertragsstatus.AKTIV);
+        kuendigenButton.addClickListener(event -> kuendigeMietvertrag());
 
-                ansichtButton.removeClassName("secondary-button");
-                ansichtButton.addClassName("primary-button");
+        Button speichernButton = new Button("Speichern", VaadinIcon.CHECK.create());
+        speichernButton.addClassName("primary-button");
+        speichernButton.setEnabled(bearbeitenAktiv);
+        speichernButton.addClickListener(event -> speichereAenderungen());
 
-                bearbeitenButton.removeClassName("primary-button");
-                bearbeitenButton.addClassName("secondary-button");
-            });
+        rightArea.add(ansichtButton, bearbeitenButton, kuendigenButton, speichernButton);
 
-            bearbeitenButton.addClickListener(event -> {
-                setBearbeitenModus(true);
-
-                bearbeitenButton.removeClassName("secondary-button");
-                bearbeitenButton.addClassName("primary-button");
-
-                ansichtButton.removeClassName("primary-button");
-                ansichtButton.addClassName("secondary-button");
-            });
-
-            kuendigenButton = new Button("Kündigen", VaadinIcon.TRASH.create());
-            kuendigenButton.addClassName("secondary-button");
-            kuendigenButton.setEnabled(false);
-
-            speichernButton = new Button("Speichern", VaadinIcon.CHECK.create());
-            speichernButton.addClassName("secondary-button");
-            speichernButton.setEnabled(false);
-
-            HorizontalLayout rightArea = new HorizontalLayout();
-            rightArea.setAlignItems(FlexComponent.Alignment.CENTER);
-            rightArea.setSpacing(true);
-            rightArea.add(ansichtButton, bearbeitenButton, kuendigenButton, speichernButton);
-
-            header.add(rightArea);
-        }
-
+        header.add(leftArea, rightArea);
         headerCard.add(header);
 
         return headerCard;
     }
 
-    // Inhalt unter dem Header
-    private Component createContentLayout(MieterDummyDaten.MietvertragRow mietvertrag) {
+    private Component createContentLayout() {
         HorizontalLayout contentLayout = new HorizontalLayout();
         contentLayout.setWidthFull();
         contentLayout.setMaxWidth("1400px");
@@ -182,8 +174,8 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         leftColumn.getStyle().set("min-width", "0");
 
         leftColumn.add(
-                createMieterEinheitCard(mietvertrag),
-                createLaufzeitCard(mietvertrag)
+                createMieterEinheitCard(),
+                createLaufzeitCard()
         );
 
         VerticalLayout rightColumn = new VerticalLayout();
@@ -193,8 +185,8 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         rightColumn.getStyle().set("min-width", "360px");
 
         rightColumn.add(
-                createFinanzenCard(mietvertrag),
-                createKautionCard(mietvertrag)
+                createFinanzenCard(),
+                createKautionCard()
         );
 
         contentLayout.add(leftColumn, rightColumn);
@@ -204,8 +196,7 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         return contentLayout;
     }
 
-    // Karte für Mieter und Einheit
-    private Component createMieterEinheitCard(MieterDummyDaten.MietvertragRow mietvertrag) {
+    private Component createMieterEinheitCard() {
         Div card = new Div();
         card.addClassName("card");
         card.setWidthFull();
@@ -219,21 +210,19 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
 
         content.add(
                 title,
-                createReadonlyInfoBlock("Hauptmieter", mietvertrag.mieter() + " • " + mietvertrag.mieterEmail()),
-                createReadonlyInfoBlock("Mietobjekt", mietvertrag.mietobjektName()),
-                createReadonlyInfoBlock("Einheit", mietvertrag.mietobjektDetails())
+                createReadonlyInfoBlock("Hauptmieter", formatMieter()),
+                createReadonlyInfoBlock("Mietobjekt", formatImmobilie()),
+                createReadonlyInfoBlock("Einheit", formatMieteinheitDetails())
         );
 
         card.add(content);
         return card;
     }
 
-    // Karte für Vertragslaufzeit und Fristen
-    private Component createLaufzeitCard(MieterDummyDaten.MietvertragRow mietvertrag) {
+    private Component createLaufzeitCard() {
         Div card = new Div();
         card.addClassName("card");
         card.setWidthFull();
-        card.getStyle().set("overflow", "hidden");
 
         VerticalLayout content = new VerticalLayout();
         content.setPadding(false);
@@ -243,47 +232,31 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         Span title = new Span("Vertragslaufzeit & Fristen");
         title.addClassName("card-title");
 
-        TextField vertragsbeginn = createTextField("Vertragsbeginn", mietvertrag.vertragsbeginn());
-        TextField vertragsende = createTextField(
-                "Vertragsende",
-                mietvertrag.vertragsende().isBlank() ? "tt.mm.jjjj" : mietvertrag.vertragsende()
-        );
+        if (bearbeitenAktiv) {
+            startdatumField.setValue(aktuellerMietvertrag.getStartdatum());
+            enddatumField.setValue(aktuellerMietvertrag.getEnddatum());
+            kuendigungsfristField.setValue(aktuellerMietvertrag.getKuendigungsfrist());
 
-        FormLayout topForm = new FormLayout();
-        topForm.setWidthFull();
-        topForm.setResponsiveSteps(
-                new FormLayout.ResponsiveStep("0", 1),
-                new FormLayout.ResponsiveStep("700px", 2)
-        );
-        topForm.add(vertragsbeginn, vertragsende);
+            startdatumField.setRequiredIndicatorVisible(true);
 
-        Select<String> kuendigungsfrist = createSelect("Kündigungsfrist", mietvertrag.kuendigungsfrist());
-        TextField mindestmietdauer = createTextField("Mindestmietdauer bis", mietvertrag.mindestmietdauerBis());
-        TextField kuendigungseingang = createTextField(
-                "Kündigungseingang",
-                mietvertrag.kuendigungseingang().isBlank() ? "tt.mm.jjjj" : mietvertrag.kuendigungseingang()
-        );
-
-        FormLayout bottomForm = new FormLayout();
-        bottomForm.setWidthFull();
-        bottomForm.setResponsiveSteps(
-                new FormLayout.ResponsiveStep("0", 1),
-                new FormLayout.ResponsiveStep("700px", 3)
-        );
-        bottomForm.add(kuendigungsfrist, mindestmietdauer, kuendigungseingang);
-
-        content.add(title, topForm, bottomForm);
+            content.add(title, startdatumField, enddatumField, kuendigungsfristField);
+        } else {
+            content.add(
+                    title,
+                    createReadonlyInfoBlock("Vertragsbeginn", formatDatum(aktuellerMietvertrag.getStartdatum())),
+                    createReadonlyInfoBlock("Vertragsende", formatDatumOderUnbefristet()),
+                    createReadonlyInfoBlock("Kündigungsfrist bis", formatDatum(aktuellerMietvertrag.getKuendigungsfrist()))
+            );
+        }
 
         card.add(content);
         return card;
     }
 
-    // Karte für Finanzen
-    private Component createFinanzenCard(MieterDummyDaten.MietvertragRow mietvertrag) {
+    private Component createFinanzenCard() {
         Div card = new Div();
         card.addClassName("card");
         card.setWidthFull();
-        card.getStyle().set("overflow", "hidden");
 
         VerticalLayout content = new VerticalLayout();
         content.setPadding(false);
@@ -293,43 +266,31 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         Span title = new Span("Finanzen");
         title.addClassName("card-title");
 
-        TextField nettokaltmiete = createTextField("Nettokaltmiete", mietvertrag.nettokaltmiete());
+        if (bearbeitenAktiv) {
+            kaltmieteField.setValue(aktuellerMietvertrag.getKaltmiete());
+            nebenkostenField.setValue(aktuellerMietvertrag.getNebenkosten());
 
-        TextField betriebskosten = createTextField("Betriebskosten", mietvertrag.betriebskosten());
-        TextField heizkosten = createTextField("Heizkosten", mietvertrag.heizkosten());
+            kaltmieteField.setSuffixComponent(new Span("€"));
+            nebenkostenField.setSuffixComponent(new Span("€"));
 
-        FormLayout kostenForm = new FormLayout();
-        kostenForm.setWidthFull();
-        kostenForm.setResponsiveSteps(
-                new FormLayout.ResponsiveStep("0", 1),
-                new FormLayout.ResponsiveStep("320px", 2)
-        );
-        kostenForm.add(betriebskosten, heizkosten);
-
-        Span warmmieteLabel = new Span("Bruttowarmmiete");
-        warmmieteLabel.addClassName("card-subtitle");
-
-        Span warmmieteValue = new Span(mietvertrag.bruttowarmmiete());
-        warmmieteValue.addClassName("card-title");
-
-        HorizontalLayout warmmieteRow = new HorizontalLayout();
-        warmmieteRow.setWidthFull();
-        warmmieteRow.setAlignItems(FlexComponent.Alignment.CENTER);
-        warmmieteRow.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
-        warmmieteRow.add(warmmieteLabel, warmmieteValue);
-
-        content.add(title, nettokaltmiete, kostenForm, warmmieteRow);
+            content.add(title, kaltmieteField, nebenkostenField);
+        } else {
+            content.add(
+                    title,
+                    createReadonlyInfoBlock("Kaltmiete", formatEuro(aktuellerMietvertrag.getKaltmiete())),
+                    createReadonlyInfoBlock("Nebenkosten", formatEuro(aktuellerMietvertrag.getNebenkosten())),
+                    createReadonlyInfoBlock("Warmmiete", formatWarmmiete())
+            );
+        }
 
         card.add(content);
         return card;
     }
 
-    // Karte für Kaution
-    private Component createKautionCard(MieterDummyDaten.MietvertragRow mietvertrag) {
+    private Component createKautionCard() {
         Div card = new Div();
         card.addClassName("card");
         card.setWidthFull();
-        card.getStyle().set("overflow", "hidden");
 
         VerticalLayout content = new VerticalLayout();
         content.setPadding(false);
@@ -339,107 +300,70 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         Span title = new Span("Kaution");
         title.addClassName("card-title");
 
-        Select<String> kautionsart = createSelect("Kautionsart", mietvertrag.kautionsart());
+        if (bearbeitenAktiv) {
+            kautionField.setValue(aktuellerMietvertrag.getKaution());
+            kautionField.setSuffixComponent(new Span("€"));
 
-        TextField sollBetrag = createTextField("Soll-Betrag", mietvertrag.kautionSoll());
-        TextField eingezahlt = createTextField("Eingezahlt", mietvertrag.kautionGezahlt());
-
-        FormLayout kautionForm = new FormLayout();
-        kautionForm.setWidthFull();
-        kautionForm.setResponsiveSteps(
-                new FormLayout.ResponsiveStep("0", 1),
-                new FormLayout.ResponsiveStep("320px", 2)
-        );
-        kautionForm.add(sollBetrag, eingezahlt);
-
-        Span statusBadge = new Span(mietvertrag.kautionStatus());
-        statusBadge.addClassNames("status-badge", mietvertrag.kautionStatusStyle());
-
-        content.add(title, kautionsart, kautionForm, statusBadge);
+            content.add(title, kautionField);
+        } else {
+            content.add(
+                    title,
+                    createReadonlyInfoBlock("Kautionsbetrag", formatEuro(aktuellerMietvertrag.getKaution()))
+            );
+        }
 
         card.add(content);
         return card;
     }
 
-    // Erstellt ein Textfeld und merkt es sich für den Bearbeiten-Modus
-    private TextField createTextField(String label, String value) {
-        TextField field = new TextField(label);
-        field.setValue(value == null ? "" : value);
-        field.setWidthFull();
-        field.getStyle().set("min-width", "0");
-
-        editierbareFelder.add(field);
-
-        return field;
-    }
-
-    // Erstellt ein Select und merkt es sich für den Bearbeiten-Modus
-    private Select<String> createSelect(String label, String value) {
-        Select<String> select = new Select<>();
-        select.setLabel(label);
-
-        if ("Kündigungsfrist".equals(label)) {
-            select.setItems(
-                    "Gesetzlich (3 Monate)",
-                    "1 Monat",
-                    "6 Monate",
-                    "Individuell"
-            );
-        } else if ("Kautionsart".equals(label)) {
-            select.setItems(
-                    "Barkaution / Überweisung",
-                    "Bankbürgschaft",
-                    "Keine Kaution"
-            );
-        } else {
-            select.setItems(value);
-        }
-
-        select.setValue(value);
-        select.setWidthFull();
-        select.getStyle().set("min-width", "0");
-
-        editierbareSelects.add(select);
-
-        return select;
-    }
-
-    // Schaltet zwischen Ansicht und Bearbeiten um
-    private void setBearbeitenModus(boolean bearbeitenAktiv) {
-        editierbareFelder.forEach(field -> field.setReadOnly(!bearbeitenAktiv));
-        editierbareSelects.forEach(select -> select.setEnabled(bearbeitenAktiv));
-
-        if (speichernButton != null) {
-            speichernButton.setEnabled(bearbeitenAktiv);
-
-            if (bearbeitenAktiv) {
-                speichernButton.removeClassName("secondary-button");
-                speichernButton.addClassName("primary-button");
-            } else {
-                speichernButton.removeClassName("primary-button");
-                speichernButton.addClassName("secondary-button");
+    private void speichereAenderungen() {
+        try {
+            if (startdatumField.getValue() == null) {
+                startdatumField.setInvalid(true);
+                startdatumField.setErrorMessage("Bitte Vertragsbeginn auswählen");
+                throw new IllegalArgumentException("Startdatum muss angegeben werden.");
             }
-        }
 
-        if (kuendigenButton != null) {
-            boolean kuendigenMoeglich =
-                    bearbeitenAktiv
-                            && aktuellerMietvertrag != null
-                            && "Aktiv".equals(aktuellerMietvertrag.status());
+            aktuellerMietvertrag.setStartdatum(startdatumField.getValue());
+            aktuellerMietvertrag.setEnddatum(enddatumField.getValue());
+            aktuellerMietvertrag.setKuendigungsfrist(kuendigungsfristField.getValue());
+            aktuellerMietvertrag.setKaltmiete(kaltmieteField.getValue());
+            aktuellerMietvertrag.setNebenkosten(nebenkostenField.getValue());
+            aktuellerMietvertrag.setKaution(kautionField.getValue());
 
-            kuendigenButton.setEnabled(kuendigenMoeglich);
+            mietvertragService.speichereMietvertrag(
+                    aktuellerMietvertrag.getMieter().getId(),
+                    aktuellerMietvertrag.getMieteinheit().getId(),
+                    aktuellerMietvertrag
+            );
 
-            if (kuendigenMoeglich) {
-                kuendigenButton.removeClassName("secondary-button");
-                kuendigenButton.addClassName("danger-button");
-            } else {
-                kuendigenButton.removeClassName("danger-button");
-                kuendigenButton.addClassName("secondary-button");
-            }
+            Notification.show("Mietvertrag wurde aktualisiert");
+
+            bearbeitenAktiv = false;
+            renderView();
+
+        } catch (Exception ex) {
+            Notification.show("Fehler beim Speichern: " + ex.getMessage(), 4000, Notification.Position.MIDDLE);
         }
     }
 
-    // Erstellt einen einfachen Info-Block
+    private void kuendigeMietvertrag() {
+        try {
+            mietvertragService.kuendigeMietvertrag(aktuellerMietvertrag.getId());
+
+            aktuellerMietvertrag = mietvertragService.findeMietvertragNachId(aktuellerMietvertrag.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Mietvertrag wurde nicht gefunden."));
+
+            Notification.show("Mietvertrag wurde gekündigt");
+
+            bearbeitenAktiv = false;
+            renderView();
+
+        } catch (Exception ex) {
+            Notification.show("Fehler beim Kündigen: " + ex.getMessage(), 4000, Notification.Position.MIDDLE);
+        }
+    }
+
     private Component createReadonlyInfoBlock(String labelText, String valueText) {
         VerticalLayout block = new VerticalLayout();
         block.setPadding(false);
@@ -455,7 +379,6 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         return block;
     }
 
-    // Wird angezeigt, wenn kein Mietvertrag gefunden wurde
     private Component createNotFoundCard() {
         Div card = new Div();
         card.addClassName("empty-state");
@@ -463,12 +386,122 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         Span title = new Span("Mietvertrag nicht gefunden");
         title.addClassName("empty-state-title");
 
-        Span text = new Span("Für diese Dummy-ID gibt es aktuell keine Daten.");
+        Span text = new Span("Für diese ID gibt es aktuell keine Daten.");
         text.addClassName("empty-state-text");
 
         card.add(title, text);
 
         return card;
+    }
+
+    private String formatMieter() {
+        if (aktuellerMietvertrag.getMieter() == null) {
+            return "-";
+        }
+
+        return textOderLeer(aktuellerMietvertrag.getMieter().getVorname()) + " "
+                + textOderLeer(aktuellerMietvertrag.getMieter().getNachname())
+                + " • "
+                + textOderLeer(aktuellerMietvertrag.getMieter().getEmail());
+    }
+
+    private String formatImmobilie() {
+        if (aktuellerMietvertrag.getMieteinheit() == null
+                || aktuellerMietvertrag.getMieteinheit().getImmobilie() == null) {
+            return "-";
+        }
+
+        return aktuellerMietvertrag.getMieteinheit().getImmobilie().getBezeichnung();
+    }
+
+    private String formatMieteinheitDetails() {
+        if (aktuellerMietvertrag.getMieteinheit() == null) {
+            return "-";
+        }
+
+        String details = aktuellerMietvertrag.getMieteinheit().getBezeichnung();
+
+        if (aktuellerMietvertrag.getMieteinheit().getGroesse() != null) {
+            details += " • " + aktuellerMietvertrag.getMieteinheit().getGroesse() + " m²";
+        }
+
+        if (aktuellerMietvertrag.getMieteinheit().getZimmerzahl() != null) {
+            details += " • " + aktuellerMietvertrag.getMieteinheit().getZimmerzahl() + " Zimmer";
+        }
+
+        if (aktuellerMietvertrag.getMieteinheit().getStockwerk() != null
+                && !aktuellerMietvertrag.getMieteinheit().getStockwerk().isBlank()) {
+            details += " • " + aktuellerMietvertrag.getMieteinheit().getStockwerk();
+        }
+
+        return details;
+    }
+
+    private String formatDatum(java.time.LocalDate datum) {
+        if (datum == null) {
+            return "-";
+        }
+
+        return datum.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+    }
+
+    private String formatDatumOderUnbefristet() {
+        if (aktuellerMietvertrag.getEnddatum() == null) {
+            return "unbefristet";
+        }
+
+        return formatDatum(aktuellerMietvertrag.getEnddatum());
+    }
+
+    private String formatEuro(Double betrag) {
+        if (betrag == null) {
+            return "-";
+        }
+
+        NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.GERMANY);
+        return formatter.format(betrag);
+    }
+
+    private String formatWarmmiete() {
+        double kaltmiete = aktuellerMietvertrag.getKaltmiete() == null ? 0 : aktuellerMietvertrag.getKaltmiete();
+        double nebenkosten = aktuellerMietvertrag.getNebenkosten() == null ? 0 : aktuellerMietvertrag.getNebenkosten();
+
+        return formatEuro(kaltmiete + nebenkosten);
+    }
+
+    private String formatStatus() {
+        if (aktuellerMietvertrag.getStatus() == null) {
+            return "-";
+        }
+
+        return switch (aktuellerMietvertrag.getStatus()) {
+            case AKTIV -> "Aktiv";
+            case GEKUENDIGT -> "Gekündigt";
+            case BEENDET -> "Beendet";
+        };
+    }
+
+    private String formatMieteinheitKurz() {
+        if (aktuellerMietvertrag.getMieteinheit() == null) {
+            return "-";
+        }
+
+        return aktuellerMietvertrag.getMieteinheit().getBezeichnung();
+    }
+
+    private String getStatusStyle() {
+        if (aktuellerMietvertrag.getStatus() == null) {
+            return "neutral";
+        }
+
+        return switch (aktuellerMietvertrag.getStatus()) {
+            case AKTIV -> "success";
+            case GEKUENDIGT, BEENDET -> "warning";
+        };
+    }
+
+    private String textOderLeer(String text) {
+        return text == null ? "" : text;
     }
 
     @Override
