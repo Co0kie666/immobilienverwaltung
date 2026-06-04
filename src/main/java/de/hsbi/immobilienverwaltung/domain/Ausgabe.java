@@ -3,45 +3,59 @@ import de.hsbi.immobilienverwaltung.domain.enums.Ausgabenkategorie;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
+@Getter
+@Setter
 public class Ausgabe {
 
-    @Getter
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    private Ausgabenkategorie typ;
+    private Ausgabenkategorie kategorie;
 
-    @Setter
-    @Getter
     private String titel;
-    @Setter
-    @Getter
-    private Double betrag;
-    @Setter
-    @Getter
+
+    private BigDecimal betrag;
+
     private LocalDate datum;
-    @Setter
-    @Getter
+
+    private LocalDate faelligkeitsdatum;
+
     private String beschreibung;
 
-    @Setter
-    @Getter
+    private String empfaenger;
+
     @ManyToOne
     private Immobilie immobilie;
 
-    public Ausgabe() {}
+    @ManyToOne
+    private Mieteinheit mieteinheit;
 
-    public Ausgabe(String titel, Ausgabenkategorie typ, Double betrag, LocalDate datum, String beschreibung) {
+    public Ausgabe() {
+    }
+
+    public Ausgabe(String titel,
+                   Ausgabenkategorie kategorie,
+                   BigDecimal betrag,
+                   LocalDate datum,
+                   LocalDate faelligkeitsdatum,
+                   String beschreibung,
+                   String empfaenger,
+                   Immobilie immobilie,
+                   Mieteinheit mieteinheit) {
         this.titel = titel;
-        this.typ = typ;
+        this.kategorie = kategorie;
         this.betrag = betrag;
         this.datum = datum;
+        this.faelligkeitsdatum = faelligkeitsdatum;
         this.beschreibung = beschreibung;
+        this.empfaenger = empfaenger;
+        this.immobilie = immobilie;
+        this.mieteinheit = mieteinheit;
     }
 }
