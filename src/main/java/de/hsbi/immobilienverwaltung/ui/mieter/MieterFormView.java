@@ -38,7 +38,8 @@ public class MieterFormView extends Div implements HasPageHeader {
 
     private final TextField emailField = new TextField("E-Mail Adresse");
     private final TextField telefonField = new TextField("Telefonnummer (Mobil)");
-    private final TextField strasseField = new TextField("Straße und Hausnummer");
+    private final TextField strasseField = new TextField("Straße");
+    private final TextField hausnummerField = new TextField("Hausnummer");
     private final TextField plzField = new TextField("PLZ");
     private final TextField ortField = new TextField("Ort");
 
@@ -159,8 +160,11 @@ public class MieterFormView extends Div implements HasPageHeader {
         telefonField.setPlaceholder("+49 151 1234567");
         telefonField.setWidthFull();
 
-        strasseField.setPlaceholder("Musterstraße 123");
+        strasseField.setPlaceholder("Musterstraße");
         strasseField.setWidthFull();
+
+        hausnummerField.setPlaceholder("123");
+        hausnummerField.setWidthFull();
 
         plzField.setPlaceholder("10115");
         plzField.setWidthFull();
@@ -170,8 +174,14 @@ public class MieterFormView extends Div implements HasPageHeader {
 
         FormLayout form = createTwoColumnFormLayout();
 
-        form.add(emailField, telefonField, strasseField, plzField, ortField);
-        form.setColspan(strasseField, 2);
+        form.add(
+                emailField,
+                telefonField,
+                strasseField,
+                hausnummerField,
+                plzField,
+                ortField
+        );
 
         return createFormCard(
                 "Kontakt & Adresse",
@@ -211,7 +221,7 @@ public class MieterFormView extends Div implements HasPageHeader {
 
             Adresse adresse = new Adresse(
                     strasseField.getValue(),
-                    "",
+                    hausnummerField.getValue(),
                     plzField.getValue(),
                     ortField.getValue()
             );
