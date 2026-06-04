@@ -15,4 +15,6 @@ public interface MietvertragRepository extends JpaRepository<Mietvertrag, Long> 
     List<Mietvertrag> findByStatus(Vertragsstatus status);
 
     List<Mietvertrag> findByMieteinheitIdAndStatus(Long mieteinheitId, Vertragsstatus status);
+
+    long countByStatus(Vertragsstatus status);
 }

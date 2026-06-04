@@ -7,4 +7,5 @@ public interface GesamtAuswertungService {
     long berechneAnzahlLeerstehendeMieteinheiten();
 
     long berechneAnzahlMieteinheiten();
-}
+
+    long berechneAnzahlAktiveVertraege();}
