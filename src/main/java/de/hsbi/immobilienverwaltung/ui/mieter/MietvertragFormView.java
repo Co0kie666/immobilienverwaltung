@@ -7,23 +7,63 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Route;
+import de.hsbi.immobilienverwaltung.domain.Immobilie;
+import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
+import de.hsbi.immobilienverwaltung.domain.Mieter;
+import de.hsbi.immobilienverwaltung.domain.Mietvertrag;
+import de.hsbi.immobilienverwaltung.domain.enums.Vertragsstatus;
+import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
+import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
+import de.hsbi.immobilienverwaltung.service.interfaces.MieterService;
+import de.hsbi.immobilienverwaltung.service.interfaces.MietvertragService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
-import com.vaadin.flow.data.value.ValueChangeMode;
 import jakarta.annotation.security.PermitAll;
 
 import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Locale;
 
 @Route(value = "mietvertrag-anlegen", layout = MainLayout.class)
 @PermitAll
 public class MietvertragFormView extends Div implements HasPageHeader {
 
-    public MietvertragFormView() {
+    private final MieterService mieterService;
+    private final ImmobilieService immobilieService;
+    private final MieteinheitService mieteinheitService;
+    private final MietvertragService mietvertragService;
+
+    private final Select<Mieter> mieterSelect = new Select<>();
+    private final Select<Immobilie> immobilieSelect = new Select<>();
+    private final Select<Mieteinheit> mieteinheitSelect = new Select<>();
+
+    private final DatePicker vertragsbeginnPicker = new DatePicker("Vertragsbeginn");
+    private final DatePicker vertragsendePicker = new DatePicker("Vertragsende (Optional)");
+
+    private final Select<String> kuendigungsfristSelect = new Select<>();
+    private final Select<String> zahlungsintervallSelect = new Select<>();
+
+    private final TextField kaltmieteField = new TextField("Kaltmiete");
+    private final TextField nebenkostenField = new TextField("Nebenkosten-Vorauszahlung");
+
+    public MietvertragFormView(
+            MieterService mieterService,
+            ImmobilieService immobilieService,
+            MieteinheitService mieteinheitService,
+            MietvertragService mietvertragService
+    ) {
+        this.mieterService = mieterService;
+        this.immobilieService = immobilieService;
+        this.mieteinheitService = mieteinheitService;
+        this.mietvertragService = mietvertragService;
+
         addClassName("page-content");
 
         Div pageWrapper = new Div();
@@ -34,7 +74,6 @@ public class MietvertragFormView extends Div implements HasPageHeader {
         add(pageWrapper);
     }
 
-    // Erstellt den Formularbereich
     private Component createFormContent() {
         Div content = new Div();
         content.setWidthFull();
@@ -60,53 +99,36 @@ public class MietvertragFormView extends Div implements HasPageHeader {
         return content;
     }
 
-    // Card für Mietobjekt und Mieter
     private Component createMietobjektMieterCard() {
-        Select<String> mieter = new Select<>();
-        mieter.setLabel("Mieter auswählen");
-        mieter.setItems(
-                "Max Mustermann",
-                "Sarah Müller",
-                "Julia Müller",
-                "Lukas Becker",
-                "Aylin Yildiz",
-                "Jonas Weber"
-        );
-        mieter.setPlaceholder("Bitte wählen...");
-        mieter.setRequiredIndicatorVisible(true);
-        mieter.setWidthFull();
+        mieterSelect.setLabel("Mieter auswählen");
+        mieterSelect.setItems(mieterService.findeAlleMieter());
+        mieterSelect.setItemLabelGenerator(this::formatMieter);
+        mieterSelect.setPlaceholder("Bitte wählen...");
+        mieterSelect.setRequiredIndicatorVisible(true);
+        mieterSelect.setWidthFull();
 
-        Select<String> immobilie = new Select<>();
-        immobilie.setLabel("Immobilie");
-        immobilie.setItems(
-                "Parkresidenz Süd",
-                "Stadthaus Mitte",
-                "Wohnpark Nord",
-                "Campus Apartments",
-                "Altbau Rosenstraße"
-        );
-        immobilie.setPlaceholder("Bitte wählen...");
-        immobilie.setRequiredIndicatorVisible(true);
-        immobilie.setWidthFull();
+        immobilieSelect.setLabel("Immobilie");
+        immobilieSelect.setItems(immobilieService.findeAlleImmobilien());
+        immobilieSelect.setItemLabelGenerator(this::formatImmobilie);
+        immobilieSelect.setPlaceholder("Bitte wählen...");
+        immobilieSelect.setRequiredIndicatorVisible(true);
+        immobilieSelect.setWidthFull();
 
-        Select<String> wohneinheit = new Select<>();
-        wohneinheit.setLabel("Wohneinheit");
-        wohneinheit.setItems(
-                "WE-01",
-                "WE-03",
-                "WE-05",
-                "WE-08",
-                "WE-12",
-                "WE-21"
+        mieteinheitSelect.setLabel("Wohneinheit");
+        mieteinheitSelect.setItemLabelGenerator(this::formatMieteinheit);
+        mieteinheitSelect.setPlaceholder("Zuerst Immobilie wählen...");
+        mieteinheitSelect.setRequiredIndicatorVisible(true);
+        mieteinheitSelect.setWidthFull();
+        mieteinheitSelect.setEnabled(false);
+
+        immobilieSelect.addValueChangeListener(event ->
+                aktualisiereMieteinheiten(event.getValue())
         );
-        wohneinheit.setPlaceholder("Zuerst Immobilie wählen...");
-        wohneinheit.setRequiredIndicatorVisible(true);
-        wohneinheit.setWidthFull();
 
         FormLayout form = createTwoColumnFormLayout();
 
-        form.add(mieter, immobilie, wohneinheit);
-        form.setColspan(mieter, 2);
+        form.add(mieterSelect, immobilieSelect, mieteinheitSelect);
+        form.setColspan(mieterSelect, 2);
 
         return createFormCard(
                 "Mietobjekt & Mieter",
@@ -115,39 +137,57 @@ public class MietvertragFormView extends Div implements HasPageHeader {
         );
     }
 
-    // Card für Vertragsdaten
-    private Component createVertragsdatenCard() {
-        DatePicker vertragsbeginn = createDatePicker("Vertragsbeginn", true);
-        DatePicker vertragsende = createDatePicker("Vertragsende (Optional)", false);
+    private void aktualisiereMieteinheiten(Immobilie immobilie) {
+        mieteinheitSelect.clear();
 
-        Select<String> kuendigungsfrist = new Select<>();
-        kuendigungsfrist.setLabel("Kündigungsfrist");
-        kuendigungsfrist.setItems(
+        if (immobilie == null || immobilie.getId() == null) {
+            mieteinheitSelect.setEnabled(false);
+            mieteinheitSelect.setPlaceholder("Zuerst Immobilie wählen...");
+            return;
+        }
+
+        List<Mieteinheit> mieteinheiten =
+                mieteinheitService.findeMieteinheitenNachImmobilie(immobilie.getId());
+
+        mieteinheitSelect.setItems(mieteinheiten);
+        mieteinheitSelect.setEnabled(true);
+        mieteinheitSelect.setPlaceholder("Bitte wählen...");
+    }
+
+    private Component createVertragsdatenCard() {
+        vertragsbeginnPicker.setPlaceholder("tt.mm.jjjj");
+        vertragsbeginnPicker.setRequiredIndicatorVisible(true);
+        vertragsbeginnPicker.setWidthFull();
+
+        vertragsendePicker.setPlaceholder("tt.mm.jjjj");
+        vertragsendePicker.setWidthFull();
+
+        kuendigungsfristSelect.setLabel("Kündigungsfrist");
+        kuendigungsfristSelect.setItems(
                 "Gesetzlich (3 Monate)",
                 "1 Monat",
                 "6 Monate",
                 "Individuell"
         );
-        kuendigungsfrist.setValue("Gesetzlich (3 Monate)");
-        kuendigungsfrist.setWidthFull();
+        kuendigungsfristSelect.setValue("Gesetzlich (3 Monate)");
+        kuendigungsfristSelect.setWidthFull();
 
-        Select<String> zahlungsintervall = new Select<>();
-        zahlungsintervall.setLabel("Zahlungsintervall");
-        zahlungsintervall.setItems(
+        zahlungsintervallSelect.setLabel("Zahlungsintervall");
+        zahlungsintervallSelect.setItems(
                 "Monatlich",
                 "Vierteljährlich",
                 "Jährlich"
         );
-        zahlungsintervall.setValue("Monatlich");
-        zahlungsintervall.setWidthFull();
+        zahlungsintervallSelect.setValue("Monatlich");
+        zahlungsintervallSelect.setWidthFull();
 
         FormLayout form = createTwoColumnFormLayout();
 
         form.add(
-                vertragsbeginn,
-                vertragsende,
-                kuendigungsfrist,
-                zahlungsintervall
+                vertragsbeginnPicker,
+                vertragsendePicker,
+                kuendigungsfristSelect,
+                zahlungsintervallSelect
         );
 
         return createFormCard(
@@ -157,22 +197,16 @@ public class MietvertragFormView extends Div implements HasPageHeader {
         );
     }
 
-    // Card für finanzielle Details
     private Component createFinanzielleDetailsCard() {
-        TextField kaltmiete = createMoneyField("Kaltmiete", "0.00", true);
-        TextField nebenkosten = createMoneyField("Nebenkosten-Vorauszahlung", "0.00", true);
+        kaltmieteField.setPlaceholder("0.00");
+        kaltmieteField.setRequiredIndicatorVisible(true);
+        kaltmieteField.setSuffixComponent(new Span("€"));
+        kaltmieteField.setWidthFull();
 
-        TextField kaution = createMoneyField("Kaution", "0.00", false);
-
-        Select<String> kautionsart = new Select<>();
-        kautionsart.setLabel("Kautionsart");
-        kautionsart.setItems(
-                "Barkaution / Überweisung",
-                "Bankbürgschaft",
-                "Keine Kaution"
-        );
-        kautionsart.setValue("Barkaution / Überweisung");
-        kautionsart.setWidthFull();
+        nebenkostenField.setPlaceholder("0.00");
+        nebenkostenField.setRequiredIndicatorVisible(true);
+        nebenkostenField.setSuffixComponent(new Span("€"));
+        nebenkostenField.setWidthFull();
 
         Div warmmieteBox = new Div();
         warmmieteBox.addClassName("money-summary-box");
@@ -189,16 +223,13 @@ public class MietvertragFormView extends Div implements HasPageHeader {
         warmmieteRow.add(warmmieteLabel, warmmieteValue);
         warmmieteBox.add(warmmieteRow);
 
-        // Berechnet die Warmmiete direkt bei Eingabe
-        configureWarmmieteCalculation(kaltmiete, nebenkosten, warmmieteValue);
+        configureWarmmieteCalculation(kaltmieteField, nebenkostenField, warmmieteValue);
 
         FormLayout form = createTwoColumnFormLayout();
 
         form.add(
-                kaltmiete,
-                nebenkosten,
-                kaution,
-                kautionsart,
+                kaltmieteField,
+                nebenkostenField,
                 warmmieteBox
         );
         form.setColspan(warmmieteBox, 2);
@@ -210,7 +241,147 @@ public class MietvertragFormView extends Div implements HasPageHeader {
         );
     }
 
-    // Berechnet die Warmmiete automatisch aus Kaltmiete und Nebenkosten
+    private void speichereMietvertrag() {
+        try {
+            pruefePflichtfelder();
+
+            Mietvertrag mietvertrag = new Mietvertrag();
+            mietvertrag.setStartdatum(vertragsbeginnPicker.getValue());
+            mietvertrag.setEnddatum(vertragsendePicker.getValue());
+            mietvertrag.setKaltmiete(parsePflichtbetrag(kaltmieteField, "Bitte Kaltmiete eingeben"));
+            mietvertrag.setNebenkosten(parsePflichtbetrag(nebenkostenField, "Bitte Nebenkosten eingeben"));
+            mietvertrag.setKaution(null);
+            mietvertrag.setKuendigungsfrist(berechneKuendigungsfrist());
+            mietvertrag.setStatus(Vertragsstatus.AKTIV);
+
+            mietvertragService.speichereMietvertrag(
+                    mieterSelect.getValue().getId(),
+                    mieteinheitSelect.getValue().getId(),
+                    mietvertrag
+            );
+
+            Notification.show("Mietvertrag wurde gespeichert");
+
+            getUI().ifPresent(ui -> ui.navigate("mieter-vertraege?tab=vertraege"));
+
+        } catch (Exception ex) {
+            Notification.show("Fehler beim Speichern: " + ex.getMessage(), 4000, Notification.Position.MIDDLE);
+        }
+    }
+
+    private void pruefePflichtfelder() {
+        boolean fehler = false;
+
+        fehler |= markierePflichtSelect(mieterSelect, "Bitte Mieter auswählen");
+        fehler |= markierePflichtSelect(immobilieSelect, "Bitte Immobilie auswählen");
+        fehler |= markierePflichtSelect(mieteinheitSelect, "Bitte Wohneinheit auswählen");
+
+        boolean startdatumFehlt = vertragsbeginnPicker.getValue() == null;
+        vertragsbeginnPicker.setInvalid(startdatumFehlt);
+        vertragsbeginnPicker.setErrorMessage("Bitte Vertragsbeginn auswählen");
+        fehler |= startdatumFehlt;
+
+        if (vertragsbeginnPicker.getValue() != null
+                && vertragsendePicker.getValue() != null
+                && vertragsendePicker.getValue().isBefore(vertragsbeginnPicker.getValue())) {
+            vertragsendePicker.setInvalid(true);
+            vertragsendePicker.setErrorMessage("Vertragsende darf nicht vor Vertragsbeginn liegen");
+            fehler = true;
+        } else {
+            vertragsendePicker.setInvalid(false);
+        }
+
+        fehler |= markierePflichtfeld(kaltmieteField, "Bitte Kaltmiete eingeben");
+        fehler |= markierePflichtfeld(nebenkostenField, "Bitte Nebenkosten eingeben");
+
+        if (fehler) {
+            throw new IllegalArgumentException("Bitte alle Pflichtfelder korrekt ausfüllen.");
+        }
+    }
+
+    private boolean markierePflichtfeld(TextField field, String errorMessage) {
+        boolean leer = field.getValue() == null || field.getValue().isBlank();
+
+        field.setInvalid(leer);
+        field.setErrorMessage(errorMessage);
+
+        return leer;
+    }
+
+    private <T> boolean markierePflichtSelect(Select<T> select, String errorMessage) {
+        boolean leer = select.getValue() == null;
+
+        select.setInvalid(leer);
+        select.setErrorMessage(errorMessage);
+
+        return leer;
+    }
+
+    private Double parsePflichtbetrag(TextField field, String errorMessage) {
+        if (field.getValue() == null || field.getValue().isBlank()) {
+            field.setInvalid(true);
+            field.setErrorMessage(errorMessage);
+            throw new IllegalArgumentException(errorMessage);
+        }
+
+        return parseBetrag(field);
+    }
+
+    private Double parseOptionalerBetrag(TextField field) {
+        if (field.getValue() == null || field.getValue().isBlank()) {
+            return null;
+        }
+
+        return parseBetrag(field);
+    }
+
+    private Double parseBetrag(TextField field) {
+        try {
+            String value = field.getValue()
+                    .replace("€", "")
+                    .replace(" ", "")
+                    .trim();
+
+            if (value.contains(",")) {
+                value = value.replace(".", "").replace(",", ".");
+            }
+
+            Double betrag = Double.parseDouble(value);
+
+            if (betrag < 0) {
+                field.setInvalid(true);
+                field.setErrorMessage("Betrag darf nicht negativ sein");
+                throw new IllegalArgumentException("Betrag darf nicht negativ sein.");
+            }
+
+            field.setInvalid(false);
+            return betrag;
+
+        } catch (NumberFormatException ex) {
+            field.setInvalid(true);
+            field.setErrorMessage("Bitte gültigen Betrag eingeben");
+            throw new IllegalArgumentException("Bitte gültigen Betrag eingeben.");
+        }
+    }
+
+    private LocalDate berechneKuendigungsfrist() {
+        if (vertragsbeginnPicker.getValue() == null) {
+            return null;
+        }
+
+        String value = kuendigungsfristSelect.getValue();
+
+        if ("1 Monat".equals(value)) {
+            return vertragsbeginnPicker.getValue().plusMonths(1);
+        }
+
+        if ("6 Monate".equals(value)) {
+            return vertragsbeginnPicker.getValue().plusMonths(6);
+        }
+
+        return vertragsbeginnPicker.getValue().plusMonths(3);
+    }
+
     private void configureWarmmieteCalculation(
             TextField kaltmieteField,
             TextField nebenkostenField,
@@ -230,22 +401,20 @@ public class MietvertragFormView extends Div implements HasPageHeader {
         updateWarmmiete(kaltmieteField, nebenkostenField, warmmieteValue);
     }
 
-    // Aktualisiert den angezeigten Warmmiete-Wert
     private void updateWarmmiete(
             TextField kaltmieteField,
             TextField nebenkostenField,
             Span warmmieteValue
     ) {
-        double kaltmiete = parseMoneyValue(kaltmieteField.getValue());
-        double nebenkosten = parseMoneyValue(nebenkostenField.getValue());
+        double kaltmiete = parseMoneyValueForPreview(kaltmieteField.getValue());
+        double nebenkosten = parseMoneyValueForPreview(nebenkostenField.getValue());
 
         double warmmiete = kaltmiete + nebenkosten;
 
         warmmieteValue.setText(formatMoneyValue(warmmiete));
     }
 
-    // Wandelt Texte wie 950,00 oder 950.00 in eine Zahl um
-    private double parseMoneyValue(String value) {
+    private double parseMoneyValueForPreview(String value) {
         if (value == null || value.isBlank()) {
             return 0;
         }
@@ -254,8 +423,11 @@ public class MietvertragFormView extends Div implements HasPageHeader {
             String normalizedValue = value
                     .replace("€", "")
                     .replace(" ", "")
-                    .replace(".", "")
-                    .replace(",", ".");
+                    .trim();
+
+            if (normalizedValue.contains(",")) {
+                normalizedValue = normalizedValue.replace(".", "").replace(",", ".");
+            }
 
             return Double.parseDouble(normalizedValue);
         } catch (NumberFormatException e) {
@@ -263,34 +435,30 @@ public class MietvertragFormView extends Div implements HasPageHeader {
         }
     }
 
-    // Formatiert die Zahl wieder als Euro-Betrag
     private String formatMoneyValue(double value) {
         NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.GERMANY);
         return formatter.format(value);
     }
 
-    // Button-Leiste unten rechts
     private Component createBottomActions() {
         HorizontalLayout actions = new HorizontalLayout();
         actions.addClassName("form-bottom-actions");
 
         Button cancelButton = new Button("Abbrechen", VaadinIcon.CLOSE.create());
         cancelButton.addClassName("secondary-button");
-
-        // Zurück zur Vertragsübersicht
         cancelButton.addClickListener(event ->
                 getUI().ifPresent(ui -> ui.navigate("mieter-vertraege?tab=vertraege"))
         );
 
         Button saveButton = new Button("Mietvertrag anlegen", VaadinIcon.PLUS.create());
         saveButton.addClassName("primary-button");
+        saveButton.addClickListener(event -> speichereMietvertrag());
 
         actions.add(cancelButton, saveButton);
 
         return actions;
     }
 
-    // Erstellt eine Form-Card mit Titel, Untertitel und Inhalt
     private Div createFormCard(String titleText, String subtitleText, Component content) {
         Div card = new Div();
         card.addClassName("form-card");
@@ -319,7 +487,6 @@ public class MietvertragFormView extends Div implements HasPageHeader {
         return card;
     }
 
-    // Erstellt ein zweispaltiges Formular
     private FormLayout createTwoColumnFormLayout() {
         FormLayout form = new FormLayout();
         form.addClassName("form-layout-two-columns");
@@ -332,25 +499,28 @@ public class MietvertragFormView extends Div implements HasPageHeader {
         return form;
     }
 
-    // Erstellt ein Datumsfeld
-    private DatePicker createDatePicker(String label, boolean required) {
-        DatePicker datePicker = new DatePicker(label);
-        datePicker.setPlaceholder("tt.mm.jjjj");
-        datePicker.setRequiredIndicatorVisible(required);
-        datePicker.setWidthFull();
+    private String formatMieter(Mieter mieter) {
+        if (mieter == null) {
+            return "";
+        }
 
-        return datePicker;
+        return mieter.getVorname() + " " + mieter.getNachname();
     }
 
-    // Erstellt ein Euro-Textfeld
-    private TextField createMoneyField(String label, String placeholder, boolean required) {
-        TextField field = new TextField(label);
-        field.setPlaceholder(placeholder);
-        field.setRequiredIndicatorVisible(required);
-        field.setSuffixComponent(new Span("€"));
-        field.setWidthFull();
+    private String formatImmobilie(Immobilie immobilie) {
+        if (immobilie == null) {
+            return "";
+        }
 
-        return field;
+        return immobilie.getBezeichnung();
+    }
+
+    private String formatMieteinheit(Mieteinheit mieteinheit) {
+        if (mieteinheit == null) {
+            return "";
+        }
+
+        return mieteinheit.getBezeichnung();
     }
 
     @Override

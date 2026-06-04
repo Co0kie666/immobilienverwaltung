@@ -91,4 +91,8 @@ public class Mietvertrag {
     public Double getNebenkosten() {return nebenkosten;}
 
     public void setNebenkosten(Double nebenkosten) {this.nebenkosten = nebenkosten;}
+
+    public Vertragsstatus getStatus() {return status;}
+
+    public void setStatus(Vertragsstatus status) {this.status = status;}
 }

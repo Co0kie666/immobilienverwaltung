@@ -8,11 +8,15 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
+import de.hsbi.immobilienverwaltung.domain.Adresse;
+import de.hsbi.immobilienverwaltung.domain.Mieter;
+import de.hsbi.immobilienverwaltung.service.interfaces.MieterService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import jakarta.annotation.security.PermitAll;
@@ -23,7 +27,29 @@ import java.util.List;
 @PermitAll
 public class MieterFormView extends Div implements HasPageHeader {
 
-    public MieterFormView() {
+    private final MieterService mieterService;
+
+    private final Select<String> anredeSelect = new Select<>();
+    private final TextField titelField = new TextField("Titel (Optional)");
+    private final TextField vornameField = new TextField("Vorname");
+    private final TextField nachnameField = new TextField("Nachname");
+    private final DatePicker geburtsdatumPicker = new DatePicker("Geburtsdatum");
+    private final TextField berufField = new TextField("Beruf / Tätigkeit");
+
+    private final TextField emailField = new TextField("E-Mail Adresse");
+    private final TextField telefonField = new TextField("Telefonnummer (Mobil)");
+    private final TextField strasseField = new TextField("Straße und Hausnummer");
+    private final TextField plzField = new TextField("PLZ");
+    private final TextField ortField = new TextField("Ort");
+
+    private final Checkbox bankdatenAktiv = new Checkbox("Bankdaten erfassen");
+    private final TextField kontoinhaberField = new TextField("Kontoinhaber");
+    private final TextField ibanField = new TextField("IBAN");
+    private final TextField bicField = new TextField("BIC / Bankname");
+
+    public MieterFormView(MieterService mieterService) {
+        this.mieterService = mieterService;
+
         addClassName("page-content");
 
         Div pageWrapper = new Div();
@@ -36,8 +62,6 @@ public class MieterFormView extends Div implements HasPageHeader {
         add(pageWrapper);
     }
 
-
-    // Erstellt den Formularbereich
     private Component createFormContent() {
         Div content = new Div();
         content.setWidthFull();
@@ -63,7 +87,6 @@ public class MieterFormView extends Div implements HasPageHeader {
         return content;
     }
 
-    // Button-Leiste unten rechts
     private Component createBottomActions() {
         HorizontalLayout actions = new HorizontalLayout();
         actions.setWidthFull();
@@ -74,49 +97,51 @@ public class MieterFormView extends Div implements HasPageHeader {
 
         Button cancelButton = new Button("Abbrechen", VaadinIcon.CLOSE.create());
         cancelButton.addClassName("secondary-button");
-
-        // Zurück zur Mieter-Übersicht
         cancelButton.addClickListener(event ->
                 getUI().ifPresent(ui -> ui.navigate("mieter-vertraege?tab=mieter"))
         );
 
         Button saveButton = new Button("Mieter anlegen", VaadinIcon.PLUS.create());
         saveButton.addClassName("primary-button");
+        saveButton.addClickListener(event -> speichereMieter());
 
         actions.add(cancelButton, saveButton);
 
         return actions;
     }
 
-    // Card für Personendaten
     private Component createPersonendatenCard() {
-        Select<String> anrede = new Select<>();
-        anrede.setLabel("Anrede");
-        anrede.setItems("Herr", "Frau", "Divers");
-        anrede.setPlaceholder("Bitte wählen...");
-        anrede.setWidthFull();
+        anredeSelect.setLabel("Anrede");
+        anredeSelect.setItems("Herr", "Frau", "Divers");
+        anredeSelect.setPlaceholder("Bitte wählen...");
+        anredeSelect.setWidthFull();
 
-        TextField titel = createTextField("Titel (Optional)", "z.B. Dr.", false);
+        titelField.setPlaceholder("z.B. Dr.");
+        titelField.setWidthFull();
 
-        TextField vorname = createTextField("Vorname", "Max", true);
-        TextField nachname = createTextField("Nachname", "Mustermann", true);
+        vornameField.setPlaceholder("Max");
+        vornameField.setRequiredIndicatorVisible(true);
+        vornameField.setWidthFull();
 
-        DatePicker geburtsdatum = new DatePicker("Geburtsdatum");
-        geburtsdatum.setPlaceholder("tt.mm.jjjj");
-        geburtsdatum.setWidthFull();
-        geburtsdatum.getStyle().set("min-width", "0");
+        nachnameField.setPlaceholder("Mustermann");
+        nachnameField.setRequiredIndicatorVisible(true);
+        nachnameField.setWidthFull();
 
-        TextField beruf = createTextField("Beruf / Tätigkeit", "z.B. Softwareentwickler", false);
+        geburtsdatumPicker.setPlaceholder("tt.mm.jjjj");
+        geburtsdatumPicker.setWidthFull();
+
+        berufField.setPlaceholder("z.B. Softwareentwickler");
+        berufField.setWidthFull();
 
         FormLayout form = createTwoColumnFormLayout();
 
         form.add(
-                anrede,
-                titel,
-                vorname,
-                nachname,
-                geburtsdatum,
-                beruf
+                anredeSelect,
+                titelField,
+                vornameField,
+                nachnameField,
+                geburtsdatumPicker,
+                berufField
         );
 
         return createFormCard(
@@ -126,20 +151,27 @@ public class MieterFormView extends Div implements HasPageHeader {
         );
     }
 
-    // Card für Kontakt und Adresse
     private Component createKontaktAdresseCard() {
-        TextField email = createTextField("E-Mail Adresse", "max@beispiel.de", true);
-        TextField telefon = createTextField("Telefonnummer (Mobil)", "+49 151 1234567", false);
+        emailField.setPlaceholder("max@beispiel.de");
+        emailField.setRequiredIndicatorVisible(true);
+        emailField.setWidthFull();
 
-        TextField strasse = createTextField("Straße und Hausnummer", "Musterstraße 123", false);
+        telefonField.setPlaceholder("+49 151 1234567");
+        telefonField.setWidthFull();
 
-        TextField plz = createTextField("PLZ", "10115", false);
-        TextField ort = createTextField("Ort", "Berlin", false);
+        strasseField.setPlaceholder("Musterstraße 123");
+        strasseField.setWidthFull();
+
+        plzField.setPlaceholder("10115");
+        plzField.setWidthFull();
+
+        ortField.setPlaceholder("Berlin");
+        ortField.setWidthFull();
 
         FormLayout form = createTwoColumnFormLayout();
 
-        form.add(email, telefon, strasse, plz, ort);
-        form.setColspan(strasse, 2);
+        form.add(emailField, telefonField, strasseField, plzField, ortField);
+        form.setColspan(strasseField, 2);
 
         return createFormCard(
                 "Kontakt & Adresse",
@@ -148,15 +180,12 @@ public class MieterFormView extends Div implements HasPageHeader {
         );
     }
 
-    // Optionale Card für Bankverbindung
     private Component createBankverbindungCard() {
-        Checkbox bankdatenAktiv = new Checkbox("Bankdaten erfassen");
+        kontoinhaberField.setPlaceholder("Max Mustermann");
+        ibanField.setPlaceholder("DE12 3456 7890 1234 5678 90");
+        bicField.setPlaceholder("Musterbank eG");
 
-        TextField kontoinhaber = createTextField("Kontoinhaber", "Max Mustermann", false);
-        TextField iban = createTextField("IBAN", "DE12 3456 7890 1234 5678 90", false);
-        TextField bic = createTextField("BIC / Bankname", "Musterbank eG", false);
-
-        List<TextField> bankFields = List.of(kontoinhaber, iban, bic);
+        List<TextField> bankFields = List.of(kontoinhaberField, ibanField, bicField);
         bankFields.forEach(field -> field.setEnabled(false));
 
         bankdatenAktiv.addValueChangeListener(event ->
@@ -165,8 +194,8 @@ public class MieterFormView extends Div implements HasPageHeader {
 
         FormLayout form = createTwoColumnFormLayout();
 
-        form.add(kontoinhaber, iban, bic);
-        form.setColspan(kontoinhaber, 2);
+        form.add(kontoinhaberField, ibanField, bicField);
+        form.setColspan(kontoinhaberField, 2);
 
         return createFormCard(
                 "Bankverbindung",
@@ -176,12 +205,81 @@ public class MieterFormView extends Div implements HasPageHeader {
         );
     }
 
-    // Erstellt eine normale Form-Card
+    private void speichereMieter() {
+        try {
+            pruefePflichtfelder();
+
+            Adresse adresse = new Adresse(
+                    strasseField.getValue(),
+                    "",
+                    plzField.getValue(),
+                    ortField.getValue()
+            );
+
+            Mieter mieter = new Mieter(
+                    anredeSelect.getValue(),
+                    titelField.getValue(),
+                    vornameField.getValue(),
+                    nachnameField.getValue(),
+                    geburtsdatumPicker.getValue(),
+                    berufField.getValue(),
+                    emailField.getValue(),
+                    telefonField.getValue(),
+                    adresse,
+                    bankdatenAktiv.getValue(),
+                    kontoinhaberField.getValue(),
+                    ibanField.getValue(),
+                    bicField.getValue()
+            );
+
+            mieterService.speichereMieter(mieter);
+
+            Notification.show("Mieter wurde gespeichert: "
+                    + vornameField.getValue() + " " + nachnameField.getValue());
+
+            getUI().ifPresent(ui -> ui.navigate("mieter-vertraege?tab=mieter"));
+
+        } catch (Exception ex) {
+            Notification.show("Fehler beim Speichern: " + ex.getMessage(), 4000, Notification.Position.MIDDLE);
+        }
+    }
+
+    private void pruefePflichtfelder() {
+        boolean fehler = false;
+
+        fehler |= markierePflichtfeld(vornameField, "Bitte Vorname eingeben");
+        fehler |= markierePflichtfeld(nachnameField, "Bitte Nachname eingeben");
+        fehler |= markierePflichtfeld(emailField, "Bitte E-Mail eingeben");
+
+        if (!emailField.getValue().isBlank() && !emailField.getValue().contains("@")) {
+            emailField.setInvalid(true);
+            emailField.setErrorMessage("Bitte gültige E-Mail eingeben");
+            fehler = true;
+        }
+
+        if (bankdatenAktiv.getValue()) {
+            fehler |= markierePflichtfeld(kontoinhaberField, "Bitte Kontoinhaber eingeben");
+            fehler |= markierePflichtfeld(ibanField, "Bitte IBAN eingeben");
+        }
+
+        if (fehler) {
+            throw new IllegalArgumentException("Bitte alle Pflichtfelder korrekt ausfüllen.");
+        }
+    }
+
+    private boolean markierePflichtfeld(TextField field, String errorMessage) {
+        boolean leer = field.getValue() == null || field.getValue().isBlank();
+
+        field.setInvalid(leer);
+        field.setErrorMessage(errorMessage);
+
+        return leer;
+    }
+
     private Div createFormCard(String titleText, String subtitleText, Component content) {
         return createFormCard(titleText, subtitleText, content, null);
     }
 
-    // Erstellt eine Form-Card mit optionalem Element rechts im Header
     private Div createFormCard(String titleText, String subtitleText, Component content, Component headerAction) {
         Div card = new Div();
         card.addClassName("form-card");
@@ -190,10 +288,13 @@ public class MieterFormView extends Div implements HasPageHeader {
         HorizontalLayout header = new HorizontalLayout();
         header.addClassName("form-card-header");
         header.setWidthFull();
-        header.setAlignItems(FlexComponent.Alignment.CENTER);
+        header.setAlignItems(FlexComponent.Alignment.START);
         header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
 
         Div titleArea = new Div();
+        titleArea.getStyle().set("display", "flex");
+        titleArea.getStyle().set("flex-direction", "column");
+        titleArea.getStyle().set("gap", "4px");
 
         Span title = new Span(titleText);
         title.addClassName("form-card-title");
@@ -201,7 +302,6 @@ public class MieterFormView extends Div implements HasPageHeader {
         Span subtitle = new Span(subtitleText);
         subtitle.addClassName("form-card-subtitle");
 
-        // Titel und Untertitel stehen untereinander
         titleArea.add(title, subtitle);
 
         if (headerAction == null) {
@@ -219,7 +319,6 @@ public class MieterFormView extends Div implements HasPageHeader {
         return card;
     }
 
-    // Erstellt ein zweispaltiges Formular
     private FormLayout createTwoColumnFormLayout() {
         FormLayout form = new FormLayout();
         form.setWidthFull();
@@ -233,17 +332,6 @@ public class MieterFormView extends Div implements HasPageHeader {
         );
 
         return form;
-    }
-
-    // Erstellt ein Textfeld
-    private TextField createTextField(String label, String placeholder, boolean required) {
-        TextField field = new TextField(label);
-        field.setPlaceholder(placeholder);
-        field.setRequiredIndicatorVisible(required);
-        field.setWidthFull();
-        field.getStyle().set("min-width", "0");
-
-        return field;
     }
 
     @Override

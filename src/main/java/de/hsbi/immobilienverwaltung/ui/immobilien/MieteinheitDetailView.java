@@ -13,25 +13,40 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
+import de.hsbi.immobilienverwaltung.domain.Mietvertrag;
+import de.hsbi.immobilienverwaltung.domain.enums.Vertragsstatus;
 import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
+import de.hsbi.immobilienverwaltung.service.interfaces.MietvertragService;
 import de.hsbi.immobilienverwaltung.ui.components.ConfirmDeleteDialog;
 import de.hsbi.immobilienverwaltung.ui.components.StatusBadge;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
+import de.hsbi.immobilienverwaltung.ui.mieter.MietvertragListView;
 import jakarta.annotation.security.PermitAll;
+
+import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Locale;
 
 @Route(value = "immobilien/:immobilieId/einheiten/:mieteinheitId/details", layout = MainLayout.class)
 @PermitAll
 public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeEnterObserver {
 
     private final MieteinheitService mieteinheitService;
+    private final MietvertragService mietvertragService;
+
     private Long immobilieId;
     private Long mieteinheitId;
 
     private Mieteinheit mieteinheit;
+    private List<Mietvertrag> mietvertraege = List.of();
 
-    public MieteinheitDetailView(MieteinheitService mieteinheitService) {
+    public MieteinheitDetailView(MieteinheitService mieteinheitService, MietvertragService mietvertragService) {
         this.mieteinheitService = mieteinheitService;
+        this.mietvertragService = mietvertragService;
+
         addClassName("page-content");
         addClassName("mieteinheit-detail-view");
     }
@@ -50,6 +65,8 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
 
         this.mieteinheit = mieteinheitService.findeMieteinheitNachId(mieteinheitId)
                 .orElseThrow(() -> new IllegalArgumentException("Mieteinheit wurde nicht gefunden."));
+
+        this.mietvertraege = mietvertragService.findeMietvertraegeNachMieteinheit(mieteinheitId);
 
         removeAll();
 
@@ -112,7 +129,7 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         stammdatenCard.add(
                 stammdatenTitle,
                 createInfoItem("Einheit-Nr.", valueOrDash(mieteinheit.getBezeichnung())),
-                createInfoItem("Typ", valueOrDash(mieteinheit.getTyp().getLabel())),
+                createInfoItem("Typ", mieteinheit.getTyp() == null ? "-" : mieteinheit.getTyp().getLabel()),
                 createInfoItem("Größe", mieteinheit.getGroesse() == null ? "-" : mieteinheit.getGroesse() + " m²"),
                 createInfoItem("Stockwerk", valueOrDash(mieteinheit.getStockwerk())),
                 createInfoItem("Zimmeranzahl", valueOrDash(mieteinheit.getZimmerzahl())),
@@ -124,21 +141,21 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         return grid;
     }
 
-    private String valueOrDash(Object value) {
-        return value == null ? "-" : value.toString();
-    }
-
     private Component createAktuellerMietvertragCard() {
-        if (hatAktivenMietvertrag()) {
-            return createAktiverMietvertragCard();
+        Mietvertrag aktuellerMietvertrag = findeAktuellenMietvertrag();
+
+        if (aktuellerMietvertrag == null) {
+            return createKeinMietvertragCard();
         }
 
-        return createKeinMietvertragCard();
+        return createAktiverMietvertragCard(aktuellerMietvertrag);
     }
 
-    private boolean hatAktivenMietvertrag() {
-        // TODO Später: über MietvertragService prüfen
-        return false;
+    private Mietvertrag findeAktuellenMietvertrag() {
+        return mietvertraege.stream()
+                .filter(this::istLaufenderVertrag)
+                .findFirst()
+                .orElse(null);
     }
 
     private Component createKeinMietvertragCard() {
@@ -149,16 +166,15 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         title.addClassName("card-title");
 
         Paragraph text = new Paragraph(
-                "Für diese Mieteinheit ist aktuell kein aktiver Mietvertrag vorhanden. Daher gibt es noch keine verbindlichen Mietdaten."
+                "Für diese Mieteinheit ist aktuell kein laufender Mietvertrag vorhanden."
         );
         text.addClassName("card-subtitle");
 
         Button createContractButton = new Button("Mietvertrag anlegen", VaadinIcon.PLUS.create());
         createContractButton.addClassName("primary-button");
 
-        // TODO Festlegen dass beim anlegen direkt die jeweilige Immobilie + Mieteinheit ausgewählt ist
         createContractButton.addClickListener(event ->
-                 getUI().ifPresent(ui -> ui.navigate("mietvertrag-anlegen"))
+                getUI().ifPresent(ui -> ui.navigate("mietvertrag-anlegen"))
         );
 
         card.add(title, text, createContractButton);
@@ -166,7 +182,7 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         return card;
     }
 
-    private Component createAktiverMietvertragCard() {
+    private Component createAktiverMietvertragCard(Mietvertrag mietvertrag) {
         Div card = new Div();
         card.addClassNames("card", "mieteinheit-info-card");
 
@@ -175,16 +191,20 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
 
         card.add(
                 title,
-                createInfoItem("Mieter", "Max Mustermann"),
-                createStatusItem("Status", StatusBadge.success("Aktiv")),
-                createInfoItem("Vertragsbeginn", "01.10.2021"),
-                createInfoItem("Kaltmiete", "€ 950,00"),
-                createInfoItem("Nebenkosten", "€ 180,00"),
-                createInfoItem("Warmmiete", "€ 1.130,00")
+                createInfoItem("Mieter", formatMieterName(mietvertrag)),
+                createStatusItem("Status", createVertragsStatusBadge(mietvertrag)),
+                createInfoItem("Vertragsbeginn", formatDatum(mietvertrag.getStartdatum())),
+                createInfoItem("Vertragsende", mietvertrag.getEnddatum() == null ? "unbefristet" : formatDatum(mietvertrag.getEnddatum())),
+                createInfoItem("Kaltmiete", formatEuro(mietvertrag.getKaltmiete())),
+                createInfoItem("Nebenkosten", formatEuro(mietvertrag.getNebenkosten())),
+                createInfoItem("Warmmiete", formatWarmmiete(mietvertrag))
         );
 
         Button showContractButton = new Button("Mietvertrag anzeigen", VaadinIcon.EYE.create());
         showContractButton.addClassName("secondary-button");
+        showContractButton.addClickListener(event ->
+                getUI().ifPresent(ui -> ui.navigate(MietvertragListView.class, String.valueOf(mietvertrag.getId())))
+        );
 
         card.add(showContractButton);
 
@@ -198,12 +218,92 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         H3 title = new H3("Mietvertragshistorie");
         title.addClassName("card-title");
 
-        Paragraph text = new Paragraph("Bisher sind keine früheren Mietverträge für diese Mieteinheit vorhanden.");
-        text.addClassName("card-subtitle");
+        List<Mietvertrag> historischeVertraege = mietvertraege.stream()
+                .filter(this::istHistorischerVertrag)
+                .sorted(this::vergleicheNachEnddatumAbsteigend)
+                .toList();
 
-        card.add(title, text);
+        card.add(title);
+
+        if (historischeVertraege.isEmpty()) {
+            Paragraph text = new Paragraph("Bisher sind keine beendeten Mietverträge für diese Mieteinheit vorhanden.");
+            text.addClassName("card-subtitle");
+            card.add(text);
+            return card;
+        }
+
+        historischeVertraege.forEach(mietvertrag -> card.add(createHistorieEintrag(mietvertrag)));
 
         return card;
+    }
+
+    private Component createHistorieEintrag(Mietvertrag mietvertrag) {
+        Div eintrag = new Div();
+        eintrag.addClassName("contract-history-row");
+
+        Button showButton = new Button("Anzeigen", VaadinIcon.EYE.create());
+        showButton.addClassName("secondary-button");
+        showButton.addClickListener(event ->
+                getUI().ifPresent(ui -> ui.navigate(MietvertragListView.class, String.valueOf(mietvertrag.getId())))
+        );
+
+        eintrag.add(
+                createInfoItem("Mieter", formatMieterName(mietvertrag)),
+                createInfoItem("Zeitraum", formatZeitraum(mietvertrag)),
+                createInfoItem("Warmmiete", formatWarmmiete(mietvertrag)),
+                createStatusItem("Status", createVertragsStatusBadge(mietvertrag)),
+                showButton
+        );
+
+        return eintrag;
+    }
+
+    private boolean istLaufenderVertrag(Mietvertrag mietvertrag) {
+        if (mietvertrag == null || mietvertrag.getStatus() == null) {
+            return false;
+        }
+
+        if (mietvertrag.getStatus() == Vertragsstatus.AKTIV) {
+            return true;
+        }
+
+        return mietvertrag.getStatus() == Vertragsstatus.GEKUENDIGT
+                && (
+                mietvertrag.getEnddatum() == null
+                        || !mietvertrag.getEnddatum().isBefore(LocalDate.now())
+        );
+    }
+
+    private boolean istHistorischerVertrag(Mietvertrag mietvertrag) {
+        if (mietvertrag == null || mietvertrag.getStatus() == null) {
+            return false;
+        }
+
+        return mietvertrag.getStatus() == Vertragsstatus.BEENDET
+                || (
+                mietvertrag.getStatus() == Vertragsstatus.GEKUENDIGT
+                        && mietvertrag.getEnddatum() != null
+                        && mietvertrag.getEnddatum().isBefore(LocalDate.now())
+        );
+    }
+
+    private int vergleicheNachEnddatumAbsteigend(Mietvertrag a, Mietvertrag b) {
+        LocalDate aEnde = a.getEnddatum();
+        LocalDate bEnde = b.getEnddatum();
+
+        if (aEnde == null && bEnde == null) {
+            return 0;
+        }
+
+        if (aEnde == null) {
+            return 1;
+        }
+
+        if (bEnde == null) {
+            return -1;
+        }
+
+        return bEnde.compareTo(aEnde);
     }
 
     private Component createInfoItem(String label, String value) {
@@ -233,6 +333,86 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         return item;
     }
 
+    private Component createVertragsStatusBadge(Mietvertrag mietvertrag) {
+        String status = formatVertragsstatus(mietvertrag);
+
+        Span badge = new Span(status);
+        badge.addClassNames("status-badge", getVertragsStatusStyle(mietvertrag));
+
+        return badge;
+    }
+
+    private String formatVertragsstatus(Mietvertrag mietvertrag) {
+        if (mietvertrag == null || mietvertrag.getStatus() == null) {
+            return "-";
+        }
+
+        if (mietvertrag.getStatus() == Vertragsstatus.AKTIV) {
+            return "Aktiv";
+        }
+
+        if (mietvertrag.getStatus() == Vertragsstatus.GEKUENDIGT && istLaufenderVertrag(mietvertrag)) {
+            return "Läuft aus";
+        }
+
+        return "Beendet";
+    }
+
+    private String getVertragsStatusStyle(Mietvertrag mietvertrag) {
+        if (mietvertrag == null || mietvertrag.getStatus() == null) {
+            return "neutral";
+        }
+
+        if (mietvertrag.getStatus() == Vertragsstatus.AKTIV) {
+            return "success";
+        }
+
+        if (mietvertrag.getStatus() == Vertragsstatus.GEKUENDIGT && istLaufenderVertrag(mietvertrag)) {
+            return "warning";
+        }
+
+        return "neutral";
+    }
+
+    private String formatMieterName(Mietvertrag mietvertrag) {
+        if (mietvertrag == null || mietvertrag.getMieter() == null) {
+            return "-";
+        }
+
+        String vorname = mietvertrag.getMieter().getVorname() == null ? "" : mietvertrag.getMieter().getVorname();
+        String nachname = mietvertrag.getMieter().getNachname() == null ? "" : mietvertrag.getMieter().getNachname();
+
+        return (vorname + " " + nachname).trim();
+    }
+
+    private String formatZeitraum(Mietvertrag mietvertrag) {
+        return formatDatum(mietvertrag.getStartdatum()) + " - " + formatDatum(mietvertrag.getEnddatum());
+    }
+
+    private String formatDatum(LocalDate datum) {
+        if (datum == null) {
+            return "-";
+        }
+
+        return datum.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+    }
+
+    private String formatWarmmiete(Mietvertrag mietvertrag) {
+        double kaltmiete = mietvertrag.getKaltmiete() == null ? 0 : mietvertrag.getKaltmiete();
+        double nebenkosten = mietvertrag.getNebenkosten() == null ? 0 : mietvertrag.getNebenkosten();
+
+        return formatEuro(kaltmiete + nebenkosten);
+    }
+
+    private String formatEuro(Double betrag) {
+        double wert = betrag == null ? 0 : betrag;
+        return NumberFormat.getCurrencyInstance(Locale.GERMANY).format(wert);
+    }
+
+    private String valueOrDash(Object value) {
+        return value == null ? "-" : value.toString();
+    }
+
     @Override
     public String getPageTitle() {
         return mieteinheit != null
@@ -246,5 +426,4 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
                 ? "Immobilien > Mieteinheit " + mieteinheit.getBezeichnung()
                 : "Immobilien > Mieteinheit";
     }
-
 }
