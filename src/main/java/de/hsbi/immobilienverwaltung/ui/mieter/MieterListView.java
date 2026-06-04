@@ -145,10 +145,21 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
                 getUI().ifPresent(ui -> ui.navigate(MietvertragFormView.class))
         );
 
+        Button archiveButton = new Button("Mieter archivieren", VaadinIcon.TRASH.create());
+        archiveButton.addClassName("danger-button");
+        archiveButton.setVisible(bearbeitenAktiv);
+        archiveButton.addClickListener(event -> archiviereMieter());
+
         HorizontalLayout rightArea = new HorizontalLayout();
         rightArea.setAlignItems(FlexComponent.Alignment.CENTER);
         rightArea.setSpacing(true);
-        rightArea.add(editButton, newContractButton);
+        rightArea.add(editButton);
+
+        if (bearbeitenAktiv) {
+            rightArea.add(archiveButton);
+        }
+
+        rightArea.add(newContractButton);
 
         header.add(leftArea, rightArea);
         headerCard.add(header);
@@ -409,6 +420,19 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         card.add(title, text);
 
         return card;
+    }
+
+    private void archiviereMieter() {
+        try {
+            mieterService.archiviereMieter(aktuellerMieter.getId());
+
+            Notification.show("Mieter wurde archiviert");
+
+            getUI().ifPresent(ui -> ui.navigate("mieter-vertraege?tab=mieter"));
+
+        } catch (Exception ex) {
+            Notification.show("Fehler beim Archivieren: " + ex.getMessage(), 4000, Notification.Position.MIDDLE);
+        }
     }
 
     private String ermittleMieterStatus() {

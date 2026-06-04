@@ -52,7 +52,6 @@ public class MietvertragFormView extends Div implements HasPageHeader {
 
     private final TextField kaltmieteField = new TextField("Kaltmiete");
     private final TextField nebenkostenField = new TextField("Nebenkosten-Vorauszahlung");
-    private final TextField kautionField = new TextField("Kaution");
 
     public MietvertragFormView(
             MieterService mieterService,
@@ -209,10 +208,6 @@ public class MietvertragFormView extends Div implements HasPageHeader {
         nebenkostenField.setSuffixComponent(new Span("€"));
         nebenkostenField.setWidthFull();
 
-        kautionField.setPlaceholder("0.00");
-        kautionField.setSuffixComponent(new Span("€"));
-        kautionField.setWidthFull();
-
         Div warmmieteBox = new Div();
         warmmieteBox.addClassName("money-summary-box");
 
@@ -235,7 +230,6 @@ public class MietvertragFormView extends Div implements HasPageHeader {
         form.add(
                 kaltmieteField,
                 nebenkostenField,
-                kautionField,
                 warmmieteBox
         );
         form.setColspan(warmmieteBox, 2);
@@ -256,7 +250,7 @@ public class MietvertragFormView extends Div implements HasPageHeader {
             mietvertrag.setEnddatum(vertragsendePicker.getValue());
             mietvertrag.setKaltmiete(parsePflichtbetrag(kaltmieteField, "Bitte Kaltmiete eingeben"));
             mietvertrag.setNebenkosten(parsePflichtbetrag(nebenkostenField, "Bitte Nebenkosten eingeben"));
-            mietvertrag.setKaution(parseOptionalerBetrag(kautionField));
+            mietvertrag.setKaution(null);
             mietvertrag.setKuendigungsfrist(berechneKuendigungsfrist());
             mietvertrag.setStatus(Vertragsstatus.AKTIV);
 

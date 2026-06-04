@@ -1,12 +1,12 @@
 package de.hsbi.immobilienverwaltung.service.impl;
 
-import de.hsbi.immobilienverwaltung.domain.Mieter;
 import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
+import de.hsbi.immobilienverwaltung.domain.Mieter;
 import de.hsbi.immobilienverwaltung.domain.Mietvertrag;
 import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
 import de.hsbi.immobilienverwaltung.domain.enums.Vertragsstatus;
-import de.hsbi.immobilienverwaltung.repository.MieterRepository;
 import de.hsbi.immobilienverwaltung.repository.MieteinheitRepository;
+import de.hsbi.immobilienverwaltung.repository.MieterRepository;
 import de.hsbi.immobilienverwaltung.repository.MietvertragRepository;
 import de.hsbi.immobilienverwaltung.service.interfaces.MietvertragService;
 import org.springframework.stereotype.Service;
@@ -36,19 +36,94 @@ public class MietvertragServiceImpl implements MietvertragService {
     @Override
     @Transactional
     public Mietvertrag speichereMietvertrag(Long mieterId, Long mieteinheitId, Mietvertrag mietvertrag) {
-
         Mieter mieter = mieterRepository.findById(mieterId)
                 .orElseThrow(() -> new IllegalArgumentException("Mieter wurde nicht gefunden."));
 
         Mieteinheit mieteinheit = mieteinheitRepository.findById(mieteinheitId)
                 .orElseThrow(() -> new IllegalArgumentException("Mieteinheit wurde nicht gefunden."));
 
+        validiereMietvertrag(mietvertrag);
+
+        if (mietvertrag.getStatus() == null) {
+            mietvertrag.setStatus(Vertragsstatus.AKTIV);
+        }
+
+        aktualisiereStatusNachDatum(mietvertrag);
+
+        mietvertrag.setMieter(mieter);
+        mietvertrag.setMieteinheit(mieteinheit);
+
+        pruefeLaufendenVertragFuerMieteinheit(mieteinheitId, mietvertrag);
+        aktualisiereMieteinheitStatus(mietvertrag);
+
+        return mietvertragRepository.save(mietvertrag);
+    }
+
+    @Override
+    @Transactional
+    public List<Mietvertrag> findeAlleMietvertraege() {
+        List<Mietvertrag> vertraege = mietvertragRepository.findAll();
+        vertraege.forEach(this::aktualisierePersistiertenVertragNachDatum);
+        return vertraege;
+    }
+
+    @Override
+    @Transactional
+    public List<Mietvertrag> findeMietvertraegeNachMieter(Long mieterId) {
+        List<Mietvertrag> vertraege = mietvertragRepository.findByMieterId(mieterId);
+        vertraege.forEach(this::aktualisierePersistiertenVertragNachDatum);
+        return vertraege;
+    }
+
+    @Override
+    @Transactional
+    public List<Mietvertrag> findeMietvertraegeNachMieteinheit(Long mieteinheitId) {
+        List<Mietvertrag> vertraege = mietvertragRepository.findByMieteinheitId(mieteinheitId);
+        vertraege.forEach(this::aktualisierePersistiertenVertragNachDatum);
+        return vertraege;
+    }
+
+    @Override
+    @Transactional
+    public Optional<Mietvertrag> findeMietvertragNachId(Long id) {
+        return mietvertragRepository.findById(id)
+                .map(this::aktualisierePersistiertenVertragNachDatum);
+    }
+
+    @Override
+    @Transactional
+    public void kuendigeMietvertrag(Long id) {
+        Mietvertrag mietvertrag = mietvertragRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Mietvertrag wurde nicht gefunden."));
+
+        if (mietvertrag.getStatus() == Vertragsstatus.BEENDET) {
+            throw new IllegalArgumentException("Beendete Mietverträge können nicht gekündigt werden.");
+        }
+
+        mietvertrag.setStatus(Vertragsstatus.GEKUENDIGT);
+
+        if (mietvertrag.getEnddatum() == null) {
+            mietvertrag.setEnddatum(LocalDate.now());
+        }
+
+        aktualisiereStatusNachDatum(mietvertrag);
+        aktualisiereMieteinheitStatus(mietvertrag);
+
+        mietvertragRepository.save(mietvertrag);
+    }
+
+    @Override
+    @Transactional
+    public void loescheMietvertrag(Long id) {
+        mietvertragRepository.deleteById(id);
+    }
+
+    private void validiereMietvertrag(Mietvertrag mietvertrag) {
         if (mietvertrag.getStartdatum() == null) {
             throw new IllegalArgumentException("Startdatum muss angegeben werden.");
         }
 
-        if (mietvertrag.getEnddatum() != null
-                && mietvertrag.getEnddatum().isBefore(mietvertrag.getStartdatum())) {
+        if (mietvertrag.getEnddatum() != null && mietvertrag.getEnddatum().isBefore(mietvertrag.getStartdatum())) {
             throw new IllegalArgumentException("Enddatum darf nicht vor dem Startdatum liegen.");
         }
 
@@ -71,83 +146,95 @@ public class MietvertragServiceImpl implements MietvertragService {
         if (mietvertrag.getKaution() != null && mietvertrag.getKaution() < 0) {
             throw new IllegalArgumentException("Kaution darf nicht negativ sein.");
         }
-
-        if (mietvertrag.getStatus() == null) {
-            mietvertrag.setStatus(Vertragsstatus.AKTIV);
-        }
-
-        pruefeAktivenVertragFuerMieteinheit(mieteinheitId, mietvertrag);
-
-        mietvertrag.setMieter(mieter);
-        mietvertrag.setMieteinheit(mieteinheit);
-
-        if (mietvertrag.getStatus() == Vertragsstatus.AKTIV) {
-            mieteinheit.setStatus(Mieteinheitstatus.VERMIETET);
-        }
-
-        return mietvertragRepository.save(mietvertrag);
     }
 
-    private void pruefeAktivenVertragFuerMieteinheit(Long mieteinheitId, Mietvertrag mietvertrag) {
-        List<Mietvertrag> aktiveVertraege =
-                mietvertragRepository.findByMieteinheitIdAndStatus(mieteinheitId, Vertragsstatus.AKTIV);
+    private Mietvertrag aktualisierePersistiertenVertragNachDatum(Mietvertrag mietvertrag) {
+        Vertragsstatus alterStatus = mietvertrag.getStatus();
 
-        for (Mietvertrag aktiverVertrag : aktiveVertraege) {
+        aktualisiereStatusNachDatum(mietvertrag);
 
-            if (mietvertrag.getId() != null && mietvertrag.getId().equals(aktiverVertrag.getId())) {
+        if (alterStatus != mietvertrag.getStatus()) {
+            aktualisiereMieteinheitStatus(mietvertrag);
+            return mietvertragRepository.save(mietvertrag);
+        }
+
+        return mietvertrag;
+    }
+
+    private void aktualisiereStatusNachDatum(Mietvertrag mietvertrag) {
+        if (mietvertrag.getStatus() == Vertragsstatus.GEKUENDIGT
+                && mietvertrag.getEnddatum() != null
+                && mietvertrag.getEnddatum().isBefore(LocalDate.now())) {
+            mietvertrag.setStatus(Vertragsstatus.BEENDET);
+        }
+    }
+
+    private void pruefeLaufendenVertragFuerMieteinheit(Long mieteinheitId, Mietvertrag aktuellerVertrag) {
+        if (!istLaufenderVertrag(aktuellerVertrag)) {
+            return;
+        }
+
+        List<Mietvertrag> vorhandeneVertraege = mietvertragRepository.findByMieteinheitId(mieteinheitId);
+
+        for (Mietvertrag vorhandenerVertrag : vorhandeneVertraege) {
+            aktualisiereStatusNachDatum(vorhandenerVertrag);
+
+            if (aktuellerVertrag.getId() != null
+                    && aktuellerVertrag.getId().equals(vorhandenerVertrag.getId())) {
                 continue;
             }
 
-            throw new IllegalArgumentException("Für diese Mieteinheit existiert bereits ein aktiver Mietvertrag.");
+            if (istLaufenderVertrag(vorhandenerVertrag)) {
+                throw new IllegalArgumentException("Für diese Mieteinheit existiert bereits ein laufender Mietvertrag.");
+            }
         }
     }
 
-    @Override
-    public List<Mietvertrag> findeAlleMietvertraege() {
-        return mietvertragRepository.findAll();
-    }
-
-    @Override
-    public List<Mietvertrag> findeMietvertraegeNachMieter(Long mieterId) {
-        return mietvertragRepository.findByMieterId(mieterId);
-    }
-
-    @Override
-    public List<Mietvertrag> findeMietvertraegeNachMieteinheit(Long mieteinheitId) {
-        return mietvertragRepository.findByMieteinheitId(mieteinheitId);
-    }
-
-    @Override
-    public Optional<Mietvertrag> findeMietvertragNachId(Long id) {
-        return mietvertragRepository.findById(id);
-    }
-
-    @Override
-    @Transactional
-    public void kuendigeMietvertrag(Long id) {
-        Mietvertrag mietvertrag = mietvertragRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Mietvertrag wurde nicht gefunden."));
-
-        if (mietvertrag.getStatus() == Vertragsstatus.BEENDET) {
-            throw new IllegalArgumentException("Beendete Mietverträge können nicht gekündigt werden.");
+    private boolean istLaufenderVertrag(Mietvertrag mietvertrag) {
+        if (mietvertrag == null || mietvertrag.getStatus() == null) {
+            return false;
         }
 
-        mietvertrag.setStatus(Vertragsstatus.GEKUENDIGT);
-
-        if (mietvertrag.getEnddatum() == null) {
-            mietvertrag.setEnddatum(LocalDate.now());
+        if (mietvertrag.getStatus() == Vertragsstatus.AKTIV) {
+            return true;
         }
 
-        if (mietvertrag.getMieteinheit() != null) {
-            mietvertrag.getMieteinheit().setStatus(Mieteinheitstatus.FREI);
-        }
-
-        mietvertragRepository.save(mietvertrag);
+        return mietvertrag.getStatus() == Vertragsstatus.GEKUENDIGT
+                && (
+                mietvertrag.getEnddatum() == null
+                        || !mietvertrag.getEnddatum().isBefore(LocalDate.now())
+        );
     }
 
-    @Override
-    @Transactional
-    public void loescheMietvertrag(Long id) {
-        mietvertragRepository.deleteById(id);
+    private void aktualisiereMieteinheitStatus(Mietvertrag mietvertrag) {
+        if (mietvertrag.getMieteinheit() == null) {
+            return;
+        }
+
+        Mieteinheit mieteinheit = mietvertrag.getMieteinheit();
+
+        if (istLaufenderVertrag(mietvertrag)) {
+            mieteinheit.setStatus(Mieteinheitstatus.VERMIETET);
+            mieteinheitRepository.save(mieteinheit);
+            return;
+        }
+
+        if (!hatAnderenLaufendenVertragFuerMieteinheit(mietvertrag)) {
+            mieteinheit.setStatus(Mieteinheitstatus.FREI);
+            mieteinheitRepository.save(mieteinheit);
+        }
+    }
+
+    private boolean hatAnderenLaufendenVertragFuerMieteinheit(Mietvertrag aktuellerVertrag) {
+        if (aktuellerVertrag.getMieteinheit() == null || aktuellerVertrag.getMieteinheit().getId() == null) {
+            return false;
+        }
+
+        return mietvertragRepository.findByMieteinheitId(aktuellerVertrag.getMieteinheit().getId())
+                .stream()
+                .filter(vertrag -> aktuellerVertrag.getId() == null
+                        || !aktuellerVertrag.getId().equals(vertrag.getId())
+                )
+                .anyMatch(this::istLaufenderVertrag);
     }
 }

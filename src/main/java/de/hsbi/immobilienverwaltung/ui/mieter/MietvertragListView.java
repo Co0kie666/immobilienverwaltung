@@ -185,8 +185,7 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         rightColumn.getStyle().set("min-width", "360px");
 
         rightColumn.add(
-                createFinanzenCard(),
-                createKautionCard()
+                createFinanzenCard()
         );
 
         contentLayout.add(leftColumn, rightColumn);
@@ -269,17 +268,20 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         if (bearbeitenAktiv) {
             kaltmieteField.setValue(aktuellerMietvertrag.getKaltmiete());
             nebenkostenField.setValue(aktuellerMietvertrag.getNebenkosten());
+            kautionField.setValue(aktuellerMietvertrag.getKaution());
 
             kaltmieteField.setSuffixComponent(new Span("€"));
             nebenkostenField.setSuffixComponent(new Span("€"));
+            kautionField.setSuffixComponent(new Span("€"));
 
-            content.add(title, kaltmieteField, nebenkostenField);
+            content.add(title, kaltmieteField, nebenkostenField, kautionField);
         } else {
             content.add(
                     title,
                     createReadonlyInfoBlock("Kaltmiete", formatEuro(aktuellerMietvertrag.getKaltmiete())),
                     createReadonlyInfoBlock("Nebenkosten", formatEuro(aktuellerMietvertrag.getNebenkosten())),
-                    createReadonlyInfoBlock("Warmmiete", formatWarmmiete())
+                    createReadonlyInfoBlock("Warmmiete", formatWarmmiete()),
+                    createReadonlyInfoBlock("Kaution", formatEuro(aktuellerMietvertrag.getKaution()))
             );
         }
 
@@ -287,34 +289,6 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         return card;
     }
 
-    private Component createKautionCard() {
-        Div card = new Div();
-        card.addClassName("card");
-        card.setWidthFull();
-
-        VerticalLayout content = new VerticalLayout();
-        content.setPadding(false);
-        content.setSpacing(true);
-        content.setWidthFull();
-
-        Span title = new Span("Kaution");
-        title.addClassName("card-title");
-
-        if (bearbeitenAktiv) {
-            kautionField.setValue(aktuellerMietvertrag.getKaution());
-            kautionField.setSuffixComponent(new Span("€"));
-
-            content.add(title, kautionField);
-        } else {
-            content.add(
-                    title,
-                    createReadonlyInfoBlock("Kautionsbetrag", formatEuro(aktuellerMietvertrag.getKaution()))
-            );
-        }
-
-        card.add(content);
-        return card;
-    }
 
     private void speichereAenderungen() {
         try {

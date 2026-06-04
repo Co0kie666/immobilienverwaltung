@@ -288,10 +288,13 @@ public class MieterFormView extends Div implements HasPageHeader {
         HorizontalLayout header = new HorizontalLayout();
         header.addClassName("form-card-header");
         header.setWidthFull();
-        header.setAlignItems(FlexComponent.Alignment.CENTER);
+        header.setAlignItems(FlexComponent.Alignment.START);
         header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
 
         Div titleArea = new Div();
+        titleArea.getStyle().set("display", "flex");
+        titleArea.getStyle().set("flex-direction", "column");
+        titleArea.getStyle().set("gap", "4px");
 
         Span title = new Span(titleText);
         title.addClassName("form-card-title");
