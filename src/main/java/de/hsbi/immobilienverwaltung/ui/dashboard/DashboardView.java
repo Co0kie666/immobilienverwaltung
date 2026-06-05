@@ -20,10 +20,12 @@ import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 @PermitAll
 public class DashboardView extends Div implements HasPageHeader {
 
-    private final double leerstandsquote;
+
     private final long gesamtMieteinheiten;
     private final long leerstehendeMieteinheiten;
     private final long vermieteteMieteinheiten;
+    private final double leerstandsquote;
+    private final long aktiveVertraege;
 
     public DashboardView(GesamtAuswertungService gesamtAuswertungService) {
 
@@ -38,6 +40,8 @@ public class DashboardView extends Div implements HasPageHeader {
 
         this.leerstandsquote =
                 gesamtAuswertungService.berechneLeerstandsquote();
+
+        this.aktiveVertraege = gesamtAuswertungService.berechneAnzahlAktiveVertraege();
 
         UI.getCurrent().getPage().addJavaScript(
                 "https://cdn.jsdelivr.net/npm/chart.js"
@@ -132,12 +136,12 @@ public class DashboardView extends Div implements HasPageHeader {
 
                 kpiCard(
                         "Aktive Verträge",
-                        "142",
-                        "+4",
+                        String.valueOf(aktiveVertraege),
+                        "",
                         "Laufende Mietverträge",
                         VaadinIcon.USERS,
                         "success"
-                )
+                )//
         );
 
         layout.getChildren().forEach(component ->
