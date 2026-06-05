@@ -136,27 +136,12 @@ VALUES
     ('2027-06-30', 1100.00, 2200.00, '2027-03-31', 320.00, '2026-01-01', 8, 8, 'AKTIV'),
     (NULL, 950.00, 1900.00, '2026-12-31', 280.00, '2026-05-01', 9, 9, 'AKTIV'),
     ('2026-05-31', 480.00, 960.00, '2026-02-28', 140.00, '2024-09-01', 10, 10, 'BEENDET');
-INSERT INTO AUSGABE
-(BETRAG, DATUM, FAELLIGKEITSDATUM, BESCHREIBUNG, EMPFAENGER, TITEL, KATEGORIE, IMMOBILIE_ID, MIETEINHEIT_ID)
-VALUES
-    (390.00, '2026-06-12', NULL, 'Heizungsreparatur in WE-03', 'Heizung Krüger', 'Heizungsreparatur WE-03', 'REPARATUR', 2, 7);
 
 INSERT INTO AUSGABE
 (BETRAG, DATUM, FAELLIGKEITSDATUM, BESCHREIBUNG, EMPFAENGER, TITEL, KATEGORIE, IMMOBILIE_ID, MIETEINHEIT_ID)
 VALUES
-    (600.00, '2026-06-15', NULL, 'Gebäudeversicherung für Seeblick Quartier', 'Versicherung AG', 'Gebäudeversicherung', 'VERSICHERUNG', 3, NULL);
-
-INSERT INTO AUSGABE
-(BETRAG, DATUM, FAELLIGKEITSDATUM, BESCHREIBUNG, EMPFAENGER, TITEL, KATEGORIE, IMMOBILIE_ID, MIETEINHEIT_ID)
-VALUES
-    (520.00, '2026-06-18', NULL, 'Reparatur im Büro EG', 'Facility Service GmbH', 'Reparatur Büro EG', 'REPARATUR', 3, 8);
-
-INSERT INTO AUSGABE
-(BETRAG, DATUM, FAELLIGKEITSDATUM, BESCHREIBUNG, EMPFAENGER, TITEL, KATEGORIE, IMMOBILIE_ID, MIETEINHEIT_ID)
-VALUES
-    (280.00, '2026-06-20', NULL, 'Lagerwartung Lager A', 'Logistik Service Nord', 'Wartung Lager A', 'INSTANDHALTUNG', 3, 9);
-
-INSERT INTO AUSGABE
-(BETRAG, DATUM, FAELLIGKEITSDATUM, BESCHREIBUNG, EMPFAENGER, TITEL, KATEGORIE, IMMOBILIE_ID, MIETEINHEIT_ID)
-VALUES
+    (390.00, '2026-06-12', NULL, 'Heizungsreparatur in WE-03', 'Heizung Krüger', 'Heizungsreparatur WE-03', 'REPARATUR', 2, 7),
+    (600.00, '2026-06-15', NULL, 'Gebäudeversicherung für Seeblick Quartier', 'Versicherung AG', 'Gebäudeversicherung', 'VERSICHERUNG', 3, NULL),
+    (520.00, '2026-06-18', NULL, 'Reparatur im Büro EG', 'Facility Service GmbH', 'Reparatur Büro EG', 'REPARATUR', 3, 8),
+    (280.00, '2026-06-20', NULL, 'Lagerwartung Lager A', 'Logistik Service Nord', 'Wartung Lager A', 'INSTANDHALTUNG', 3, 9),
     (350.00, '2026-06-22', NULL, 'Sonstige Betriebskosten für Gewerbefläche 1', 'Dienstleister GmbH', 'Sonstige Kosten', 'SONSTIGES', 3, 10);
