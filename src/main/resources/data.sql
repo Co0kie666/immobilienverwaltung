@@ -51,21 +51,21 @@ VALUES
 
 INSERT INTO nutzer (vorname, nachname, email, passwort, rolle)
 VALUES (
-        'Test',
-        'User',
-        'test@immopro.de',
-        '$2a$10$3W7jwY/gaIDV/LzwG1vJie9tZfeDwk2lMtXhlnXwI.IvM5mJoOZRC',
-        'USER'
-        -- passwort: test
-        ),
-    (
-        'Max',
-        'Mustermann',
-        'test@test.com',
-        '$2a$10$3W7jwY/gaIDV/LzwG1vJie9tZfeDwk2lMtXhlnXwI.IvM5mJoOZRC',
-        'USER'
-        -- passwort: test
-    );
+           'Test',
+           'User',
+           'test@immopro.de',
+           '$2a$10$3W7jwY/gaIDV/LzwG1vJie9tZfeDwk2lMtXhlnXwI.IvM5mJoOZRC',
+           'USER'
+           -- passwort: test
+       ),
+       (
+           'Max',
+           'Mustermann',
+           'test@test.com',
+           '$2a$10$3W7jwY/gaIDV/LzwG1vJie9tZfeDwk2lMtXhlnXwI.IvM5mJoOZRC',
+           'USER'
+           -- passwort: test
+       );
 
 INSERT INTO mieteinheit (bezeichnung, status, typ, groesse, zimmerzahl, stockwerk, immobilie_id)
 VALUES
@@ -81,3 +81,82 @@ VALUES
     ('Büro EG', 'VERMIETET', 'BUERO', 120, 5, 'EG', 3),
     ('Lager A', 'FREI', 'LAGERHALLE', 200, 1, 'UG', 3),
     ('Gewerbefläche 1', 'VERMIETET', 'GEWERBEFLAECHE', 150, 3, '1. OG', 3);
+
+INSERT INTO mieter (
+    archiviert,
+    bankdaten_aktiv,
+    geburtsdatum,
+    anrede,
+    beruf,
+    bic,
+    email,
+    hausnummer,
+    iban,
+    kontoinhaber,
+    nachname,
+    plz,
+    stadt,
+    strasse,
+    telefonnummer,
+    titel,
+    vorname
+)
+VALUES
+    (FALSE, TRUE,  '1990-04-12', 'Herr', 'Softwareentwickler', 'Sparkasse Bielefeld', 'max.mustermann@example.de', '12', 'DE89370400440532013000', 'Max Mustermann', 'Mustermann', '33602', 'Bielefeld', 'Bahnhofstraße', '+49 151 1234567', '', 'Max'),
+    (FALSE, TRUE,  '1985-09-23', 'Frau', 'Architektin', 'Volksbank OWL', 'anna.schmidt@example.de', '8a', 'DE12500105170648489890', 'Anna Schmidt', 'Schmidt', '33615', 'Bielefeld', 'Detmolder Straße', '+49 160 9876543', 'Dr.', 'Anna'),
+    (FALSE, FALSE, '1998-01-30', 'Herr', 'Student', '', 'lukas.weber@example.de', '45', '', '', 'Weber', '33613', 'Bielefeld', 'Jöllenbecker Straße', '+49 176 11122233', '', 'Lukas'),
+    (FALSE, TRUE,  '1977-06-18', 'Frau', 'Lehrerin', 'Commerzbank', 'sabine.fischer@example.de', '3', 'DE75512108001245126199', 'Sabine Fischer', 'Fischer', '33604', 'Bielefeld', 'August-Bebel-Straße', '+49 152 33344455', '', 'Sabine'),
+    (FALSE, FALSE, '1992-11-05', 'Divers', 'Grafikdesigner', '', 'kim.wagner@example.de', '21b', '', '', 'Wagner', '33607', 'Bielefeld', 'Herforder Straße', '+49 170 55566677', '', 'Kim'),
+
+    (FALSE, TRUE,  '1969-03-14', 'Herr', 'Elektriker', 'Deutsche Bank', 'thomas.becker@example.de', '17', 'DE02120300000000202051', 'Thomas Becker', 'Becker', '33647', 'Bielefeld', 'Brackweder Straße', '+49 171 22233344', '', 'Thomas'),
+    (FALSE, TRUE,  '1988-12-01', 'Frau', 'Buchhalterin', 'ING-DiBa', 'julia.hoffmann@example.de', '6', 'DE44500105175407324931', 'Julia Hoffmann', 'Hoffmann', '33619', 'Bielefeld', 'Voltmannstraße', '+49 172 44455566', '', 'Julia'),
+    (FALSE, FALSE, '1995-07-27', 'Herr', 'Pflegefachkraft', '', 'benjamin.schulz@example.de', '99', '', '', 'Schulz', '33609', 'Bielefeld', 'Heeper Straße', '+49 173 77788899', '', 'Benjamin'),
+    (FALSE, TRUE,  '1981-02-09', 'Frau', 'Rechtsanwältin', 'Postbank', 'maria.koch@example.de', '14c', 'DE89370400440532013001', 'Maria Koch', 'Koch', '33611', 'Bielefeld', 'Schloßhofstraße', '+49 174 12398765', 'Dr.', 'Maria'),
+    (TRUE,  FALSE, '1974-10-20', 'Herr', 'Rentner', '', 'peter.hansen@example.de', '15', '', '', 'Hansen', '93476', 'Pfänningen', 'Fasanstraße', '123456', '', 'Peter');
+
+INSERT INTO mietvertrag (
+    enddatum,
+    kaltmiete,
+    kaution,
+    kuendigungsfrist,
+    nebenkosten,
+    startdatum,
+    mieteinheit_id,
+    mieter_id,
+    status
+)
+VALUES
+    ('2027-02-17', 500.00, 1000.00, '2026-07-02', 150.00, '2026-06-02', 1, 1, 'AKTIV'),
+    ('2028-03-31', 720.00, 1440.00, '2027-12-31', 210.00, '2026-04-01', 2, 2, 'AKTIV'),
+    (NULL, 650.00, 1300.00, '2026-09-30', 180.00, '2026-01-15', 3, 3, 'AKTIV'),
+    ('2027-12-31', 580.00, 1160.00, '2027-09-30', 160.00, '2025-11-01', 4, 4, 'AKTIV'),
+    (NULL, 820.00, 1640.00, '2026-10-31', 230.00, '2026-02-01', 5, 5, 'AKTIV'),
+    ('2026-12-31', 690.00, 1380.00, '2026-09-30', 190.00, '2025-08-01', 6, 6, 'GEKUENDIGT'),
+    (NULL, 760.00, 1520.00, '2026-11-30', 200.00, '2026-03-01', 7, 7, 'AKTIV'),
+    ('2027-06-30', 1100.00, 2200.00, '2027-03-31', 320.00, '2026-01-01', 8, 8, 'AKTIV'),
+    (NULL, 950.00, 1900.00, '2026-12-31', 280.00, '2026-05-01', 9, 9, 'AKTIV'),
+    ('2026-05-31', 480.00, 960.00, '2026-02-28', 140.00, '2024-09-01', 10, 10, 'BEENDET');
+INSERT INTO AUSGABE
+(BETRAG, DATUM, FAELLIGKEITSDATUM, BESCHREIBUNG, EMPFAENGER, TITEL, KATEGORIE, IMMOBILIE_ID, MIETEINHEIT_ID)
+VALUES
+    (390.00, '2026-06-12', NULL, 'Heizungsreparatur in WE-03', 'Heizung Krüger', 'Heizungsreparatur WE-03', 'REPARATUR', 2, 7);
+
+INSERT INTO AUSGABE
+(BETRAG, DATUM, FAELLIGKEITSDATUM, BESCHREIBUNG, EMPFAENGER, TITEL, KATEGORIE, IMMOBILIE_ID, MIETEINHEIT_ID)
+VALUES
+    (600.00, '2026-06-15', NULL, 'Gebäudeversicherung für Seeblick Quartier', 'Versicherung AG', 'Gebäudeversicherung', 'VERSICHERUNG', 3, NULL);
+
+INSERT INTO AUSGABE
+(BETRAG, DATUM, FAELLIGKEITSDATUM, BESCHREIBUNG, EMPFAENGER, TITEL, KATEGORIE, IMMOBILIE_ID, MIETEINHEIT_ID)
+VALUES
+    (520.00, '2026-06-18', NULL, 'Reparatur im Büro EG', 'Facility Service GmbH', 'Reparatur Büro EG', 'REPARATUR', 3, 8);
+
+INSERT INTO AUSGABE
+(BETRAG, DATUM, FAELLIGKEITSDATUM, BESCHREIBUNG, EMPFAENGER, TITEL, KATEGORIE, IMMOBILIE_ID, MIETEINHEIT_ID)
+VALUES
+    (280.00, '2026-06-20', NULL, 'Lagerwartung Lager A', 'Logistik Service Nord', 'Wartung Lager A', 'INSTANDHALTUNG', 3, 9);
+
+INSERT INTO AUSGABE
+(BETRAG, DATUM, FAELLIGKEITSDATUM, BESCHREIBUNG, EMPFAENGER, TITEL, KATEGORIE, IMMOBILIE_ID, MIETEINHEIT_ID)
+VALUES
+    (350.00, '2026-06-22', NULL, 'Sonstige Betriebskosten für Gewerbefläche 1', 'Dienstleister GmbH', 'Sonstige Kosten', 'SONSTIGES', 3, 10);
