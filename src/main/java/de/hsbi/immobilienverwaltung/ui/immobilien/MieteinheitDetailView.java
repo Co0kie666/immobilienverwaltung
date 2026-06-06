@@ -113,7 +113,7 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
                 stammdatenTitle,
                 createInfoItem("Einheit-Nr.", valueOrDash(mieteinheit.getBezeichnung())),
                 createInfoItem("Typ", valueOrDash(mieteinheit.getTyp().getLabel())),
-                createInfoItem("Größe", mieteinheit.getGroesse() == null ? "-" : mieteinheit.getGroesse() + " m²"),
+                createInfoItem("Größe", valueOrDash(mieteinheit.getGroesse()) + " m²"),
                 createInfoItem("Stockwerk", valueOrDash(mieteinheit.getStockwerk())),
                 createInfoItem("Zimmeranzahl", valueOrDash(mieteinheit.getZimmerzahl())),
                 createStatusItem("Status", StatusBadge.neutral(mieteinheit.getStatus().getLabel()))

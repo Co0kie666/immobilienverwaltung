@@ -322,15 +322,15 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                 .setHeader("Typ")
                 .setAutoWidth(true);
 
-        mieteinheitenGrid.addColumn(mieteinheit -> mieteinheit.getGroesse() + " m²")
+        mieteinheitenGrid.addColumn(mieteinheit -> valueOrDash(mieteinheit.getGroesse()) + " m²")
                 .setHeader("Größe")
                 .setAutoWidth(true);
 
-        mieteinheitenGrid.addColumn(Mieteinheit::getStockwerk)
+        mieteinheitenGrid.addColumn(mieteinheit -> valueOrDash(mieteinheit.getStockwerk()))
                 .setHeader("Stockwerk")
                 .setAutoWidth(true);
 
-        mieteinheitenGrid.addColumn(Mieteinheit::getZimmerzahl)
+        mieteinheitenGrid.addColumn(mieteinheit -> valueOrDash(mieteinheit.getZimmerzahl()))
                 .setHeader("Zimmer")
                 .setAutoWidth(true);
 
