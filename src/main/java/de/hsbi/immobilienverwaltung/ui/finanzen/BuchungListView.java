@@ -170,7 +170,7 @@ public class BuchungListView extends Div implements HasPageHeader {
                     ausgabe.getKategorie() != null ? ausgabe.getKategorie().name() : "-",
                     ausgabe.getBeschreibung() != null ? ausgabe.getBeschreibung() : "-",
                     formatiereBetrag(ausgabe.getBetrag()),
-                    "Bezahlt / Erledigt"
+                    ausgabe.getStatus() != null ? ausgabe.getStatus() : "-"
             ));
         }
 
@@ -182,7 +182,7 @@ public class BuchungListView extends Div implements HasPageHeader {
                     zahlungseingang.getTyp() != null ? zahlungseingang.getTyp().name() : "-",
                     zahlungseingang.getBeschreibung() != null ? zahlungseingang.getBeschreibung() : "-",
                     formatiereBetrag(zahlungseingang.getBetrag()),
-                    "Bezahlt / Erledigt"
+                    zahlungseingang.getStatus() != null ? zahlungseingang.getStatus() : "-"
             ));
         }
 

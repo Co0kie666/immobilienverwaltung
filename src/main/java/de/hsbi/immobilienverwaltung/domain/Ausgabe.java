@@ -30,6 +30,8 @@ public class Ausgabe {
 
     private String empfaenger;
 
+    private String status;
+
     @ManyToOne
     private Immobilie immobilie;
 

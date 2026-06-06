@@ -373,6 +373,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
                     ausgabe.setBeschreibung(beschreibungField.getValue());
                     ausgabe.setImmobilie(immobilieField.getValue());
                     ausgabe.setImmobilie(immobilieField.getValue());
+                    ausgabe.setStatus(statusGroup.getValue());
 
                     ausgabeService.speichereAusgabe(ausgabe);
 
@@ -387,6 +388,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
                     zahlungseingang.setLeistungsmonat(faelligkeitsdatumField.getValue());
                     zahlungseingang.setBeschreibung(beschreibungField.getValue());
                     zahlungseingang.setMietvertrag(mieterVertragField.getValue());
+                    zahlungseingang.setStatus(statusGroup.getValue());
 
                     zahlungsEingangService.speichereZahlungseingang(zahlungseingang);
 
