@@ -28,6 +28,8 @@ public class Zahlungseingang {
 
     private String beschreibung;
 
+    private String status;
+
     @ManyToOne(optional = false)
     private Mietvertrag mietvertrag;
 
