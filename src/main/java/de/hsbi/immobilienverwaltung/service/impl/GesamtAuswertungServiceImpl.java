@@ -1,7 +1,9 @@
 package de.hsbi.immobilienverwaltung.service.impl;
 
 import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
+import de.hsbi.immobilienverwaltung.domain.enums.Vertragsstatus;
 import de.hsbi.immobilienverwaltung.repository.MieteinheitRepository;
+import de.hsbi.immobilienverwaltung.repository.MietvertragRepository;
 import de.hsbi.immobilienverwaltung.service.interfaces.GesamtAuswertungService;
 import org.springframework.stereotype.Service;
 
@@ -11,9 +13,14 @@ import java.util.List;
 public class GesamtAuswertungServiceImpl implements GesamtAuswertungService {
 
     private final MieteinheitRepository mieteinheitRepository;
+    private final MietvertragRepository mietvertragRepository;
 
-    public GesamtAuswertungServiceImpl(MieteinheitRepository mieteinheitRepository) {
+    public GesamtAuswertungServiceImpl(
+            MieteinheitRepository mieteinheitRepository,
+            MietvertragRepository mietvertragRepository
+    ) {
         this.mieteinheitRepository = mieteinheitRepository;
+        this.mietvertragRepository = mietvertragRepository;
     }
 
     @Override
@@ -42,5 +49,10 @@ public class GesamtAuswertungServiceImpl implements GesamtAuswertungService {
     @Override
     public long berechneAnzahlMieteinheiten() {
         return mieteinheitRepository.count();
+    }
+
+    @Override
+    public long berechneAnzahlAktiveVertraege() {
+        return mietvertragRepository.countByStatus(Vertragsstatus.AKTIV);
     }
 }

@@ -1,4 +1,113 @@
 package de.hsbi.immobilienverwaltung.service.impl;
 
-public class AusgabeServiceImpl {
+import de.hsbi.immobilienverwaltung.domain.Ausgabe;
+import de.hsbi.immobilienverwaltung.domain.Immobilie;
+import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
+import de.hsbi.immobilienverwaltung.repository.AusgabeRepository;
+import de.hsbi.immobilienverwaltung.service.interfaces.AusgabeService;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class AusgabeServiceImpl implements AusgabeService {
+
+    private final AusgabeRepository ausgabeRepository;
+
+    public AusgabeServiceImpl(AusgabeRepository ausgabeRepository) {
+        this.ausgabeRepository = ausgabeRepository;
+    }
+
+    @Override
+    @Transactional
+    public Ausgabe speichereAusgabe(Ausgabe ausgabe) {
+
+        if (ausgabe == null) {
+            throw new IllegalArgumentException("Ausgabe darf nicht leer sein.");
+        }
+
+        if (ausgabe.getKategorie() == null) {
+            throw new IllegalArgumentException("Kategorie muss ausgewählt werden.");
+        }
+
+        if (ausgabe.getBetrag() == null || ausgabe.getBetrag().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Betrag muss größer als 0 sein.");
+        }
+
+        if (ausgabe.getDatum() == null) {
+            throw new IllegalArgumentException("Datum muss angegeben werden.");
+        }
+
+        if (ausgabe.getImmobilie() == null && ausgabe.getMieteinheit() == null) {
+            throw new IllegalArgumentException("Bitte Immobilie oder Mieteinheit auswählen.");
+        }
+
+        return ausgabeRepository.save(ausgabe);
+    }
+
+    @Override
+    public List<Ausgabe> findeAlleAusgaben() {
+        return ausgabeRepository.findAll();
+    }
+
+    @Override
+    public Optional<Ausgabe> findeAusgabeNachId(Long id) {
+        return ausgabeRepository.findById(id);
+    }
+
+    @Override
+    public List<Ausgabe> findeAusgabenNachImmobilie(Immobilie immobilie) {
+        return ausgabeRepository.findByImmobilie(immobilie);
+    }
+
+    @Override
+    public List<Ausgabe> findeAusgabenNachMieteinheit(Mieteinheit mieteinheit) {
+        return ausgabeRepository.findByMieteinheit(mieteinheit);
+    }
+
+    @Override
+    public List<Ausgabe> findeAusgabenNachImmobilieUndZeitraum(
+            Immobilie immobilie,
+            LocalDate startDatum,
+            LocalDate endDatum
+    ) {
+        return ausgabeRepository.findByImmobilieAndDatumBetween(
+                immobilie,
+                startDatum,
+                endDatum
+        );
+    }
+
+    @Override
+    public BigDecimal berechneSummeAusgabenFuerImmobilie(
+            Immobilie immobilie,
+            LocalDate startDatum,
+            LocalDate endDatum
+    ) {
+        List<Ausgabe> ausgaben = ausgabeRepository.findByImmobilieAndDatumBetween(
+                immobilie,
+                startDatum,
+                endDatum
+        );
+
+        BigDecimal summe = BigDecimal.ZERO;
+
+        for (Ausgabe ausgabe : ausgaben) {
+            if (ausgabe.getBetrag() != null) {
+                summe = summe.add(ausgabe.getBetrag());
+            }
+        }
+
+        return summe;
+    }
+
+    @Override
+    @Transactional
+    public void loescheAusgabe(Long id) {
+        ausgabeRepository.deleteById(id);
+    }
 }

@@ -2,7 +2,9 @@ package de.hsbi.immobilienverwaltung.ui.mieter;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -10,53 +12,66 @@ import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.router.Route;
-import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
-import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
-import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
+import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
+import com.vaadin.flow.router.Route;
+import de.hsbi.immobilienverwaltung.domain.Mieter;
+import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
+import de.hsbi.immobilienverwaltung.domain.Mietvertrag;
+import de.hsbi.immobilienverwaltung.domain.enums.Vertragsstatus;
+import de.hsbi.immobilienverwaltung.service.interfaces.MieterService;
+import de.hsbi.immobilienverwaltung.service.interfaces.MietvertragService;
+import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
+import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import jakarta.annotation.security.PermitAll;
 
+import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Locale;
 
 @Route(value = "mieter-vertraege", layout = MainLayout.class)
 @PermitAll
 public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavigationObserver {
 
-    // Speichert, welcher Bereich gerade ausgewählt ist
+    private final MieterService mieterService;
+    private final MietvertragService mietvertragService;
+
     private TabellenModus aktiverModus = TabellenModus.MIETER;
     private Tabs tabs;
+    private Button addButton;
+    private Grid.Column<Mietvertrag> laufzeitColumn;
 
-    private final Grid<MieterDummyDaten.MieterRow> mieterGrid =
-            new Grid<>(MieterDummyDaten.MieterRow.class, false);
+    private final Grid<Mieter> mieterGrid = new Grid<>(Mieter.class, false);
+    private final Grid<Mietvertrag> mietvertragGrid = new Grid<>(Mietvertrag.class, false);
 
-    private final Grid<MieterDummyDaten.MietvertragRow> mietvertragGrid =
-            new Grid<>(MieterDummyDaten.MietvertragRow.class, false);
+    private final TextField searchField = new TextField();
+    private final Select<String> statusFilter = new Select<>();
 
-    // Mögliche Bereiche in der Tabelle
     private enum TabellenModus {
         MIETER,
-        VERTRAEGE
+        VERTRAEGE,
+        ARCHIV
     }
 
-    public MieterVertraegeView() {
+    public MieterVertraegeView(MieterService mieterService, MietvertragService mietvertragService) {
+        this.mieterService = mieterService;
+        this.mietvertragService = mietvertragService;
+
         addClassName("page-content");
-
-        add(createTableCard()); // Erstellt die große Tabelle
+        add(createTableCard());
     }
 
-    // Tabellen Körper
     private Component createTableCard() {
         Div tableCard = new Div();
         tableCard.addClassName("table-card");
 
-        // Beide Tabellen vorbereiten
         configureMieterGrid();
         configureMietvertragGrid();
 
-        // Am Anfang soll nur die Mieter-Tabelle sichtbar sein
         mietvertragGrid.setVisible(false);
 
         tableCard.add(
@@ -65,71 +80,72 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
                 mietvertragGrid
         );
 
+        aktualisiereStatusFilterOptionen();
+        aktualisiereTabellen();
+
         return tableCard;
     }
 
-    // Erstellt die Spalten und Daten für die Mieter-Tabelle
     private void configureMieterGrid() {
         mieterGrid.removeAllColumns();
         mieterGrid.setWidthFull();
         mieterGrid.setAllRowsVisible(true);
+        mieterGrid.addClassName("immobilien-grid");
 
-        mieterGrid.addColumn(MieterDummyDaten.MieterRow::name)
+        mieterGrid.addColumn(this::formatMieterName)
                 .setHeader("Mieter")
                 .setAutoWidth(true)
                 .setFlexGrow(2);
 
-        mieterGrid.addColumn(MieterDummyDaten.MieterRow::telefon)
+        mieterGrid.addColumn(mieter -> textOderLeer(mieter.getTelefonnummer()))
                 .setHeader("Telefon")
                 .setAutoWidth(true)
                 .setFlexGrow(1);
 
-        mieterGrid.addColumn(MieterDummyDaten.MieterRow::immobilieEinheit)
+        mieterGrid.addColumn(this::findeAktuelleEinheit)
                 .setHeader("Aktuelle Einheit")
                 .setAutoWidth(true)
                 .setFlexGrow(2);
 
-        mieterGrid.addColumn(new ComponentRenderer<>(this::createStatusBadge))
+        mieterGrid.addColumn(new ComponentRenderer<>(this::createMieterStatusBadge))
                 .setHeader("Status")
                 .setAutoWidth(true)
                 .setFlexGrow(1);
 
-        mieterGrid.addColumn(new ComponentRenderer<>(this::createActionButtons))
-                .setHeader("Aktionen")
-                .setAutoWidth(true)
-                .setFlexGrow(0);
-
-        // Holt die Dummy-Daten aus der extra Dummy-Klasse
-        mieterGrid.setItems(MieterDummyDaten.getMieter());
+        mieterGrid.addItemClickListener(event ->
+                getUI().ifPresent(ui ->
+                        ui.navigate(MieterListView.class, String.valueOf(event.getItem().getId()))
+                )
+        );
     }
 
-    // Erstellt die Spalten und Daten für die Mietvertrag-Tabelle
     private void configureMietvertragGrid() {
         mietvertragGrid.removeAllColumns();
         mietvertragGrid.setWidthFull();
         mietvertragGrid.setAllRowsVisible(true);
+        mietvertragGrid.addClassName("immobilien-grid");
 
-        mietvertragGrid.addColumn(MieterDummyDaten.MietvertragRow::id)
+        mietvertragGrid.addColumn(mietvertrag -> "MV-" + mietvertrag.getId())
                 .setHeader("Vertragsnummer")
                 .setAutoWidth(true)
                 .setFlexGrow(1);
 
-        mietvertragGrid.addColumn(MieterDummyDaten.MietvertragRow::mieter)
+        mietvertragGrid.addColumn(mietvertrag -> formatMieterName(mietvertrag.getMieter()))
                 .setHeader("Mieter")
                 .setAutoWidth(true)
                 .setFlexGrow(2);
 
-        mietvertragGrid.addColumn(MieterDummyDaten.MietvertragRow::immobilieEinheit)
+        mietvertragGrid.addColumn(this::formatMietobjekt)
                 .setHeader("Einheit")
                 .setAutoWidth(true)
                 .setFlexGrow(2);
 
-        mietvertragGrid.addColumn(row -> getLaufzeitBis(row.laufzeit()))
+        laufzeitColumn = mietvertragGrid.addColumn(this::formatLaufzeitOderZeitraum)
                 .setHeader("Laufzeit")
                 .setAutoWidth(true)
                 .setFlexGrow(1);
 
-        mietvertragGrid.addColumn(MieterDummyDaten.MietvertragRow::miete)
+        mietvertragGrid.addColumn(this::formatWarmmiete)
                 .setHeader("Miete mtl.")
                 .setAutoWidth(true)
                 .setFlexGrow(1);
@@ -139,54 +155,13 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
                 .setAutoWidth(true)
                 .setFlexGrow(1);
 
-        mietvertragGrid.addColumn(new ComponentRenderer<>(this::createMietvertragActionButtons))
-                .setHeader("Aktionen")
-                .setAutoWidth(true)
-                .setFlexGrow(0);
-
-        // Holt die Dummy-Daten aus der extra Dummy-Klasse
-        mietvertragGrid.setItems(MieterDummyDaten.getMietvertraege());
-    }
-
-    // Zeigt bei der Laufzeit-Spalte nur das Ende an
-    private String getLaufzeitBis(String laufzeit) {
-        if (laufzeit == null || laufzeit.isBlank()) {
-            return "-";
-        }
-
-        if (laufzeit.contains(" - ")) {
-            return laufzeit.substring(laufzeit.indexOf(" - ") + 3);
-        }
-
-        return laufzeit;
-    }
-
-    // Erstellt den Status-Badge für einen Mieter
-    private Component createStatusBadge(MieterDummyDaten.MieterRow row) {
-        Span badge = new Span(row.status());
-        badge.addClassNames("status-badge", row.statusStyle());
-        return badge;
-    }
-
-    // Erstellt die Aktionsbuttons für einen Mieter
-    private Component createActionButtons(MieterDummyDaten.MieterRow row) {
-        HorizontalLayout actions = new HorizontalLayout();
-        actions.setSpacing(false);
-
-        Button detailsButton = new Button(VaadinIcon.EYE.create());
-        detailsButton.addClassName("icon-button");
-
-        // Öffnet die Detailansicht von diesem Mieter
-        detailsButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate(MieterListView.class, row.id()))
+        mietvertragGrid.addItemClickListener(event ->
+                getUI().ifPresent(ui ->
+                        ui.navigate(MietvertragListView.class, String.valueOf(event.getItem().getId()))
+                )
         );
-
-        actions.add(detailsButton);
-
-        return actions;
     }
 
-    // Tabellen Kopf
     private Component createTableHeader() {
         HorizontalLayout header = new HorizontalLayout();
         header.addClassName("table-card-header");
@@ -194,48 +169,43 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
         header.setAlignItems(FlexComponent.Alignment.CENTER);
         header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
 
-        // Mieter & Verträge switchen
         tabs = new Tabs(
                 new Tab("Mieter"),
-                new Tab("Verträge")
+                new Tab("Verträge"),
+                new Tab("Archiv")
         );
 
-        // Prüft, welcher Tab ausgewählt wurde
         tabs.addSelectedChangeListener(event -> {
             if (tabs.getSelectedIndex() == 0) {
                 setAktiverModus(TabellenModus.MIETER);
-            } else {
+            } else if (tabs.getSelectedIndex() == 1) {
                 setAktiverModus(TabellenModus.VERTRAEGE);
+            } else {
+                setAktiverModus(TabellenModus.ARCHIV);
             }
         });
 
-        // Suchfunktion
-        TextField searchField = new TextField();
         searchField.setPlaceholder("Suchen...");
         searchField.setPrefixComponent(VaadinIcon.SEARCH.create());
         searchField.setClearButtonVisible(true);
         searchField.setWidth("320px");
+        searchField.setValueChangeMode(ValueChangeMode.EAGER);
+        searchField.addValueChangeListener(event -> aktualisiereTabellen());
 
-        // Status aussuchen/filtern
-        Select<String> statusFilter = new Select<>();
-        statusFilter.setItems("Alle Status", "Aktiv", "Zahlungsverzug", "Gekündigt");
-        statusFilter.setValue("Alle Status");
-        statusFilter.setWidth("180px");
+        statusFilter.setWidth("220px");
+        statusFilter.addValueChangeListener(event -> aktualisiereTabellen());
 
-        // Anlegen Button für Mieter und Verträge
-        Button addButton = new Button(VaadinIcon.PLUS.create());
+        addButton = new Button(VaadinIcon.PLUS.create());
         addButton.addClassName("primary-button");
 
-        // Prüft, welcher Tab ausgewählt ist und öffnet dann die passende FormView
         addButton.addClickListener(event -> {
             if (aktiverModus == TabellenModus.MIETER) {
-                getUI().ifPresent(ui -> ui.navigate(MieterFormView.class)); // Öffnet die Mieter-FormView
-            } else {
-                getUI().ifPresent(ui -> ui.navigate(MietvertragFormView.class)); // Öffnet die Mietvertrag-FormView
+                getUI().ifPresent(ui -> ui.navigate(MieterFormView.class));
+            } else if (aktiverModus == TabellenModus.VERTRAEGE) {
+                getUI().ifPresent(ui -> ui.navigate(MietvertragFormView.class));
             }
         });
 
-        // Rechter Bereich im Tabellenkopf
         HorizontalLayout rightArea = new HorizontalLayout();
         rightArea.setAlignItems(FlexComponent.Alignment.CENTER);
         rightArea.setSpacing(true);
@@ -246,7 +216,6 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
         return header;
     }
 
-    // Setzt den aktiven Tabellenbereich
     private void setAktiverModus(TabellenModus modus) {
         aktiverModus = modus;
 
@@ -255,16 +224,302 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
         mieterGrid.setVisible(mieterAktiv);
         mietvertragGrid.setVisible(!mieterAktiv);
 
+        if (laufzeitColumn != null) {
+            laufzeitColumn.setHeader(aktiverModus == TabellenModus.ARCHIV ? "Zeitraum" : "Laufzeit");
+        }
+
+        aktualisiereStatusFilterOptionen();
+
+        if (addButton != null) {
+            addButton.setVisible(aktiverModus != TabellenModus.ARCHIV);
+        }
+
         if (tabs != null) {
-            int zielIndex = mieterAktiv ? 0 : 1;
+            int zielIndex = switch (modus) {
+                case MIETER -> 0;
+                case VERTRAEGE -> 1;
+                case ARCHIV -> 2;
+            };
 
             if (tabs.getSelectedIndex() != zielIndex) {
                 tabs.setSelectedIndex(zielIndex);
             }
         }
+
+        aktualisiereTabellen();
     }
 
-    // Prüft beim Öffnen der Seite, welcher Tab aktiv sein soll
+    private void aktualisiereStatusFilterOptionen() {
+        statusFilter.setVisible(aktiverModus != TabellenModus.ARCHIV);
+
+        String alterWert = statusFilter.getValue();
+
+        List<String> erlaubteOptionen = switch (aktiverModus) {
+            case MIETER -> List.of(
+                    "Alle Status",
+                    "Aktiv",
+                    "Läuft aus",
+                    "Ohne aktiven Vertrag"
+            );
+            case VERTRAEGE -> List.of(
+                    "Alle Status",
+                    "Aktiv",
+                    "Läuft aus"
+            );
+            case ARCHIV -> List.of("Alle Status");
+        };
+
+        statusFilter.setItems(erlaubteOptionen);
+
+        if (alterWert != null && erlaubteOptionen.contains(alterWert)) {
+            statusFilter.setValue(alterWert);
+        } else {
+            statusFilter.setValue("Alle Status");
+        }
+    }
+
+    private void aktualisiereTabellen() {
+        if (aktiverModus == TabellenModus.MIETER) {
+            mieterGrid.setItems(filterMieter(mieterService.findeAlleMieter()));
+        } else {
+            mietvertragGrid.setItems(filterMietvertraege(mietvertragService.findeAlleMietvertraege()));
+        }
+    }
+
+    private List<Mieter> filterMieter(List<Mieter> mieterListe) {
+        String suche = getSuche();
+        String status = statusFilter.getValue();
+
+        return mieterListe.stream()
+                .filter(mieter -> suche.isBlank()
+                        || formatMieterName(mieter).toLowerCase().contains(suche)
+                        || textOderLeer(mieter.getEmail()).toLowerCase().contains(suche)
+                        || textOderLeer(mieter.getTelefonnummer()).toLowerCase().contains(suche)
+                        || findeAktuelleEinheit(mieter).toLowerCase().contains(suche)
+                )
+                .filter(mieter -> status == null
+                        || "Alle Status".equals(status)
+                        || ermittleMieterStatus(mieter).equals(status)
+                )
+                .toList();
+    }
+
+    private List<Mietvertrag> filterMietvertraege(List<Mietvertrag> mietvertraege) {
+        String suche = getSuche();
+        String status = statusFilter.getValue();
+
+        return mietvertraege.stream()
+                .filter(this::passtZumAktivenVertragsTab)
+                .filter(mietvertrag -> suche.isBlank()
+                        || ("MV-" + mietvertrag.getId()).toLowerCase().contains(suche)
+                        || formatMieterName(mietvertrag.getMieter()).toLowerCase().contains(suche)
+                        || formatMietobjekt(mietvertrag).toLowerCase().contains(suche)
+                )
+                .filter(mietvertrag -> aktiverModus != TabellenModus.VERTRAEGE
+                        || status == null
+                        || "Alle Status".equals(status)
+                        || formatVertragsstatus(mietvertrag).equals(status)
+                )
+                .toList();
+    }
+
+    private boolean passtZumAktivenVertragsTab(Mietvertrag mietvertrag) {
+        if (aktiverModus == TabellenModus.VERTRAEGE) {
+            return istAktiverVertrag(mietvertrag) || istAuslaufenderVertrag(mietvertrag);
+        }
+
+        if (aktiverModus == TabellenModus.ARCHIV) {
+            return istArchivVertrag(mietvertrag);
+        }
+
+        return true;
+    }
+
+    private boolean istAktiverVertrag(Mietvertrag mietvertrag) {
+        return mietvertrag != null && mietvertrag.getStatus() == Vertragsstatus.AKTIV;
+    }
+
+    private boolean istAuslaufenderVertrag(Mietvertrag mietvertrag) {
+        return mietvertrag != null
+                && mietvertrag.getStatus() == Vertragsstatus.GEKUENDIGT
+                && !istAusgelaufen(mietvertrag);
+    }
+
+    private boolean istArchivVertrag(Mietvertrag mietvertrag) {
+        return mietvertrag != null
+                && (
+                mietvertrag.getStatus() == Vertragsstatus.BEENDET
+                        || (
+                        mietvertrag.getStatus() == Vertragsstatus.GEKUENDIGT
+                                && istAusgelaufen(mietvertrag)
+                )
+        );
+    }
+
+    private boolean istAusgelaufen(Mietvertrag mietvertrag) {
+        return mietvertrag.getEnddatum() != null
+                && mietvertrag.getEnddatum().isBefore(LocalDate.now());
+    }
+
+    private String getSuche() {
+        if (searchField.getValue() == null) {
+            return "";
+        }
+
+        return searchField.getValue().trim().toLowerCase();
+    }
+
+    private Component createMieterStatusBadge(Mieter mieter) {
+        String status = ermittleMieterStatus(mieter);
+
+        Span badge = new Span(status);
+        badge.addClassNames("status-badge", getMieterStatusStyle(status));
+
+        return badge;
+    }
+
+    private Component createMietvertragStatusBadge(Mietvertrag mietvertrag) {
+        String status = formatVertragsstatus(mietvertrag);
+
+        Span badge = new Span(status);
+        badge.addClassNames("status-badge", getVertragsStatusStyle(mietvertrag));
+
+        return badge;
+    }
+
+    private String ermittleMieterStatus(Mieter mieter) {
+        List<Mietvertrag> vertraege = mietvertragService.findeMietvertraegeNachMieter(mieter.getId());
+
+        boolean hatAktivenVertrag = vertraege.stream()
+                .anyMatch(this::istAktiverVertrag);
+
+        if (hatAktivenVertrag) {
+            return "Aktiv";
+        }
+
+        boolean hatAuslaufendenVertrag = vertraege.stream()
+                .anyMatch(this::istAuslaufenderVertrag);
+
+        if (hatAuslaufendenVertrag) {
+            return "Läuft aus";
+        }
+
+        return "Ohne aktiven Vertrag";
+    }
+
+    private String findeAktuelleEinheit(Mieter mieter) {
+        List<Mietvertrag> vertraege = mietvertragService.findeMietvertraegeNachMieter(mieter.getId());
+
+        return vertraege.stream()
+                .filter(this::istAktiverVertrag)
+                .findFirst()
+                .map(this::formatMietobjekt)
+                .orElseGet(() -> vertraege.stream()
+                        .filter(this::istAuslaufenderVertrag)
+                        .findFirst()
+                        .map(this::formatMietobjekt)
+                        .orElse("-")
+                );
+    }
+
+    private String formatMieterName(Mieter mieter) {
+        if (mieter == null) {
+            return "-";
+        }
+
+        return textOderLeer(mieter.getVorname()) + " " + textOderLeer(mieter.getNachname());
+    }
+
+    private String formatMietobjekt(Mietvertrag mietvertrag) {
+        if (mietvertrag == null || mietvertrag.getMieteinheit() == null) {
+            return "-";
+        }
+
+        Mieteinheit mieteinheit = mietvertrag.getMieteinheit();
+
+        if (mieteinheit.getImmobilie() == null) {
+            return mieteinheit.getBezeichnung();
+        }
+
+        return mieteinheit.getImmobilie().getBezeichnung() + " / " + mieteinheit.getBezeichnung();
+    }
+
+    private String formatLaufzeitOderZeitraum(Mietvertrag mietvertrag) {
+        if (aktiverModus == TabellenModus.ARCHIV) {
+            return formatZeitraum(mietvertrag);
+        }
+
+        if (mietvertrag.getEnddatum() == null) {
+            return "unbefristet";
+        }
+
+        return "bis " + mietvertrag.getEnddatum().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+    }
+
+    private String formatZeitraum(Mietvertrag mietvertrag) {
+        String start = mietvertrag.getStartdatum() == null
+                ? "-"
+                : mietvertrag.getStartdatum().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+
+        String ende = mietvertrag.getEnddatum() == null
+                ? "-"
+                : mietvertrag.getEnddatum().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+
+        return start + " - " + ende;
+    }
+
+    private String formatWarmmiete(Mietvertrag mietvertrag) {
+        double kaltmiete = mietvertrag.getKaltmiete() == null ? 0 : mietvertrag.getKaltmiete();
+        double nebenkosten = mietvertrag.getNebenkosten() == null ? 0 : mietvertrag.getNebenkosten();
+
+        NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.GERMANY);
+        return formatter.format(kaltmiete + nebenkosten);
+    }
+
+    private String formatVertragsstatus(Mietvertrag mietvertrag) {
+        if (mietvertrag == null || mietvertrag.getStatus() == null) {
+            return "-";
+        }
+
+        if (istAktiverVertrag(mietvertrag)) {
+            return "Aktiv";
+        }
+
+        if (istAuslaufenderVertrag(mietvertrag)) {
+            return "Läuft aus";
+        }
+
+        return "Beendet";
+    }
+
+    private String getMieterStatusStyle(String status) {
+        return switch (status) {
+            case "Aktiv" -> "success";
+            case "Läuft aus" -> "warning";
+            default -> "neutral";
+        };
+    }
+
+    private String getVertragsStatusStyle(Mietvertrag mietvertrag) {
+        if (mietvertrag == null || mietvertrag.getStatus() == null) {
+            return "neutral";
+        }
+
+        if (istAktiverVertrag(mietvertrag)) {
+            return "success";
+        }
+
+        if (istAuslaufenderVertrag(mietvertrag)) {
+            return "warning";
+        }
+
+        return "neutral";
+    }
+
+    private String textOderLeer(String text) {
+        return text == null ? "" : text;
+    }
+
     @Override
     public void afterNavigation(AfterNavigationEvent event) {
         String tab = event.getLocation()
@@ -275,34 +530,11 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
 
         if ("vertraege".equalsIgnoreCase(tab)) {
             setAktiverModus(TabellenModus.VERTRAEGE);
+        } else if ("archiv".equalsIgnoreCase(tab)) {
+            setAktiverModus(TabellenModus.ARCHIV);
         } else {
             setAktiverModus(TabellenModus.MIETER);
         }
-    }
-
-    // Erstellt den Status-Badge für einen Mietvertrag
-    private Component createMietvertragStatusBadge(MieterDummyDaten.MietvertragRow row) {
-        Span badge = new Span(row.status());
-        badge.addClassNames("status-badge", row.statusStyle());
-        return badge;
-    }
-
-    // Erstellt die Aktionsbuttons für einen Mietvertrag
-    private Component createMietvertragActionButtons(MieterDummyDaten.MietvertragRow row) {
-        HorizontalLayout actions = new HorizontalLayout();
-        actions.setSpacing(false);
-
-        Button detailsButton = new Button(VaadinIcon.EYE.create());
-        detailsButton.addClassName("icon-button");
-
-        // Öffnet die Detailansicht von diesem Mietvertrag
-        detailsButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate(MietvertragListView.class, row.id()))
-        );
-
-        actions.add(detailsButton);
-
-        return actions;
     }
 
     @Override
@@ -312,6 +544,6 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
 
     @Override
     public String getPageSubtitle() {
-        return "Mieter und laufende Mietverhältnisse verwalten";
+        return "Mieter, laufende Mietverhältnisse und Vertragsarchiv verwalten";
     }
 }

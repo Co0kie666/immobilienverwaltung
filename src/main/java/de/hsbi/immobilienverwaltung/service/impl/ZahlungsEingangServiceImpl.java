@@ -1,4 +1,122 @@
 package de.hsbi.immobilienverwaltung.service.impl;
 
-public class ZahlungsEingangServiceImpl {
+import de.hsbi.immobilienverwaltung.domain.Mietvertrag;
+import de.hsbi.immobilienverwaltung.domain.Zahlungseingang;
+import de.hsbi.immobilienverwaltung.repository.ZahlungsEingangRepository;
+import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class ZahlungsEingangServiceImpl implements ZahlungsEingangService {
+
+    private final ZahlungsEingangRepository zahlungsEingangRepository;
+
+    public ZahlungsEingangServiceImpl(ZahlungsEingangRepository zahlungsEingangRepository) {
+        this.zahlungsEingangRepository = zahlungsEingangRepository;
+    }
+
+    @Override
+    @Transactional
+    public Zahlungseingang speichereZahlungseingang(Zahlungseingang zahlungseingang) {
+
+        if (zahlungseingang == null) {
+            throw new IllegalArgumentException("Zahlungseingang darf nicht leer sein.");
+        }
+
+        if (zahlungseingang.getTyp() == null) {
+            throw new IllegalArgumentException("Zahlungstyp muss ausgewählt werden.");
+        }
+
+        if (zahlungseingang.getBetrag() == null ||
+                zahlungseingang.getBetrag().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Betrag muss größer als 0 sein.");
+        }
+
+        if (zahlungseingang.getZahlungsdatum() == null) {
+            throw new IllegalArgumentException("Zahlungsdatum muss angegeben werden.");
+        }
+
+        if (zahlungseingang.getMietvertrag() == null) {
+            throw new IllegalArgumentException("Mietvertrag muss ausgewählt werden.");
+        }
+
+        return zahlungsEingangRepository.save(zahlungseingang);
+    }
+
+    @Override
+    public List<Zahlungseingang> findeAlleZahlungseingaenge() {
+        return zahlungsEingangRepository.findAll();
+    }
+
+    @Override
+    public Optional<Zahlungseingang> findeZahlungseingangNachId(Long id) {
+        return zahlungsEingangRepository.findById(id);
+    }
+
+    @Override
+    public List<Zahlungseingang> findeZahlungseingaengeNachMietvertrag(Mietvertrag mietvertrag) {
+        return zahlungsEingangRepository.findByMietvertrag(mietvertrag);
+    }
+
+    @Override
+    public List<Zahlungseingang> findeZahlungseingaengeNachMietvertragUndZeitraum(
+            Mietvertrag mietvertrag,
+            LocalDate startDatum,
+            LocalDate endDatum
+    ) {
+        return zahlungsEingangRepository.findByMietvertragAndZahlungsdatumBetween(
+                mietvertrag,
+                startDatum,
+                endDatum
+        );
+    }
+
+    @Override
+    public BigDecimal berechneSummeZahlungseingaengeFuerMietvertrag(
+            Mietvertrag mietvertrag,
+            LocalDate startDatum,
+            LocalDate endDatum
+    ) {
+        List<Zahlungseingang> zahlungen =
+                zahlungsEingangRepository.findByMietvertragAndZahlungsdatumBetween(
+                        mietvertrag,
+                        startDatum,
+                        endDatum
+                );
+
+        BigDecimal summe = BigDecimal.ZERO;
+
+        for (Zahlungseingang zahlung : zahlungen) {
+            if (zahlung.getBetrag() != null) {
+                summe = summe.add(zahlung.getBetrag());
+            }
+        }
+
+        return summe;
+    }
+
+    @Override
+    public boolean hatZahlungImZeitraum(
+            Mietvertrag mietvertrag,
+            LocalDate startDatum,
+            LocalDate endDatum
+    ) {
+        return zahlungsEingangRepository.existsByMietvertragAndZahlungsdatumBetween(
+                mietvertrag,
+                startDatum,
+                endDatum
+        );
+    }
+
+    @Override
+    @Transactional
+    public void loescheZahlungseingang(Long id) {
+        zahlungsEingangRepository.deleteById(id);
+    }
 }
