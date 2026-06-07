@@ -123,9 +123,10 @@ public class ZahlungsEingangServiceImpl implements ZahlungsEingangService {
 
     @Override
     public BigDecimal berechneOffeneZahlungenFuerImmobilie(Long immobilieId) {
-        List<Zahlungseingang> offeneZahlungen = zahlungsEingangRepository.findByMietvertrag_Mieteinheit_Immobilie_IdAndStatus(
+        List<Zahlungseingang> offeneZahlungen =
+                zahlungsEingangRepository.findByMietvertrag_Mieteinheit_Immobilie_IdAndStatus(
                         immobilieId,
-                "Offen / Ausstehend" // TODO: später enums verwenden statt String
+                        "Offen / Ausstehend"
                 );
 
         BigDecimal summe = BigDecimal.ZERO;
@@ -143,13 +144,22 @@ public class ZahlungsEingangServiceImpl implements ZahlungsEingangService {
     public long zaehleOffeneZahlungenFuerImmobilie(Long immobilieId) {
         return zahlungsEingangRepository.countByMietvertrag_Mieteinheit_Immobilie_IdAndStatus(
                 immobilieId,
-                "Offen / Ausstehend" // TODO: später enums verwenden statt String
+                "Offen / Ausstehend"
         );
     }
 
     @Override
     public BigDecimal berechneGesamteBezahlteZahlungseingaenge() {
         return zahlungsEingangRepository.findByStatus("Bezahlt / Erledigt")
+                .stream()
+                .map(Zahlungseingang::getBetrag)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Override
+    public BigDecimal berechneOffeneZahlungseingaenge() {
+        return zahlungsEingangRepository.findByStatus("Offen / Ausstehend")
                 .stream()
                 .map(Zahlungseingang::getBetrag)
                 .filter(Objects::nonNull)
@@ -164,6 +174,23 @@ public class ZahlungsEingangServiceImpl implements ZahlungsEingangService {
         return zahlungsEingangRepository
                 .findByStatusAndZahlungsdatumBetween(
                         "Bezahlt / Erledigt",
+                        startDatum,
+                        endDatum
+                )
+                .stream()
+                .map(Zahlungseingang::getBetrag)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Override
+    public BigDecimal berechneOffeneZahlungseingaengeImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum
+    ) {
+        return zahlungsEingangRepository
+                .findByStatusAndZahlungsdatumBetween(
+                        "Offen / Ausstehend",
                         startDatum,
                         endDatum
                 )

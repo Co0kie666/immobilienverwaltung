@@ -51,4 +51,11 @@ public interface ZahlungsEingangService {
 
     List<Zahlungseingang> findeOffeneZahlungseingaenge();
 
+    BigDecimal berechneOffeneZahlungseingaenge();
+
+    BigDecimal berechneOffeneZahlungseingaengeImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum
+    );
+    
 }

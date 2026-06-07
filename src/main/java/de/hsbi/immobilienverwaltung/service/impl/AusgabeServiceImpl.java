@@ -122,6 +122,15 @@ public class AusgabeServiceImpl implements AusgabeService {
     }
 
     @Override
+    public BigDecimal berechneBezahlteAusgaben() {
+        return ausgabeRepository.findByStatus("Bezahlt / Erledigt")
+                .stream()
+                .map(Ausgabe::getBetrag)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Override
     public long zaehleOffeneAusgaben() {
         return ausgabeRepository.countByStatus("Offen / Ausstehend");
     }
@@ -134,6 +143,23 @@ public class AusgabeServiceImpl implements AusgabeService {
         return ausgabeRepository
                 .findByStatusAndDatumBetween(
                         "Offen / Ausstehend",
+                        startDatum,
+                        endDatum
+                )
+                .stream()
+                .map(Ausgabe::getBetrag)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Override
+    public BigDecimal berechneBezahlteAusgabenImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum
+    ) {
+        return ausgabeRepository
+                .findByStatusAndDatumBetween(
+                        "Bezahlt / Erledigt",
                         startDatum,
                         endDatum
                 )

@@ -9,26 +9,144 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.router.Route;
+import de.hsbi.immobilienverwaltung.service.interfaces.AusgabeService;
+import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import jakarta.annotation.security.PermitAll;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @Route(value = "finanzen", layout = MainLayout.class)
 @PermitAll
 public class FinanzDashboardView extends Div implements HasPageHeader {
 
-    public FinanzDashboardView() {
+    private enum ZeitraumFilter {
+        EIN_MONAT,
+        DREI_MONATE,
+        SECHS_MONATE,
+        YTD
+    }
+
+    private final ZahlungsEingangService zahlungsEingangService;
+    private final AusgabeService ausgabeService;
+
+    private ZeitraumFilter aktuellerFilter = ZeitraumFilter.EIN_MONAT;
+
+    private BigDecimal summeEinnahmen;
+    private BigDecimal summeAusgaben;
+    private BigDecimal rueckstaende;
+    private BigDecimal cashflow;
+
+    private double[] chartEinnahmen;
+    private double[] chartAusgaben;
+    private String[] chartMonate;
+
+    private double zahlungsstatusBezahlt;
+    private double zahlungsstatusOffen;
+
+    public FinanzDashboardView(
+            ZahlungsEingangService zahlungsEingangService,
+            AusgabeService ausgabeService
+    ) {
+        this.zahlungsEingangService = zahlungsEingangService;
+        this.ausgabeService = ausgabeService;
+
         UI.getCurrent().getPage().addJavaScript(
                 "https://cdn.jsdelivr.net/npm/chart.js"
         );
 
         addClassName("finance-page");
 
+        ladeFinanzdaten();
+        baueSeiteNeu();
+    }
+
+    private void baueSeiteNeu() {
+        removeAll();
+
         add(createFilterBar());
         add(createKpiGrid());
         add(createDashboardGrid());
         add(createTableGrid());
+    }
+
+    private void ladeFinanzdaten() {
+        LocalDate startDatum = ermittleStartDatum();
+        LocalDate endDatum = LocalDate.now();
+
+        this.summeEinnahmen =
+                zahlungsEingangService.berechneBezahlteZahlungseingaengeImZeitraum(
+                        startDatum,
+                        endDatum
+                );
+
+        this.summeAusgaben =
+                ausgabeService.berechneBezahlteAusgabenImZeitraum(
+                        startDatum,
+                        endDatum
+                );
+
+        this.rueckstaende =
+                zahlungsEingangService.berechneOffeneZahlungseingaengeImZeitraum(
+                        startDatum,
+                        endDatum
+                );
+
+        this.cashflow =
+                summeEinnahmen.subtract(summeAusgaben);
+
+        this.chartEinnahmen =
+                berechneEinnahmenChartDaten(startDatum, endDatum);
+
+        this.chartAusgaben =
+                berechneAusgabenChartDaten(startDatum, endDatum);
+
+        this.chartMonate =
+                berechneChartMonate(startDatum, endDatum);
+
+        berechneZahlungsstatus();
+    }
+
+    private LocalDate ermittleStartDatum() {
+        LocalDate heute = LocalDate.now();
+
+        return switch (aktuellerFilter) {
+            case EIN_MONAT -> heute.withDayOfMonth(1);
+            case DREI_MONATE -> heute.minusMonths(2).withDayOfMonth(1);
+            case SECHS_MONATE -> heute.minusMonths(5).withDayOfMonth(1);
+            case YTD -> heute.withDayOfYear(1);
+        };
+    }
+
+    private void berechneZahlungsstatus() {
+        BigDecimal bezahlt = summeEinnahmen == null ? BigDecimal.ZERO : summeEinnahmen;
+        BigDecimal offen = rueckstaende == null ? BigDecimal.ZERO : rueckstaende;
+        BigDecimal gesamt = bezahlt.add(offen);
+
+        if (gesamt.compareTo(BigDecimal.ZERO) == 0) {
+            this.zahlungsstatusBezahlt = 0;
+            this.zahlungsstatusOffen = 0;
+            return;
+        }
+
+        this.zahlungsstatusBezahlt =
+                bezahlt.multiply(BigDecimal.valueOf(100))
+                        .divide(gesamt, 2, RoundingMode.HALF_UP)
+                        .doubleValue();
+
+        this.zahlungsstatusOffen =
+                offen.multiply(BigDecimal.valueOf(100))
+                        .divide(gesamt, 2, RoundingMode.HALF_UP)
+                        .doubleValue();
     }
 
     private Component createFilterBar() {
@@ -54,17 +172,12 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 btn.addClassName("secondary-button")
         );
 
-        oneMonth.addClassName("finance-filter-active");
+        markiereAktivenFilter(oneMonth, threeMonths, sixMonths, ytd);
 
-        filterButtons.forEach(button -> {
-            button.addClickListener(e -> {
-                filterButtons.forEach(btn ->
-                        btn.removeClassName("finance-filter-active")
-                );
-
-                button.addClassName("finance-filter-active");
-            });
-        });
+        oneMonth.addClickListener(e -> wechselZeitraum(ZeitraumFilter.EIN_MONAT));
+        threeMonths.addClickListener(e -> wechselZeitraum(ZeitraumFilter.DREI_MONATE));
+        sixMonths.addClickListener(e -> wechselZeitraum(ZeitraumFilter.SECHS_MONATE));
+        ytd.addClickListener(e -> wechselZeitraum(ZeitraumFilter.YTD));
 
         Button allProperties = new Button(
                 "Alle Immobilien",
@@ -100,6 +213,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         addBooking.addClickListener(e ->
                 UI.getCurrent().navigate("finanzen/buchung-neu")
         );
+
         showBookings.addClickListener(e ->
                 UI.getCurrent().navigate("finanzen/buchungen")
         );
@@ -111,10 +225,30 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         bookingButtons.setSpacing(true);
 
         filterBar.setWidthFull();
-
         filterBar.add(left, bookingButtons);
 
         return filterBar;
+    }
+
+    private void wechselZeitraum(ZeitraumFilter filter) {
+        this.aktuellerFilter = filter;
+
+        ladeFinanzdaten();
+        baueSeiteNeu();
+    }
+
+    private void markiereAktivenFilter(
+            Button oneMonth,
+            Button threeMonths,
+            Button sixMonths,
+            Button ytd
+    ) {
+        switch (aktuellerFilter) {
+            case EIN_MONAT -> oneMonth.addClassName("finance-filter-active");
+            case DREI_MONATE -> threeMonths.addClassName("finance-filter-active");
+            case SECHS_MONATE -> sixMonths.addClassName("finance-filter-active");
+            case YTD -> ytd.addClassName("finance-filter-active");
+        }
     }
 
     private Component createKpiGrid() {
@@ -122,13 +256,46 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         grid.addClassName("finance-kpi-grid");
 
         grid.add(
-                kpiCard("Summe Einnahmen", "€ 124.500,00", "↑ 12.5%  vs. Vormonat", VaadinIcon.TRENDING_UP, "success"),
-                kpiCard("Summe Ausgaben", "€ 42.850,00", "↑ 4.2%  vs. Vormonat", VaadinIcon.TRENDING_DOWN, "danger"),
-                kpiCard("Rückstände", "€ 5.240,00", "↓ 2.1%  vs. Vormonat", VaadinIcon.REFRESH, "warning"),
-                kpiCard("Cashflow", "€ 81.650,00", "↑ 18.4%  vs. Vormonat", VaadinIcon.WALLET, "primary")
+                kpiCard(
+                        "Summe Einnahmen",
+                        formatEuro(summeEinnahmen),
+                        getZeitraumText(),
+                        VaadinIcon.TRENDING_UP,
+                        "success"
+                ),
+                kpiCard(
+                        "Summe Ausgaben",
+                        formatEuro(summeAusgaben),
+                        getZeitraumText(),
+                        VaadinIcon.TRENDING_DOWN,
+                        "danger"
+                ),
+                kpiCard(
+                        "Rückstände",
+                        formatEuro(rueckstaende),
+                        "Offene Zahlungseingänge",
+                        VaadinIcon.REFRESH,
+                        "warning"
+                ),
+                kpiCard(
+                        "Cashflow",
+                        formatEuro(cashflow),
+                        "Einnahmen minus Ausgaben",
+                        VaadinIcon.WALLET,
+                        cashflow.signum() >= 0 ? "primary" : "danger"
+                )
         );
 
         return grid;
+    }
+
+    private String getZeitraumText() {
+        return switch (aktuellerFilter) {
+            case EIN_MONAT -> "Aktueller Monat";
+            case DREI_MONATE -> "Letzte 3 Monate";
+            case SECHS_MONATE -> "Letzte 6 Monate";
+            case YTD -> "Seit Jahresbeginn";
+        };
     }
 
     private Component kpiCard(String title, String value, String trend, VaadinIcon icon, String color) {
@@ -170,7 +337,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         H3 chartTitle = new H3("Einnahmen vs. Ausgaben");
         chartTitle.addClassName("card-title");
 
-        Paragraph subtitle = new Paragraph("Monatlicher Verlauf");
+        Paragraph subtitle = new Paragraph(getZeitraumText());
         subtitle.addClassName("card-subtitle");
 
         chartCard.add(chartTitle, subtitle, createLineChart());
@@ -207,28 +374,17 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: [
-                            'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
-                            'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'
-                        ],
+                        labels: $0,
                         datasets: [
                             {
                                 label: 'Einnahmen',
-                                data: [
-                                    102000, 108000, 112000, 118000,
-                                    121000, 124000, 127000, 129000,
-                                    132000, 135000, 138000, 142000
-                                ],
+                                data: $1,
                                 tension: 0.4,
                                 fill: false
                             },
                             {
                                 label: 'Ausgaben',
-                                data: [
-                                    42000, 44000, 43000, 47000,
-                                    46000, 45000, 49000, 52000,
-                                    51000, 53000, 54000, 56000
-                                ],
+                                data: $2,
                                 tension: 0.4,
                                 fill: false
                             }
@@ -250,7 +406,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                     }
                 });
             }, 300);
-        """);
+        """, chartMonate, chartEinnahmen, chartAusgaben);
 
         return wrapper;
     }
@@ -291,7 +447,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                             'Offen'
                         ],
                         datasets: [{
-                            data: [75, 25],
+                            data: [$0, $1],
                             borderWidth: 0
                         }]
                     },
@@ -306,13 +462,13 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                     }
                 });
             }, 300);
-        """);
+        """, zahlungsstatusBezahlt, zahlungsstatusOffen);
 
         Div stats = new Div();
         stats.addClassName("finance-mini-grid");
 
-        stats.add(miniBox("Bezahlt", "75 %"));
-        stats.add(miniBox("Offen", "25 %"));
+        stats.add(miniBox("Bezahlt", String.format(Locale.GERMANY, "%.1f %%", zahlungsstatusBezahlt)));
+        stats.add(miniBox("Offen", String.format(Locale.GERMANY, "%.1f %%", zahlungsstatusOffen)));
 
         card.add(header, chartWrapper, stats);
         return card;
@@ -346,11 +502,12 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                     data: {
                         labels: [
                             'Instandhaltung',
-                            'Nebenkosten',
-                            'Verwaltung'
+                            'Reparatur',
+                            'Versicherung',
+                            'Sonstiges'
                         ],
                         datasets: [{
-                            data: [43, 30, 27],
+                            data: [30, 25, 25, 20],
                             borderWidth: 0
                         }]
                     },
@@ -390,18 +547,39 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         grid.addClassName("finance-table-grid");
 
         grid.add(
-                transactionTable("Letzte Einnahmen", "Mieten & Nebenkosten",
+                transactionTable(
+                        "Letzte Einnahmen",
+                        "Mieten & Nebenkosten",
                         new String[][]{
-                                {"01.10.2023", "Max Mustermann", "Miete", "Bezahlt", "+ € 1.250,00"},
-                                {"01.10.2023", "Anna Schmidt", "Miete", "Offen", "+ € 980,00"},
-                                {"28.09.2023", "Thomas Weber", "Nebenkosten", "Bezahlt", "+ € 250,00"}
-                        }),
-                transactionTable("Letzte Ausgaben", "Instandhaltung & Verwaltung",
+                                {
+                                        getZeitraumText(),
+                                        "Alle Mieter",
+                                        "Einnahmen",
+                                        "Bezahlt / Erledigt",
+                                        formatEuro(summeEinnahmen)
+                                },
+                                {
+                                        getZeitraumText(),
+                                        "Alle Mieter",
+                                        "Rückstände",
+                                        "Offen / Ausstehend",
+                                        formatEuro(rueckstaende)
+                                }
+                        }
+                ),
+                transactionTable(
+                        "Letzte Ausgaben",
+                        "Instandhaltung & Verwaltung",
                         new String[][]{
-                                {"02.10.2023", "Handwerker GmbH", "Reparatur", "Bezahlt", "- € 450,00"},
-                                {"01.10.2023", "Stadtwerke", "Strom/Wasser", "Offen", "- € 1.200,00"},
-                                {"25.09.2023", "Hausverwaltung Meyer", "Verwaltung", "Bezahlt", "- € 850,00"}
-                        })
+                                {
+                                        getZeitraumText(),
+                                        "Alle Immobilien",
+                                        "Ausgaben",
+                                        "Bezahlt / Erledigt",
+                                        "- " + formatEuro(summeAusgaben)
+                                }
+                        }
+                )
         );
 
         return grid;
@@ -439,7 +617,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         row.addClassNames("finance-table-row", "finance-table-head");
 
         row.add(
-                new Span("Datum"),
+                new Span("Zeitraum"),
                 new Span("Mieter / Objekt"),
                 new Span("Kategorie"),
                 new Span("Status"),
@@ -456,7 +634,9 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         Span status = new Span(data[3]);
         status.addClassNames(
                 "status-badge",
-                data[3].equals("Bezahlt") ? "success" : "warning"
+                data[3].equals("Bezahlt / Erledigt")
+                        ? "success"
+                        : "warning"
         );
 
         row.add(
@@ -468,6 +648,97 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         );
 
         return row;
+    }
+
+    private double[] berechneEinnahmenChartDaten(
+            LocalDate startDatum,
+            LocalDate endDatum
+    ) {
+        List<YearMonth> monate = ermittleMonateImZeitraum(startDatum, endDatum);
+        double[] daten = new double[monate.size()];
+
+        for (int i = 0; i < monate.size(); i++) {
+            YearMonth monat = monate.get(i);
+
+            BigDecimal summe =
+                    zahlungsEingangService.berechneBezahlteZahlungseingaengeImZeitraum(
+                            monat.atDay(1),
+                            monat.atEndOfMonth()
+                    );
+
+            daten[i] = summe.doubleValue();
+        }
+
+        return daten;
+    }
+
+    private double[] berechneAusgabenChartDaten(
+            LocalDate startDatum,
+            LocalDate endDatum
+    ) {
+        List<YearMonth> monate = ermittleMonateImZeitraum(startDatum, endDatum);
+        double[] daten = new double[monate.size()];
+
+        for (int i = 0; i < monate.size(); i++) {
+            YearMonth monat = monate.get(i);
+
+            BigDecimal summe =
+                    ausgabeService.berechneBezahlteAusgabenImZeitraum(
+                            monat.atDay(1),
+                            monat.atEndOfMonth()
+                    );
+
+            daten[i] = summe.doubleValue();
+        }
+
+        return daten;
+    }
+
+    private String[] berechneChartMonate(
+            LocalDate startDatum,
+            LocalDate endDatum
+    ) {
+        List<YearMonth> monate = ermittleMonateImZeitraum(startDatum, endDatum);
+
+        DateTimeFormatter formatter =
+                DateTimeFormatter.ofPattern("MMM", Locale.GERMANY);
+
+        String[] labels = new String[monate.size()];
+
+        for (int i = 0; i < monate.size(); i++) {
+            labels[i] = monate.get(i).format(formatter);
+        }
+
+        return labels;
+    }
+
+    private List<YearMonth> ermittleMonateImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum
+    ) {
+        List<YearMonth> monate = new ArrayList<>();
+
+        YearMonth start = YearMonth.from(startDatum);
+        YearMonth ende = YearMonth.from(endDatum);
+
+        YearMonth aktuell = start;
+
+        while (!aktuell.isAfter(ende)) {
+            monate.add(aktuell);
+            aktuell = aktuell.plusMonths(1);
+        }
+
+        return monate;
+    }
+
+    private String formatEuro(BigDecimal betrag) {
+        if (betrag == null) {
+            betrag = BigDecimal.ZERO;
+        }
+
+        return NumberFormat
+                .getCurrencyInstance(Locale.GERMANY)
+                .format(betrag);
     }
 
     @Override

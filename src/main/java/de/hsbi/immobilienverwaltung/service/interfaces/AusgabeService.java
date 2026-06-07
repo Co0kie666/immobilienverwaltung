@@ -42,4 +42,11 @@ public interface AusgabeService {
             LocalDate startDatum,
             LocalDate endDatum
     );
+
+    BigDecimal berechneBezahlteAusgaben();
+
+    BigDecimal berechneBezahlteAusgabenImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum
+    );
 }
