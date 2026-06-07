@@ -22,4 +22,18 @@ public interface ZahlungsEingangRepository extends JpaRepository<Zahlungseingang
             LocalDate startDatum,
             LocalDate endDatum
     );
+
+    // Suche alle Zahlungseingänge,
+    // deren Mietvertrag zu einer Mieteinheit gehört,
+    // die zu dieser Immobilie gehört,
+    // und deren Status z. B. "Offen / Ausstehend" ist.
+    List<Zahlungseingang> findByMietvertrag_Mieteinheit_Immobilie_IdAndStatus(
+            Long immobilieId,
+            String status
+    );
+
+    long countByMietvertrag_Mieteinheit_Immobilie_IdAndStatus(
+            Long immobilieId,
+            String status
+    );
 }

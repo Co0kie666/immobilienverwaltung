@@ -119,4 +119,30 @@ public class ZahlungsEingangServiceImpl implements ZahlungsEingangService {
     public void loescheZahlungseingang(Long id) {
         zahlungsEingangRepository.deleteById(id);
     }
+
+    @Override
+    public BigDecimal berechneOffeneZahlungenFuerImmobilie(Long immobilieId) {
+        List<Zahlungseingang> offeneZahlungen = zahlungsEingangRepository.findByMietvertrag_Mieteinheit_Immobilie_IdAndStatus(
+                        immobilieId,
+                "Offen / Ausstehend" // TODO: später enums verwenden statt String
+                );
+
+        BigDecimal summe = BigDecimal.ZERO;
+
+        for (Zahlungseingang zahlung : offeneZahlungen) {
+            if (zahlung.getBetrag() != null) {
+                summe = summe.add(zahlung.getBetrag());
+            }
+        }
+
+        return summe;
+    }
+
+    @Override
+    public long zaehleOffeneZahlungenFuerImmobilie(Long immobilieId) {
+        return zahlungsEingangRepository.countByMietvertrag_Mieteinheit_Immobilie_IdAndStatus(
+                immobilieId,
+                "Offen / Ausstehend" // TODO: später enums verwenden statt String
+        );
+    }
 }

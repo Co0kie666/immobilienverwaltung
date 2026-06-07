@@ -15,6 +15,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
+import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
 import de.hsbi.immobilienverwaltung.ui.components.ConfirmDeleteDialog;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
@@ -25,6 +26,10 @@ import de.hsbi.immobilienverwaltung.domain.Immobilie;
 import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import jakarta.annotation.security.PermitAll;
+
+import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.util.Locale;
 
 @Route(value = "immobilien/:immobilieId", layout = MainLayout.class)
 @PermitAll
@@ -37,10 +42,12 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
     private final ImmobilieService immobilieService;
 
     private final TextField mieteinheitenSearchField = new TextField();
+    private final ZahlungsEingangService zahlungsEingangService;
 
-    public ImmobilieDetailView(MieteinheitService mieteinheitService, ImmobilieService immobilieService) {
+    public ImmobilieDetailView(MieteinheitService mieteinheitService, ImmobilieService immobilieService, ZahlungsEingangService zahlungsEingangService) {
         this.mieteinheitService = mieteinheitService;
         this.immobilieService = immobilieService;
+        this.zahlungsEingangService = zahlungsEingangService;
 
         addClassName("page-content");
         addClassName("immobilie-detail-view");
@@ -230,6 +237,10 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
 
         double leerstandsquote = mieteinheitService.berechneLeerstandsquote(immobilieId);
 
+        BigDecimal offeneZahlungenSumme = zahlungsEingangService.berechneOffeneZahlungenFuerImmobilie(immobilieId);
+
+        long offeneZahlungenAnzahl = zahlungsEingangService.zaehleOffeneZahlungenFuerImmobilie(immobilieId);
+
         kpiGrid.add(
                 createKpiCard(
                         "Einheiten Gesamt",
@@ -247,8 +258,8 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                 ),
                 createKpiCard(
                         "Offene Zahlungen",
-                        "-",
-                        "Julian mach schneller",
+                        formatiereBetrag(offeneZahlungenSumme),
+                        offeneZahlungenAnzahl + " offene Buchung(en)",
                         "danger",
                         VaadinIcon.WARNING
                 )
@@ -452,4 +463,12 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         return card;
     }
 
+    private String formatiereBetrag(BigDecimal betrag) {
+        if (betrag == null) {
+            return "0,00 €";
+        }
+
+        NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.GERMANY);
+        return formatter.format(betrag);
+    }
 }

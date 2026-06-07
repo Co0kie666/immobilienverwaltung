@@ -37,4 +37,8 @@ public interface ZahlungsEingangService {
     );
 
     void loescheZahlungseingang(Long id);
+
+    BigDecimal berechneOffeneZahlungenFuerImmobilie(Long immobilieId);
+
+    long zaehleOffeneZahlungenFuerImmobilie(Long immobilieId);
 }
