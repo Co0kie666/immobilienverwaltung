@@ -12,6 +12,8 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.domain.Immobilie;
 import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
@@ -33,7 +35,7 @@ import java.util.Locale;
 
 @Route(value = "mietvertrag-anlegen", layout = MainLayout.class)
 @PermitAll
-public class MietvertragFormView extends Div implements HasPageHeader {
+public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnterObserver {
 
     private final MieterService mieterService;
     private final ImmobilieService immobilieService;
@@ -52,6 +54,9 @@ public class MietvertragFormView extends Div implements HasPageHeader {
 
     private final TextField kaltmieteField = new TextField("Kaltmiete");
     private final TextField nebenkostenField = new TextField("Nebenkosten-Vorauszahlung");
+
+    private Long immobilieId;
+    private Long mieteinheitId ;
 
     public MietvertragFormView(
             MieterService mieterService,
@@ -531,5 +536,42 @@ public class MietvertragFormView extends Div implements HasPageHeader {
     @Override
     public String getPageSubtitle() {
         return "Neuen Mietvertrag erfassen";
+    }
+
+    // Falls Mietvertrag über MieteinheitDetailView angelegt wird -> übernehme Immobilie und Mieteinheit automatisch
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        this.immobilieId  = leseLongQueryParameter(event, "immobilieId");
+        this.mieteinheitId  = leseLongQueryParameter(event, "mieteinheitId");
+
+        if (immobilieId  != null && mieteinheitId  != null) {
+            uebernehmeMietobjektAusUrl(immobilieId, mieteinheitId);
+        }
+    }
+
+    private Long leseLongQueryParameter(BeforeEnterEvent event, String parameterName) {
+        return event.getLocation()
+                .getQueryParameters() // Holt alle Query-Parameter aus der aktuellen URL
+                .getSingleParameter(parameterName) // Holt den einzelnen Wert des gewünschten Parameters.
+                .map(Long::valueOf) // umwandeln in Long
+                .orElse(null);
+    }
+
+    private void uebernehmeMietobjektAusUrl(Long immobilieId, Long mieteinheitId) {
+        Immobilie immobilie = immobilieService.findeImmobilieNachId(immobilieId)
+                .orElseThrow(() -> new IllegalArgumentException("Immobilie wurde nicht gefunden."));
+
+        Mieteinheit mieteinheit = mieteinheitService.findeMieteinheitNachId(mieteinheitId)
+                .orElseThrow(() -> new IllegalArgumentException("Mieteinheit wurde nicht gefunden."));
+
+        immobilieSelect.setItems(immobilie);
+        immobilieSelect.setValue(immobilie);
+
+        mieteinheitSelect.setItems(mieteinheit);
+        mieteinheitSelect.setEnabled(true);
+        mieteinheitSelect.setValue(mieteinheit);
+
+        immobilieSelect.setReadOnly(true);
+        mieteinheitSelect.setReadOnly(true);
     }
 }

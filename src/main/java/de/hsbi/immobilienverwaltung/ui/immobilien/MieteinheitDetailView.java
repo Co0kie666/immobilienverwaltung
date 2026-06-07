@@ -173,8 +173,11 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         Button createContractButton = new Button("Mietvertrag anlegen", VaadinIcon.PLUS.create());
         createContractButton.addClassName("primary-button");
 
+        // übergebe immobilieId und mieteinheitId damit diese autmatisch ausgewählt werden
         createContractButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate("mietvertrag-anlegen"))
+                getUI().ifPresent(ui -> ui.navigate(
+                        "mietvertrag-anlegen?immobilieId=" + immobilieId + "&mieteinheitId=" + mieteinheitId
+                ))
         );
 
         card.add(title, text, createContractButton);
