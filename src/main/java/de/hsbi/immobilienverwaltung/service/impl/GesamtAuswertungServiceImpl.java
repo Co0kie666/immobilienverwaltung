@@ -7,6 +7,7 @@ import de.hsbi.immobilienverwaltung.repository.MietvertragRepository;
 import de.hsbi.immobilienverwaltung.service.interfaces.GesamtAuswertungService;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -54,5 +55,15 @@ public class GesamtAuswertungServiceImpl implements GesamtAuswertungService {
     @Override
     public long berechneAnzahlAktiveVertraege() {
         return mietvertragRepository.countByStatus(Vertragsstatus.AKTIV);
+    }
+
+    @Override
+    public BigDecimal berechneEinnahmen(Long immobilieId, Long einheitId, Long mieterId) {
+        return null;
+    }
+
+    @Override
+    public BigDecimal berechneAusgaben(Long immobilieId, Long einheitId, Long mieterId) {
+        return null;
     }
 }

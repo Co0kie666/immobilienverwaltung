@@ -155,17 +155,19 @@ public class AusgabeServiceImpl implements AusgabeService {
     @Override
     public BigDecimal berechneBezahlteAusgabenImZeitraum(
             LocalDate startDatum,
-            LocalDate endDatum
+            LocalDate endDatum,
+            Long immobilieId
     ) {
-        return ausgabeRepository
-                .findByStatusAndDatumBetween(
-                        "Bezahlt / Erledigt",
-                        startDatum,
-                        endDatum
-                )
+        return ausgabeRepository.findAll()
                 .stream()
+                .filter(a -> !a.getDatum().isBefore(startDatum))
+                .filter(a -> !a.getDatum().isAfter(endDatum))
+                .filter(a -> a.getStatus().equals("Bezahlt / Erledigt"))
+                .filter(a -> immobilieId == null ||
+                        a.getImmobilie()
+                                .getId()
+                                .equals(immobilieId))
                 .map(Ausgabe::getBetrag)
-                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

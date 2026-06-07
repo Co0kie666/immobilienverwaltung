@@ -47,6 +47,6 @@ public interface AusgabeService {
 
     BigDecimal berechneBezahlteAusgabenImZeitraum(
             LocalDate startDatum,
-            LocalDate endDatum
-    );
+            LocalDate endDatum,
+            Long immobilieId);
 }

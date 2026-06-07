@@ -1,5 +1,6 @@
 package de.hsbi.immobilienverwaltung.service.interfaces;
 
+import de.hsbi.immobilienverwaltung.domain.Immobilie;
 import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
 
 import java.util.List;
@@ -10,6 +11,8 @@ public interface MieteinheitService {
     Mieteinheit speichereMieteinheit(Long immobilieId, Mieteinheit mieteinheit);
 
     List<Mieteinheit> findeMieteinheitenNachImmobilie(Long immobilieId);
+
+    List<Mieteinheit> findeAlleMieteinheiten();
 
     Optional<Mieteinheit> findeMieteinheitNachId(Long id);
 

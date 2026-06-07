@@ -3,14 +3,17 @@ package de.hsbi.immobilienverwaltung.ui.finanzen;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.router.Route;
-import de.hsbi.immobilienverwaltung.service.interfaces.AusgabeService;
-import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
+import de.hsbi.immobilienverwaltung.domain.Immobilie;
+import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
+import de.hsbi.immobilienverwaltung.domain.Mieter;
+import de.hsbi.immobilienverwaltung.service.interfaces.*;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import jakarta.annotation.security.PermitAll;
@@ -53,10 +56,28 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
     private double zahlungsstatusBezahlt;
     private double zahlungsstatusOffen;
 
+    private final ImmobilieService immobilieService;
+    private final MieteinheitService mieteinheitService;
+    private final MieterService mieterService;
+
+    private ComboBox<Immobilie> immobilieFilter;
+    private ComboBox<Mieteinheit> einheitFilter;
+    private ComboBox<Mieter> mieterFilter;
+
+    private Long ausgewaehlteImmobilieId;
+    private Long ausgewaehlteMieteinheitId;
+    private Long ausgewaehlterMieterId;
+
     public FinanzDashboardView(
             ZahlungsEingangService zahlungsEingangService,
-            AusgabeService ausgabeService
+            AusgabeService ausgabeService,
+            ImmobilieService immobilieService,
+            MieteinheitService mieteinheitService,
+            MieterService mieterService
     ) {
+        this.immobilieService = immobilieService;
+        this.mieteinheitService = mieteinheitService;
+        this.mieterService = mieterService;
         this.zahlungsEingangService = zahlungsEingangService;
         this.ausgabeService = ausgabeService;
 
@@ -66,54 +87,82 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         addClassName("finance-page");
 
-        ladeFinanzdaten();
+        ladeFinanzdaten(null, null, null);
         baueSeiteNeu();
     }
 
     private void baueSeiteNeu() {
         removeAll();
-
+        ladeFinanzdaten(
+                ausgewaehlteImmobilieId,
+                ausgewaehlteMieteinheitId,
+                ausgewaehlterMieterId
+        );
         add(createFilterBar());
         add(createKpiGrid());
         add(createDashboardGrid());
         add(createTableGrid());
     }
 
-    private void ladeFinanzdaten() {
+    private void ladeFinanzdaten(Long immobilieId,
+                                 Long mieteinheitId,
+                                 Long mieterId) {
+
         LocalDate startDatum = ermittleStartDatum();
         LocalDate endDatum = LocalDate.now();
 
         this.summeEinnahmen =
                 zahlungsEingangService.berechneBezahlteZahlungseingaengeImZeitraum(
                         startDatum,
-                        endDatum
+                        endDatum,
+                        immobilieId,
+                        mieteinheitId,
+                        mieterId
                 );
 
         this.summeAusgaben =
                 ausgabeService.berechneBezahlteAusgabenImZeitraum(
                         startDatum,
-                        endDatum
+                        endDatum,
+                        immobilieId
                 );
 
         this.rueckstaende =
                 zahlungsEingangService.berechneOffeneZahlungseingaengeImZeitraum(
                         startDatum,
-                        endDatum
+                        endDatum,
+                        immobilieId,
+                        mieteinheitId,
+                        mieterId
                 );
 
         this.cashflow =
-                summeEinnahmen.subtract(summeAusgaben);
+                this.summeEinnahmen.subtract(this.summeAusgaben);
 
         this.chartEinnahmen =
-                berechneEinnahmenChartDaten(startDatum, endDatum);
+                berechneEinnahmenChartDaten(
+                        startDatum,
+                        endDatum,
+                        immobilieId,
+                        mieteinheitId,
+                        mieterId
+                );
 
         this.chartAusgaben =
-                berechneAusgabenChartDaten(startDatum, endDatum);
+                berechneAusgabenChartDaten(
+                        startDatum,
+                        endDatum,
+                        immobilieId
+                );
 
         this.chartMonate =
                 berechneChartMonate(startDatum, endDatum);
 
-        berechneZahlungsstatus();
+        berechneZahlungsstatus(
+                immobilieId,
+                mieteinheitId,
+                mieterId
+        );
     }
 
     private LocalDate ermittleStartDatum() {
@@ -127,7 +176,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         };
     }
 
-    private void berechneZahlungsstatus() {
+    private void berechneZahlungsstatus(Long immobilieId, Long mieteinheitId, Long mieterId) {
         BigDecimal bezahlt = summeEinnahmen == null ? BigDecimal.ZERO : summeEinnahmen;
         BigDecimal offen = rueckstaende == null ? BigDecimal.ZERO : rueckstaende;
         BigDecimal gesamt = bezahlt.add(offen);
@@ -179,33 +228,64 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         sixMonths.addClickListener(e -> wechselZeitraum(ZeitraumFilter.SECHS_MONATE));
         ytd.addClickListener(e -> wechselZeitraum(ZeitraumFilter.YTD));
 
-        Button allProperties = new Button(
-                "Alle Immobilien",
-                new Icon(VaadinIcon.CHEVRON_DOWN)
-        );
-        allProperties.addClassName("secondary-button");
+        immobilieFilter = new ComboBox<>();
+        immobilieFilter.setPlaceholder("Alle Immobilien");
+        immobilieFilter.setItems(immobilieService.findeAlleImmobilien());
+        immobilieFilter.setItemLabelGenerator(Immobilie::getBezeichnung);
+        immobilieFilter.setClearButtonVisible(true);
+        immobilieFilter.addClassName("dashboard-filter-combo");
 
-        Button allUnits = new Button(
-                "Alle Einheiten",
-                new Icon(VaadinIcon.CHEVRON_DOWN)
-        );
-        allUnits.addClassName("secondary-button");
+        einheitFilter = new ComboBox<>();
+        einheitFilter.setPlaceholder("Alle Einheiten");
+        einheitFilter.setItems(mieteinheitService.findeAlleMieteinheiten());
+        einheitFilter.setItemLabelGenerator(Mieteinheit::getBezeichnung);
+        einheitFilter.setClearButtonVisible(true);
+        einheitFilter.addClassName("dashboard-filter-combo");
 
-        Button allTenants = new Button(
-                "Alle Mieter",
-                new Icon(VaadinIcon.CHEVRON_DOWN)
+        mieterFilter = new ComboBox<>();
+        mieterFilter.setPlaceholder("Alle Mieter");
+        mieterFilter.setItems(mieterService.findeAlleMieter());
+        mieterFilter.setItemLabelGenerator(mieter ->
+                mieter.getVorname() + " " + mieter.getNachname()
         );
-        allTenants.addClassName("secondary-button");
+        mieterFilter.setClearButtonVisible(true);
+        mieterFilter.addClassName("dashboard-filter-combo");
+
+        immobilieFilter.addValueChangeListener(event -> {
+            Immobilie immobilie = event.getValue();
+            ausgewaehlteImmobilieId = immobilie != null
+                    ? immobilie.getId()
+                    : null;
+            // Wenn neue Immobilie gewählt wird, alte Unterfilter zurücksetzen
+            ausgewaehlteMieteinheitId = null;
+            ausgewaehlterMieterId = null;
+            baueSeiteNeu();
+        });
+        einheitFilter.addValueChangeListener(event -> {
+            Mieteinheit mieteinheit = event.getValue();
+            ausgewaehlteMieteinheitId = mieteinheit != null
+                    ? mieteinheit.getId()
+                    : null;
+            baueSeiteNeu();
+        });
+        mieterFilter.addValueChangeListener(event -> {
+            Mieter mieter = event.getValue();
+            ausgewaehlterMieterId = mieter != null
+                    ? mieter.getId()
+                    : null;
+            baueSeiteNeu();
+        });
 
         left.add(
                 oneMonth,
                 threeMonths,
                 sixMonths,
                 ytd,
-                allProperties,
-                allUnits,
-                allTenants
+                immobilieFilter,
+                einheitFilter,
+                mieterFilter
         );
+
 
         Button addBooking = new Button("Buchung anlegen", new Icon(VaadinIcon.PLUS));
         Button showBookings = new Button("Alle Buchungen anzeigen", new Icon(VaadinIcon.PLUS));
@@ -230,10 +310,26 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         return filterBar;
     }
 
+    private void wendeFilterAn() {
+        Long immobilieId = immobilieFilter.getValue() == null
+                ? null
+                : immobilieFilter.getValue().getId();
+
+        Long einheitId = einheitFilter.getValue() == null
+                ? null
+                : einheitFilter.getValue().getId();
+
+        Long mieterId = mieterFilter.getValue() == null
+                ? null
+                : mieterFilter.getValue().getId();
+
+        ladeFinanzdaten(immobilieId, einheitId, mieterId);
+    }
+
     private void wechselZeitraum(ZeitraumFilter filter) {
         this.aktuellerFilter = filter;
 
-        ladeFinanzdaten();
+        ladeFinanzdaten(null, null, null);
         baueSeiteNeu();
     }
 
@@ -285,7 +381,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                         cashflow.signum() >= 0 ? "primary" : "danger"
                 )
         );
-
+            wendeFilterAn();
         return grid;
     }
 
@@ -652,8 +748,8 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
     private double[] berechneEinnahmenChartDaten(
             LocalDate startDatum,
-            LocalDate endDatum
-    ) {
+            LocalDate endDatum,
+            Long immobilieId, Long mieteinheitId, Long mieterId) {
         List<YearMonth> monate = ermittleMonateImZeitraum(startDatum, endDatum);
         double[] daten = new double[monate.size()];
 
@@ -663,8 +759,8 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
             BigDecimal summe =
                     zahlungsEingangService.berechneBezahlteZahlungseingaengeImZeitraum(
                             monat.atDay(1),
-                            monat.atEndOfMonth()
-                    );
+                            monat.atEndOfMonth(),
+                            immobilieId, mieteinheitId, mieterId);
 
             daten[i] = summe.doubleValue();
         }
@@ -674,8 +770,8 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
     private double[] berechneAusgabenChartDaten(
             LocalDate startDatum,
-            LocalDate endDatum
-    ) {
+            LocalDate endDatum,
+            Long immobilieId) {
         List<YearMonth> monate = ermittleMonateImZeitraum(startDatum, endDatum);
         double[] daten = new double[monate.size()];
 
@@ -685,8 +781,8 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
             BigDecimal summe =
                     ausgabeService.berechneBezahlteAusgabenImZeitraum(
                             monat.atDay(1),
-                            monat.atEndOfMonth()
-                    );
+                            monat.atEndOfMonth(),
+                            immobilieId);
 
             daten[i] = summe.doubleValue();
         }

@@ -86,6 +86,9 @@ public class MieteinheitServiceImpl implements MieteinheitService {
     }
 
     @Override
+    public List<Mieteinheit> findeAlleMieteinheiten() { return mieteinheitRepository.findAll(); }
+
+    @Override
     public Optional<Mieteinheit> findeMieteinheitNachId(Long id) {
         return mieteinheitRepository.findById(id);
     }

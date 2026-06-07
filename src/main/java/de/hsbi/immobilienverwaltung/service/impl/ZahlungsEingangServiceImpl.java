@@ -82,7 +82,10 @@ public class ZahlungsEingangServiceImpl implements ZahlungsEingangService {
     public BigDecimal berechneSummeZahlungseingaengeFuerMietvertrag(
             Mietvertrag mietvertrag,
             LocalDate startDatum,
-            LocalDate endDatum
+            LocalDate endDatum,
+            Long immobilieId,
+            Long mieteinheitId,
+            Long mieterId
     ) {
         List<Zahlungseingang> zahlungen =
                 zahlungsEingangRepository.findByMietvertragAndZahlungsdatumBetween(
@@ -169,37 +172,67 @@ public class ZahlungsEingangServiceImpl implements ZahlungsEingangService {
     @Override
     public BigDecimal berechneBezahlteZahlungseingaengeImZeitraum(
             LocalDate startDatum,
-            LocalDate endDatum
+            LocalDate endDatum,
+            Long immobilieId,
+            Long mieteinheitId,
+            Long mieterId
     ) {
-        return zahlungsEingangRepository
-                .findByStatusAndZahlungsdatumBetween(
-                        "Bezahlt / Erledigt",
-                        startDatum,
-                        endDatum
-                )
+        return zahlungsEingangRepository.findAll()
                 .stream()
+                .filter(z -> !z.getZahlungsdatum().isBefore(startDatum))
+                .filter(z -> !z.getZahlungsdatum().isAfter(endDatum))
+                .filter(z -> z.getStatus().equals("Bezahlt / Erledigt"))
+                .filter(z -> immobilieId == null ||
+                        z.getMietvertrag()
+                                .getMieteinheit()
+                                .getImmobilie()
+                                .getId()
+                                .equals(immobilieId))
+                .filter(z -> mieteinheitId == null ||
+                        z.getMietvertrag()
+                                .getMieteinheit()
+                                .getId()
+                                .equals(mieteinheitId))
+                .filter(z -> mieterId == null ||
+                        z.getMietvertrag()
+                                .getMieter()
+                                .getId()
+                                .equals(mieterId))
                 .map(Zahlungseingang::getBetrag)
-                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
-
     @Override
     public BigDecimal berechneOffeneZahlungseingaengeImZeitraum(
             LocalDate startDatum,
-            LocalDate endDatum
+            LocalDate endDatum,
+            Long immobilieId,
+            Long mieteinheitId,
+            Long mieterId
     ) {
-        return zahlungsEingangRepository
-                .findByStatusAndZahlungsdatumBetween(
-                        "Offen / Ausstehend",
-                        startDatum,
-                        endDatum
-                )
+        return zahlungsEingangRepository.findAll()
                 .stream()
+                .filter(z -> !z.getZahlungsdatum().isBefore(startDatum))
+                .filter(z -> !z.getZahlungsdatum().isAfter(endDatum))
+                .filter(z -> !z.getStatus().equals("Bezahlt / Erledigt"))
+                .filter(z -> immobilieId == null ||
+                        z.getMietvertrag()
+                                .getMieteinheit()
+                                .getImmobilie()
+                                .getId()
+                                .equals(immobilieId))
+                .filter(z -> mieteinheitId == null ||
+                        z.getMietvertrag()
+                                .getMieteinheit()
+                                .getId()
+                                .equals(mieteinheitId))
+                .filter(z -> mieterId == null ||
+                        z.getMietvertrag()
+                                .getMieter()
+                                .getId()
+                                .equals(mieterId))
                 .map(Zahlungseingang::getBetrag)
-                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
-
     @Override
     public List<Zahlungseingang> findeOffeneZahlungseingaenge() {
         return zahlungsEingangRepository.findByStatus("Offen / Ausstehend");
