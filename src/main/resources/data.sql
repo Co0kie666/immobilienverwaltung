@@ -161,9 +161,8 @@ VALUES
     (NULL,         950.00,  1900.00, '2026-12-31', 280.00, '2026-05-01', 9,  9,  'AKTIV'),
     ('2026-05-31', 480.00,  960.00,  '2026-02-28', 140.00, '2024-09-01', 10, 10, 'BEENDET');
 
-
 -- ============================================================
--- ZAHLUNGSEINGÄNGE
+-- ZAHLUNGSEINGÄNGE 2026
 -- ============================================================
 
 INSERT INTO zahlungseingang (
@@ -176,20 +175,57 @@ INSERT INTO zahlungseingang (
     mietvertrag_id
 )
 VALUES
-    (500.00,  'Kaltmiete Juni für WE-01',                       '2026-06-01', 'KALTMIETE',    '2026-06-03', 'Bezahlt / Erledigt', 1),
-    (150.00,  'Nebenkosten Juni für WE-01',                      '2026-06-01', 'NEBENKOSTEN', '2026-06-03', 'Bezahlt / Erledigt', 1),
-    (720.00,  'Kaltmiete Juni für WE-02',                       '2026-06-01', 'KALTMIETE',    '2026-06-05', 'Offen / Ausstehend', 2),
-    (210.00,  'Nebenkosten Juni für WE-02',                      '2026-06-01', 'NEBENKOSTEN', '2026-06-05', 'Offen / Ausstehend', 2),
-    (1300.00, 'Kaution Mietvertrag WE-03',                       '2026-06-01', 'KAUTION',      '2026-06-07', 'Bezahlt / Erledigt', 3),
-    (650.00,  'Kaltmiete Juni für WE-03',                       '2026-06-01', 'KALTMIETE',    '2026-06-07', 'Bezahlt / Erledigt', 3),
-    (820.00,  'Kaltmiete Juni für WE-01 Altbau Ensemble Mitte', '2026-06-01', 'KALTMIETE',    '2026-06-10', 'Offen / Ausstehend', 5),
-    (230.00,  'Nebenkosten Juni für WE-01 Altbau Ensemble Mitte','2026-06-01', 'NEBENKOSTEN', '2026-06-10', 'Offen / Ausstehend', 5),
-    (1100.00, 'Kaltmiete Juni für Büro EG',                     '2026-06-01', 'KALTMIETE',    '2026-06-12', 'Bezahlt / Erledigt', 8),
-    (320.00,  'Nebenkosten Juni für Büro EG',                    '2026-06-01', 'NEBENKOSTEN', '2026-06-12', 'Bezahlt / Erledigt', 8);
+    -- Januar
+    (500.00,  'Kaltmiete Januar für WE-01',          '2026-01-01', 'KALTMIETE',    '2026-01-03', 'Bezahlt / Erledigt', 1),
+    (150.00,  'Nebenkosten Januar für WE-01',        '2026-01-01', 'NEBENKOSTEN', '2026-01-03', 'Bezahlt / Erledigt', 1),
 
+    -- Februar
+    (720.00,  'Kaltmiete Februar für WE-02',         '2026-02-01', 'KALTMIETE',    '2026-02-04', 'Bezahlt / Erledigt', 2),
+    (210.00,  'Nebenkosten Februar für WE-02',       '2026-02-01', 'NEBENKOSTEN', '2026-02-04', 'Offen / Ausstehend', 2),
+
+    -- März
+    (650.00,  'Kaltmiete März für WE-03',            '2026-03-01', 'KALTMIETE',    '2026-03-05', 'Bezahlt / Erledigt', 3),
+    (180.00,  'Nebenkosten März für WE-03',          '2026-03-01', 'NEBENKOSTEN', '2026-03-05', 'Bezahlt / Erledigt', 3),
+
+    -- April
+    (580.00,  'Kaltmiete April für WE-04',           '2026-04-01', 'KALTMIETE',    '2026-04-04', 'Offen / Ausstehend', 4),
+    (160.00,  'Nebenkosten April für WE-04',         '2026-04-01', 'NEBENKOSTEN', '2026-04-04', 'Bezahlt / Erledigt', 4),
+
+    -- Mai
+    (820.00,  'Kaltmiete Mai für WE-01 Altbau',      '2026-05-01', 'KALTMIETE',    '2026-05-06', 'Bezahlt / Erledigt', 5),
+    (230.00,  'Nebenkosten Mai für WE-01 Altbau',    '2026-05-01', 'NEBENKOSTEN', '2026-05-06', 'Offen / Ausstehend', 5),
+
+    -- Juni
+    (500.00,  'Kaltmiete Juni für WE-01',            '2026-06-01', 'KALTMIETE',    '2026-06-03', 'Bezahlt / Erledigt', 1),
+    (150.00,  'Nebenkosten Juni für WE-01',          '2026-06-01', 'NEBENKOSTEN', '2026-06-03', 'Bezahlt / Erledigt', 1),
+    (1300.00, 'Kaution Mietvertrag WE-03',           '2026-06-01', 'KAUTION',      '2026-06-07', 'Bezahlt / Erledigt', 3),
+
+    -- Juli
+    (760.00,  'Kaltmiete Juli für WE-03 Objekt 2',   '2026-07-01', 'KALTMIETE',    '2026-07-05', 'Offen / Ausstehend', 7),
+    (200.00,  'Nebenkosten Juli für WE-03 Objekt 2', '2026-07-01', 'NEBENKOSTEN', '2026-07-05', 'Bezahlt / Erledigt', 7),
+
+    -- August
+    (1100.00, 'Kaltmiete August für Büro EG',        '2026-08-01', 'KALTMIETE',    '2026-08-08', 'Bezahlt / Erledigt', 8),
+    (320.00,  'Nebenkosten August für Büro EG',      '2026-08-01', 'NEBENKOSTEN', '2026-08-08', 'Offen / Ausstehend', 8),
+
+    -- September
+    (950.00,  'Kaltmiete September für Lager A',     '2026-09-01', 'KALTMIETE',    '2026-09-06', 'Bezahlt / Erledigt', 9),
+    (280.00,  'Nebenkosten September für Lager A',   '2026-09-01', 'NEBENKOSTEN', '2026-09-06', 'Bezahlt / Erledigt', 9),
+
+    -- Oktober
+    (690.00,  'Kaltmiete Oktober für WE-02',         '2026-10-01', 'KALTMIETE',    '2026-10-04', 'Offen / Ausstehend', 6),
+    (190.00,  'Nebenkosten Oktober für WE-02',       '2026-10-01', 'NEBENKOSTEN', '2026-10-04', 'Bezahlt / Erledigt', 6),
+
+    -- November
+    (720.00,  'Kaltmiete November für WE-02',        '2026-11-01', 'KALTMIETE',    '2026-11-05', 'Bezahlt / Erledigt', 2),
+    (210.00,  'Nebenkosten November für WE-02',      '2026-11-01', 'NEBENKOSTEN', '2026-11-05', 'Offen / Ausstehend', 2),
+
+    -- Dezember
+    (1100.00, 'Kaltmiete Dezember für Büro EG',      '2026-12-01', 'KALTMIETE',    '2026-12-07', 'Bezahlt / Erledigt', 8),
+    (320.00,  'Nebenkosten Dezember für Büro EG',    '2026-12-01', 'NEBENKOSTEN', '2026-12-07', 'Bezahlt / Erledigt', 8);
 
 -- ============================================================
--- AUSGABEN
+-- AUSGABEN 2026
 -- ============================================================
 
 INSERT INTO ausgabe (
@@ -205,8 +241,39 @@ INSERT INTO ausgabe (
     mieteinheit_id
 )
 VALUES
-    (390.00, '2026-06-12', NULL, 'Heizungsreparatur in WE-03',                 'Heizung Krüger',        'Heizungsreparatur WE-03', 'REPARATUR',       'Bezahlt / Erledigt', 2, 7),
-    (600.00, '2026-06-15', NULL, 'Gebäudeversicherung für Seeblick Quartier',  'Versicherung AG',       'Gebäudeversicherung',     'VERSICHERUNG',    'Offen / Ausstehend', 3, NULL),
-    (520.00, '2026-06-18', NULL, 'Reparatur im Büro EG',                       'Facility Service GmbH',  'Reparatur Büro EG',       'REPARATUR',       'Bezahlt / Erledigt', 3, 8),
-    (280.00, '2026-06-20', NULL, 'Lagerwartung Lager A',                       'Logistik Service Nord', 'Wartung Lager A',         'INSTANDHALTUNG',  'Offen / Ausstehend', 3, 9),
-    (350.00, '2026-06-22', NULL, 'Sonstige Betriebskosten für Gewerbefläche 1', 'Dienstleister GmbH',    'Sonstige Kosten',         'SONSTIGES',       'Bezahlt / Erledigt', 3, 10);
+    -- Januar
+    (240.00, '2026-01-12', NULL, 'Wartung Rauchmelder',                      'Sicherheitsdienst OWL',    'Rauchmelderwartung',       'INSTANDHALTUNG', 'Bezahlt / Erledigt', 1, NULL),
+
+    -- Februar
+    (390.00, '2026-02-10', NULL, 'Heizungsreparatur in WE-03',               'Heizung Krüger',           'Heizungsreparatur WE-03',  'REPARATUR',      'Offen / Ausstehend', 2, 7),
+
+    -- März
+    (180.00, '2026-03-08', NULL, 'Treppenhausreinigung März',                'Reinigungsservice Müller', 'Treppenhausreinigung',     'SONSTIGES',      'Bezahlt / Erledigt', 1, NULL),
+
+    -- April
+    (450.00, '2026-04-16', NULL, 'Reparatur Klingelanlage',                  'Elektro Schneider',        'Klingelanlage Reparatur',  'REPARATUR',      'Offen / Ausstehend', 1, NULL),
+
+    -- Mai
+    (320.00, '2026-05-19', NULL, 'Gartenpflege Außenanlage',                 'Gartenbau Meier',          'Gartenpflege',             'SONSTIGES',      'Bezahlt / Erledigt', 2, NULL),
+
+    -- Juni
+    (600.00, '2026-06-15', NULL, 'Gebäudeversicherung für Seeblick Quartier', 'Versicherung AG',          'Gebäudeversicherung',      'VERSICHERUNG',   'Offen / Ausstehend', 3, NULL),
+    (280.00, '2026-06-20', NULL, 'Lagerwartung Lager A',                     'Logistik Service Nord',    'Wartung Lager A',          'INSTANDHALTUNG', 'Bezahlt / Erledigt', 3, 9),
+
+    -- Juli
+    (520.00, '2026-07-11', NULL, 'Reparatur im Büro EG',                     'Facility Service GmbH',    'Reparatur Büro EG',        'REPARATUR',      'Bezahlt / Erledigt', 3, 8),
+
+    -- August
+    (350.00, '2026-08-14', NULL, 'Sonstige Betriebskosten Gewerbefläche 1',   'Dienstleister GmbH',       'Sonstige Kosten',          'SONSTIGES',      'Offen / Ausstehend', 3, 10),
+
+    -- September
+    (410.00, '2026-09-09', NULL, 'Sanitärreparatur WE-02',                   'Sanitär Hoffmann',         'Sanitärreparatur WE-02',   'REPARATUR',      'Bezahlt / Erledigt', 1, 2),
+
+    -- Oktober
+    (275.00, '2026-10-18', NULL, 'Wartung Heizungsanlage',                   'Heizung Krüger',           'Heizungswartung',          'INSTANDHALTUNG', 'Offen / Ausstehend', 2, NULL),
+
+    -- November
+    (690.00, '2026-11-22', NULL, 'Versicherung Gewerbeobjekt',               'Versicherung AG',          'Gewerbeversicherung',      'VERSICHERUNG',   'Bezahlt / Erledigt', 3, NULL),
+
+    -- Dezember
+    (310.00, '2026-12-13', NULL, 'Winterdienst Dezember',                    'Hausservice Winter GmbH',  'Winterdienst',             'SONSTIGES',      'Offen / Ausstehend', 1, NULL);

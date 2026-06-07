@@ -19,4 +19,15 @@ public interface AusgabeRepository extends JpaRepository<Ausgabe, Long> {
             LocalDate startDatum,
             LocalDate endDatum
     );
+
+    List<Ausgabe> findByStatus(String status);
+
+    long countByStatus(String status);
+
+    List<Ausgabe> findByStatusAndDatumBetween(
+            String status,
+            LocalDate startDatum,
+            LocalDate endDatum
+    );
+    
 }

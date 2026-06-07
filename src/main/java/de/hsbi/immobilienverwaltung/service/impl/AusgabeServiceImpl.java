@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -109,5 +110,36 @@ public class AusgabeServiceImpl implements AusgabeService {
     @Transactional
     public void loescheAusgabe(Long id) {
         ausgabeRepository.deleteById(id);
+    }
+
+    @Override
+    public BigDecimal berechneOffeneAusgaben() {
+        return ausgabeRepository.findByStatus("Offen / Ausstehend")
+                .stream()
+                .map(Ausgabe::getBetrag)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Override
+    public long zaehleOffeneAusgaben() {
+        return ausgabeRepository.countByStatus("Offen / Ausstehend");
+    }
+
+    @Override
+    public BigDecimal berechneOffeneAusgabenImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum
+    ) {
+        return ausgabeRepository
+                .findByStatusAndDatumBetween(
+                        "Offen / Ausstehend",
+                        startDatum,
+                        endDatum
+                )
+                .stream()
+                .map(Ausgabe::getBetrag)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

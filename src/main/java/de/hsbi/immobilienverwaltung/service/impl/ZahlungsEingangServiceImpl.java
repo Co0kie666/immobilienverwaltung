@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -144,5 +145,36 @@ public class ZahlungsEingangServiceImpl implements ZahlungsEingangService {
                 immobilieId,
                 "Offen / Ausstehend" // TODO: später enums verwenden statt String
         );
+    }
+
+    @Override
+    public BigDecimal berechneGesamteBezahlteZahlungseingaenge() {
+        return zahlungsEingangRepository.findByStatus("Bezahlt / Erledigt")
+                .stream()
+                .map(Zahlungseingang::getBetrag)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Override
+    public BigDecimal berechneBezahlteZahlungseingaengeImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum
+    ) {
+        return zahlungsEingangRepository
+                .findByStatusAndZahlungsdatumBetween(
+                        "Bezahlt / Erledigt",
+                        startDatum,
+                        endDatum
+                )
+                .stream()
+                .map(Zahlungseingang::getBetrag)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Override
+    public List<Zahlungseingang> findeOffeneZahlungseingaenge() {
+        return zahlungsEingangRepository.findByStatus("Offen / Ausstehend");
     }
 }

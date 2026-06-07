@@ -33,4 +33,13 @@ public interface AusgabeService {
     );
 
     void loescheAusgabe(Long id);
+
+    BigDecimal berechneOffeneAusgaben();
+
+    long zaehleOffeneAusgaben();
+
+    BigDecimal berechneOffeneAusgabenImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum
+    );
 }

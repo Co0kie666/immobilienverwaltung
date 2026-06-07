@@ -10,11 +10,17 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.router.Route;
+import de.hsbi.immobilienverwaltung.domain.Zahlungseingang;
 import jakarta.annotation.security.PermitAll;
 
 import de.hsbi.immobilienverwaltung.service.interfaces.GesamtAuswertungService;
+import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
+import de.hsbi.immobilienverwaltung.service.interfaces.AusgabeService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 @Route(value = "dashboard", layout = MainLayout.class)
 @PermitAll
@@ -26,9 +32,20 @@ public class DashboardView extends Div implements HasPageHeader {
     private final long vermieteteMieteinheiten;
     private final double leerstandsquote;
     private final long aktiveVertraege;
+    private final BigDecimal gesamteinnahmen;
+    private final BigDecimal offeneAusgaben;
+    private final long anzahlOffeneAusgaben;
+    private final List<Zahlungseingang> offeneZahlungseingaenge;
 
-    public DashboardView(GesamtAuswertungService gesamtAuswertungService) {
+    private final double[] chartEinnahmen;
+    private final double[] chartAusgaben;
+    private final String[] chartMonate;
 
+    public DashboardView(
+            GesamtAuswertungService gesamtAuswertungService,
+            ZahlungsEingangService zahlungsEingangService,
+            AusgabeService ausgabeService
+    ) {
         this.gesamtMieteinheiten =
                 gesamtAuswertungService.berechneAnzahlMieteinheiten();
 
@@ -41,7 +58,29 @@ public class DashboardView extends Div implements HasPageHeader {
         this.leerstandsquote =
                 gesamtAuswertungService.berechneLeerstandsquote();
 
-        this.aktiveVertraege = gesamtAuswertungService.berechneAnzahlAktiveVertraege();
+        this.aktiveVertraege =
+                gesamtAuswertungService.berechneAnzahlAktiveVertraege();
+
+        this.gesamteinnahmen =
+                zahlungsEingangService.berechneGesamteBezahlteZahlungseingaenge();
+
+        this.offeneAusgaben =
+                ausgabeService.berechneOffeneAusgaben();
+
+        this.anzahlOffeneAusgaben =
+                ausgabeService.zaehleOffeneAusgaben();
+
+        this.chartEinnahmen =
+                berechneEinnahmenChartDaten(zahlungsEingangService);
+
+        this.chartAusgaben =
+                berechneAusgabenChartDaten(ausgabeService);
+
+        this.chartMonate =
+                berechneChartMonate();
+
+        this.offeneZahlungseingaenge =
+                zahlungsEingangService.findeOffeneZahlungseingaenge();
 
         UI.getCurrent().getPage().addJavaScript(
                 "https://cdn.jsdelivr.net/npm/chart.js"
@@ -52,7 +91,6 @@ public class DashboardView extends Div implements HasPageHeader {
         add(createActionBar());
         add(createKpiSection());
         add(createChartSection());
-        add(createOpenItemsCard());
     }
 
     private Component createActionBar() {
@@ -95,6 +133,24 @@ public class DashboardView extends Div implements HasPageHeader {
         return layout;
     }
 
+    private String formatEuro(BigDecimal betrag) {
+        if (betrag == null) {
+            betrag = BigDecimal.ZERO;
+        }
+
+        return java.text.NumberFormat
+                .getCurrencyInstance(java.util.Locale.GERMANY)
+                .format(betrag);
+    }
+
+    private String formatAnzahlOffeneAusgaben(long anzahl) {
+        if (anzahl == 1) {
+            return "1 ausstehende Ausgabe";
+        }
+
+        return anzahl + " ausstehende Ausgaben";
+    }
+
     private Component createKpiSection() {
 
         HorizontalLayout layout = new HorizontalLayout();
@@ -106,12 +162,13 @@ public class DashboardView extends Div implements HasPageHeader {
         layout.add(
                 kpiCard(
                         "Gesamteinnahmen",
-                        "€124,500",
-                        "+12%",
-                        "Einnahmen diesen Monat",
+                        formatEuro(gesamteinnahmen),
+                        "",
+                        "Summe aller Zahlungseingänge",
                         VaadinIcon.LINE_CHART,
                         "primary"
                 ),
+
 
                 kpiCard(
                         "Leerstandsquote",
@@ -127,9 +184,9 @@ public class DashboardView extends Div implements HasPageHeader {
 
                 kpiCard(
                         "Offene Zahlungen",
-                        "€4,250",
+                        formatEuro(offeneAusgaben),
                         "",
-                        "5 ausstehende Mieten",
+                        formatAnzahlOffeneAusgaben(anzahlOffeneAusgaben),
                         VaadinIcon.WARNING,
                         "warning"
                 ),
@@ -151,30 +208,133 @@ public class DashboardView extends Div implements HasPageHeader {
         return layout;
     }
 
+    private double[] berechneEinnahmenChartDaten(
+            ZahlungsEingangService zahlungsEingangService
+    ) {
+        double[] daten = new double[12];
+
+        int jahr = java.time.Year.now().getValue();
+
+        for (int i = 0; i < 12; i++) {
+            java.time.YearMonth monat = java.time.YearMonth.of(jahr, i + 1);
+
+            BigDecimal summe =
+                    zahlungsEingangService.berechneBezahlteZahlungseingaengeImZeitraum(
+                            monat.atDay(1),
+                            monat.atEndOfMonth()
+                    );
+
+            daten[i] = summe.doubleValue();
+        }
+
+        return daten;
+    }
+
+    private double[] berechneAusgabenChartDaten(
+            AusgabeService ausgabeService
+    ) {
+        double[] daten = new double[12];
+
+        int jahr = java.time.Year.now().getValue();
+
+        for (int i = 0; i < 12; i++) {
+            java.time.YearMonth monat = java.time.YearMonth.of(jahr, i + 1);
+
+            BigDecimal summe =
+                    ausgabeService.berechneOffeneAusgabenImZeitraum(
+                            monat.atDay(1),
+                            monat.atEndOfMonth()
+                    );
+
+            daten[i] = summe.doubleValue();
+        }
+
+        return daten;
+    }
+
+    private String[] berechneChartMonate() {
+        String[] monate = new String[12];
+
+        java.time.format.DateTimeFormatter formatter =
+                java.time.format.DateTimeFormatter.ofPattern(
+                        "MMM",
+                        java.util.Locale.GERMANY
+                );
+
+        int jahr = java.time.Year.now().getValue();
+
+        for (int i = 0; i < 12; i++) {
+            java.time.YearMonth monat = java.time.YearMonth.of(jahr, i + 1);
+            monate[i] = monat.format(formatter);
+        }
+
+        return monate;
+    }
+
     private Component createChartSection() {
 
-        HorizontalLayout layout = new HorizontalLayout();
+        Div section = new Div();
 
-        layout.setWidthFull();
-
-        layout.addClassName("page-section");
+        section.setWidthFull();
+        section.addClassName("page-section");
 
         Div barChart = chartCard(
                 "Einnahmen vs. Ausgaben",
                 createBarChart()
         );
 
+        barChart.setWidthFull();
+
+        HorizontalLayout lowerCharts = new HorizontalLayout();
+        lowerCharts.setWidthFull();
+        lowerCharts.setSpacing(true);
+        lowerCharts.setAlignItems(FlexComponent.Alignment.STRETCH);
+
         Div pieChart = chartCard(
                 "Vermietet vs Leerstand",
                 createPieChart()
         );
 
-        barChart.getStyle().set("flex", "1");
-        pieChart.getStyle().set("flex", "1");
+        Div openItemsCard = createOpenItemsCard();
 
-        layout.add(barChart, pieChart);
+        pieChart.getStyle().set("flex", "2");
+        openItemsCard.getStyle().set("flex", "1");
 
-        return layout;
+        pieChart.setWidthFull();
+        openItemsCard.setWidthFull();
+
+        lowerCharts.add(pieChart, openItemsCard);
+
+        section.add(barChart, lowerCharts);
+
+        return section;
+    }
+
+    private String ermittleMieterName(Zahlungseingang zahlung) {
+        if (zahlung == null ||
+                zahlung.getMietvertrag() == null ||
+                zahlung.getMietvertrag().getMieter() == null) {
+            return "Unbekannter Mieter";
+        }
+
+        String vorname = zahlung.getMietvertrag().getMieter().getVorname();
+        String nachname = zahlung.getMietvertrag().getMieter().getNachname();
+
+        if (vorname == null) {
+            vorname = "";
+        }
+
+        if (nachname == null) {
+            nachname = "";
+        }
+
+        String name = (vorname + " " + nachname).trim();
+
+        if (name.isBlank()) {
+            return "Unbekannter Mieter";
+        }
+
+        return name;
     }
 
     private Div createOpenItemsCard() {
@@ -182,28 +342,36 @@ public class DashboardView extends Div implements HasPageHeader {
         Div card = new Div();
 
         card.addClassName("card");
-
-        card.setWidth("420px");
+        card.setWidthFull();
 
         H3 title = new H3("Offene Posten");
-
         title.addClassName("card-title");
 
         card.add(title);
 
-        card.add(openItem(
-                "Max Mustermann",
-                "Miete Mai 2024",
-                "€850.00",
-                "5 Tage überfällig"
-        ));
+        if (offeneZahlungseingaenge.isEmpty()) {
+            Div emptyState = new Div();
+            emptyState.setText("Keine offenen Posten vorhanden.");
+            emptyState.getStyle().set("font-size", "14px");
+            emptyState.getStyle().set("color", "var(--lumo-secondary-text-color)");
 
-        card.add(openItem(
-                "Julia Schmidt",
-                "Nebenkosten 2023",
-                "€120.50",
-                "12 Tage überfällig"
-        ));
+            card.add(emptyState);
+            return card;
+        }
+
+        offeneZahlungseingaenge.forEach(zahlung -> {
+            String name = ermittleMieterName(zahlung);
+            String beschreibung = zahlung.getBeschreibung();
+            String betrag = formatEuro(zahlung.getBetrag());
+            String status = "Ausstehend";
+
+            card.add(openItem(
+                    name,
+                    beschreibung,
+                    betrag,
+                    status
+            ));
+        });
 
         return card;
     }
@@ -294,98 +462,62 @@ public class DashboardView extends Div implements HasPageHeader {
         Div wrapper = new Div();
 
         wrapper.setWidthFull();
-
-        wrapper.getStyle().set("height", "300px");
+        wrapper.getStyle().set("height", "420");
 
         Element canvas = new Element("canvas");
-
         canvas.setAttribute("id", "incomeExpenseChart");
-
         canvas.getStyle().set("width", "100%");
-        canvas.getStyle().set("height", "300px");
+        canvas.getStyle().set("height", "420px");
 
         wrapper.getElement().appendChild(canvas);
 
         UI.getCurrent().getPage().executeJs("""
-            setTimeout(() => {
+        setTimeout(() => {
 
-                const ctx =
-                    document.getElementById(
-                        'incomeExpenseChart'
-                    );
+            const ctx = document.getElementById('incomeExpenseChart');
 
-                if (!ctx) return;
+            if (!ctx) return;
 
-                new Chart(ctx, {
+            new Chart(ctx, {
+                type: 'bar',
 
-                    type: 'bar',
+                data: {
+                    labels: $0,
 
-                    data: {
+                    datasets: [
+                        {
+                            label: 'Einnahmen',
+                            data: $1,
+                            borderRadius: 8
+                        },
+                        {
+                            label: 'Ausgaben',
+                            data: $2,
+                            borderRadius: 8
+                        }
+                    ]
+                },
 
-                        labels: [
-                            'Jan',
-                            'Feb',
-                            'Mär',
-                            'Apr',
-                            'Mai',
-                            'Jun'
-                        ],
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
 
-                        datasets: [
-                            {
-                                label: 'Einnahmen',
-
-                                data: [
-                                    110,
-                                    115,
-                                    112,
-                                    118,
-                                    125,
-                                    120
-                                ],
-
-                                borderRadius: 8
-                            },
-
-                            {
-                                label: 'Ausgaben',
-
-                                data: [
-                                    45,
-                                    48,
-                                    42,
-                                    50,
-                                    47,
-                                    46
-                                ],
-
-                                borderRadius: 8
-                            }
-                        ]
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
                     },
 
-                    options: {
-
-                        responsive: true,
-
-                        maintainAspectRatio: false,
-
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
-                            }
-                        },
-
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
+                    scales: {
+                        y: {
+                            beginAtZero: true
                         }
                     }
-                });
+                }
+            });
 
-            }, 300);
-        """);
+        }, 300);
+    """, chartMonate, chartEinnahmen, chartAusgaben);
 
         return wrapper;
     }

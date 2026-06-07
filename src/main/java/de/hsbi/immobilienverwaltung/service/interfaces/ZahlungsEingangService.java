@@ -41,4 +41,14 @@ public interface ZahlungsEingangService {
     BigDecimal berechneOffeneZahlungenFuerImmobilie(Long immobilieId);
 
     long zaehleOffeneZahlungenFuerImmobilie(Long immobilieId);
+
+    BigDecimal berechneGesamteBezahlteZahlungseingaenge();
+
+    BigDecimal berechneBezahlteZahlungseingaengeImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum
+    );
+
+    List<Zahlungseingang> findeOffeneZahlungseingaenge();
+
 }
