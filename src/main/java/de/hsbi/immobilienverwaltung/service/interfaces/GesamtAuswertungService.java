@@ -11,7 +11,4 @@ public interface GesamtAuswertungService {
     long berechneAnzahlMieteinheiten();
 
     long berechneAnzahlAktiveVertraege();
-
-    BigDecimal berechneEinnahmen(Long immobilieId, Long einheitId, Long mieterId);
-
-    BigDecimal berechneAusgaben(Long immobilieId, Long einheitId, Long mieterId);}
+}

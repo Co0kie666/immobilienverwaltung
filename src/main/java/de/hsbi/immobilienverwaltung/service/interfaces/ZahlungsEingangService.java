@@ -27,10 +27,7 @@ public interface ZahlungsEingangService {
     BigDecimal berechneSummeZahlungseingaengeFuerMietvertrag(
             Mietvertrag mietvertrag,
             LocalDate startDatum,
-            LocalDate endDatum,
-            Long immobilieId,
-            Long mieteinheitId,
-            Long meterId
+            LocalDate endDatum
     );
 
     boolean hatZahlungImZeitraum(

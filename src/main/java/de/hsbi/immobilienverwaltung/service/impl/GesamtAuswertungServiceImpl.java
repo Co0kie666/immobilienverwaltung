@@ -57,13 +57,4 @@ public class GesamtAuswertungServiceImpl implements GesamtAuswertungService {
         return mietvertragRepository.countByStatus(Vertragsstatus.AKTIV);
     }
 
-    @Override
-    public BigDecimal berechneEinnahmen(Long immobilieId, Long einheitId, Long mieterId) {
-        return null;
-    }
-
-    @Override
-    public BigDecimal berechneAusgaben(Long immobilieId, Long einheitId, Long mieterId) {
-        return null;
-    }
 }
