@@ -39,6 +39,16 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         YTD
     }
 
+    private record FilterOption<T>(
+            Long id,
+            String label,
+            T value
+    ) {
+        boolean isAll() {
+            return id == null;
+        }
+    }
+
     private final ZahlungsEingangService zahlungsEingangService;
     private final AusgabeService ausgabeService;
 
@@ -60,9 +70,9 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
     private final MieteinheitService mieteinheitService;
     private final MieterService mieterService;
 
-    private ComboBox<Immobilie> immobilieFilter;
-    private ComboBox<Mieteinheit> einheitFilter;
-    private ComboBox<Mieter> mieterFilter;
+    private ComboBox<FilterOption<Immobilie>> immobilieFilter;
+    private ComboBox<FilterOption<Mieteinheit>> einheitFilter;
+    private ComboBox<FilterOption<Mieter>> mieterFilter;
 
     private Long ausgewaehlteImmobilieId;
     private Long ausgewaehlteMieteinheitId;
@@ -229,50 +239,104 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         ytd.addClickListener(e -> wechselZeitraum(ZeitraumFilter.YTD));
 
         immobilieFilter = new ComboBox<>();
-        immobilieFilter.setPlaceholder("Alle Immobilien");
-        immobilieFilter.setItems(immobilieService.findeAlleImmobilien());
-        immobilieFilter.setItemLabelGenerator(Immobilie::getBezeichnung);
-        immobilieFilter.setClearButtonVisible(true);
+        List<FilterOption<Immobilie>> immobilienOptionen = new ArrayList<>();
+        immobilienOptionen.add(new FilterOption<>(null, "Alle Immobilien", null));
+        immobilieService.findeAlleImmobilien().forEach(immobilie ->
+                immobilienOptionen.add(
+                        new FilterOption<>(
+                                immobilie.getId(),
+                                immobilie.getBezeichnung(),
+                                immobilie
+                        )
+                )
+        );
+        immobilieFilter.setItems(immobilienOptionen);
+        immobilieFilter.setItemLabelGenerator(FilterOption::label);
         immobilieFilter.addClassName("dashboard-filter-combo");
+        immobilieFilter.setValue(
+                findeOptionNachId(
+                        immobilienOptionen,
+                        ausgewaehlteImmobilieId
+                )
+        );
 
         einheitFilter = new ComboBox<>();
-        einheitFilter.setPlaceholder("Alle Einheiten");
-        einheitFilter.setItems(mieteinheitService.findeAlleMieteinheiten());
-        einheitFilter.setItemLabelGenerator(Mieteinheit::getBezeichnung);
-        einheitFilter.setClearButtonVisible(true);
+        List<FilterOption<Mieteinheit>> einheitenOptionen = new ArrayList<>();
+        einheitenOptionen.add(new FilterOption<>(null, "Alle Einheiten", null));
+
+        mieteinheitService.findeAlleMieteinheiten().forEach(mieteinheit ->
+                einheitenOptionen.add(
+                        new FilterOption<>(
+                                mieteinheit.getId(),
+                                mieteinheit.getBezeichnung(),
+                                mieteinheit
+                        )
+                )
+        );
+        einheitFilter.setItems(einheitenOptionen);
+        einheitFilter.setItemLabelGenerator(FilterOption::label);
         einheitFilter.addClassName("dashboard-filter-combo");
+        einheitFilter.setValue(
+                findeOptionNachId(
+                        einheitenOptionen,
+                        ausgewaehlteMieteinheitId
+                )
+        );
 
         mieterFilter = new ComboBox<>();
-        mieterFilter.setPlaceholder("Alle Mieter");
-        mieterFilter.setItems(mieterService.findeAlleMieter());
-        mieterFilter.setItemLabelGenerator(mieter ->
-                mieter.getVorname() + " " + mieter.getNachname()
+        List<FilterOption<Mieter>> mieterOptionen = new ArrayList<>();
+        mieterOptionen.add(new FilterOption<>(null, "Alle Mieter", null));
+
+        mieterService.findeAlleMieter().forEach(mieter ->
+                mieterOptionen.add(
+                        new FilterOption<>(
+                                mieter.getId(),
+                                mieter.getVorname() + " " + mieter.getNachname(),
+                                mieter
+                        )
+                )
         );
-        mieterFilter.setClearButtonVisible(true);
+
+        mieterFilter.setItems(mieterOptionen);
+        mieterFilter.setItemLabelGenerator(FilterOption::label);
         mieterFilter.addClassName("dashboard-filter-combo");
+        mieterFilter.setValue(
+                findeOptionNachId(
+                        mieterOptionen,
+                        ausgewaehlterMieterId
+                )
+        );
 
         immobilieFilter.addValueChangeListener(event -> {
-            Immobilie immobilie = event.getValue();
-            ausgewaehlteImmobilieId = immobilie != null
-                    ? immobilie.getId()
-                    : null;
-            // Wenn neue Immobilie gewählt wird, alte Unterfilter zurücksetzen
+            FilterOption<Immobilie> option = event.getValue();
+            ausgewaehlteImmobilieId =
+                    option == null || option.isAll()
+                            ? null
+                            : option.id();
             ausgewaehlteMieteinheitId = null;
             ausgewaehlterMieterId = null;
             baueSeiteNeu();
         });
+        
         einheitFilter.addValueChangeListener(event -> {
-            Mieteinheit mieteinheit = event.getValue();
-            ausgewaehlteMieteinheitId = mieteinheit != null
-                    ? mieteinheit.getId()
-                    : null;
+            FilterOption<Mieteinheit> option = event.getValue();
+            ausgewaehlteMieteinheitId =
+                    option == null || option.isAll()
+                            ? null
+                            : option.id();
+            ausgewaehlteImmobilieId = null;
+            ausgewaehlterMieterId = null;
             baueSeiteNeu();
         });
+
         mieterFilter.addValueChangeListener(event -> {
-            Mieter mieter = event.getValue();
-            ausgewaehlterMieterId = mieter != null
-                    ? mieter.getId()
-                    : null;
+            FilterOption<Mieter> option = event.getValue();
+            ausgewaehlterMieterId =
+                    option == null || option.isAll()
+                            ? null
+                            : option.id();
+            ausgewaehlteImmobilieId = null;
+            ausgewaehlteMieteinheitId = null;
             baueSeiteNeu();
         });
 
@@ -310,20 +374,20 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         return filterBar;
     }
 
-    private void wendeFilterAn() {
-        Long immobilieId = immobilieFilter.getValue() == null
-                ? null
-                : immobilieFilter.getValue().getId();
+    private <T> FilterOption<T> findeOptionNachId(
+            List<FilterOption<T>> optionen,
+            Long id
+    ) {
+        return optionen.stream()
+                .filter(option -> {
+                    if (id == null) {
+                        return option.id() == null;
+                    }
 
-        Long einheitId = einheitFilter.getValue() == null
-                ? null
-                : einheitFilter.getValue().getId();
-
-        Long mieterId = mieterFilter.getValue() == null
-                ? null
-                : mieterFilter.getValue().getId();
-
-        ladeFinanzdaten(immobilieId, einheitId, mieterId);
+                    return id.equals(option.id());
+                })
+                .findFirst()
+                .orElse(optionen.get(0));
     }
 
     private void wechselZeitraum(ZeitraumFilter filter) {
@@ -381,7 +445,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                         cashflow.signum() >= 0 ? "primary" : "danger"
                 )
         );
-            wendeFilterAn();
         return grid;
     }
 
