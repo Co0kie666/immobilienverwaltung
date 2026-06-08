@@ -168,11 +168,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         this.chartMonate =
                 berechneChartMonate(startDatum, endDatum);
 
-        berechneZahlungsstatus(
-                immobilieId,
-                mieteinheitId,
-                mieterId
-        );
+        berechneZahlungsstatus();
     }
 
     private LocalDate ermittleStartDatum() {
@@ -186,7 +182,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         };
     }
 
-    private void berechneZahlungsstatus(Long immobilieId, Long mieteinheitId, Long mieterId) {
+    private void berechneZahlungsstatus() {
         BigDecimal bezahlt = summeEinnahmen == null ? BigDecimal.ZERO : summeEinnahmen;
         BigDecimal offen = rueckstaende == null ? BigDecimal.ZERO : rueckstaende;
         BigDecimal gesamt = bezahlt.add(offen);
@@ -317,7 +313,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
             ausgewaehlterMieterId = null;
             baueSeiteNeu();
         });
-        
+
         einheitFilter.addValueChangeListener(event -> {
             FilterOption<Mieteinheit> option = event.getValue();
             ausgewaehlteMieteinheitId =
