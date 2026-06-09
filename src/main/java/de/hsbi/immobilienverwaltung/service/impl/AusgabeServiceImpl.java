@@ -10,9 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class AusgabeServiceImpl implements AusgabeService {
@@ -168,5 +167,43 @@ public class AusgabeServiceImpl implements AusgabeService {
                                 .equals(immobilieId))
                 .map(Ausgabe::getBetrag)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Override
+    public Map<String, BigDecimal> berechneKostenverteilungImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum,
+            Long immobilieId
+    ) {
+        return ausgabeRepository.findAll()
+                .stream()
+                .filter(a -> a.getDatum() != null)
+                .filter(a -> !a.getDatum().isBefore(startDatum))
+                .filter(a -> !a.getDatum().isAfter(endDatum))
+                .filter(a -> immobilieId == null ||
+                        (
+                                a.getImmobilie() != null &&
+                                        a.getImmobilie()
+                                                .getId()
+                                                .equals(immobilieId)
+                        ))
+                .filter(a -> a.getBetrag() != null)
+                .collect(Collectors.groupingBy(
+                        this::ermittleKategorieName,
+                        LinkedHashMap::new,
+                        Collectors.reducing(
+                                BigDecimal.ZERO,
+                                Ausgabe::getBetrag,
+                                BigDecimal::add
+                        )
+                ));
+    }
+
+    private String ermittleKategorieName(Ausgabe ausgabe) {
+        if (ausgabe.getKategorie() == null) {
+            return "Ohne Kategorie";
+        }
+
+        return ausgabe.getKategorie().toString();
     }
 }

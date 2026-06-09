@@ -6,6 +6,7 @@ import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface AusgabeService {
@@ -46,6 +47,12 @@ public interface AusgabeService {
     BigDecimal berechneBezahlteAusgaben();
 
     BigDecimal berechneBezahlteAusgabenImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum,
+            Long immobilieId
+    );
+
+    Map<String, BigDecimal> berechneKostenverteilungImZeitraum(
             LocalDate startDatum,
             LocalDate endDatum,
             Long immobilieId

@@ -27,6 +27,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 @Route(value = "finanzen", layout = MainLayout.class)
 @PermitAll
@@ -62,6 +63,9 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
     private double[] chartEinnahmen;
     private double[] chartAusgaben;
     private String[] chartMonate;
+
+    private String[] kostenverteilungLabels;
+    private double[] kostenverteilungDaten;
 
     private double zahlungsstatusBezahlt;
     private double zahlungsstatusOffen;
@@ -103,21 +107,24 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
     private void baueSeiteNeu() {
         removeAll();
+
         ladeFinanzdaten(
                 ausgewaehlteImmobilieId,
                 ausgewaehlteMieteinheitId,
                 ausgewaehlterMieterId
         );
+
         add(createFilterBar());
         add(createKpiGrid());
         add(createDashboardGrid());
         add(createTableGrid());
     }
 
-    private void ladeFinanzdaten(Long immobilieId,
-                                 Long mieteinheitId,
-                                 Long mieterId) {
-
+    private void ladeFinanzdaten(
+            Long immobilieId,
+            Long mieteinheitId,
+            Long mieterId
+    ) {
         LocalDate startDatum = ermittleStartDatum();
         LocalDate endDatum = LocalDate.now();
 
@@ -168,6 +175,12 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         this.chartMonate =
                 berechneChartMonate(startDatum, endDatum);
 
+        berechneKostenverteilung(
+                startDatum,
+                endDatum,
+                immobilieId
+        );
+
         berechneZahlungsstatus();
     }
 
@@ -204,6 +217,42 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                         .doubleValue();
     }
 
+    private void berechneKostenverteilung(
+            LocalDate startDatum,
+            LocalDate endDatum,
+            Long immobilieId
+    ) {
+        Map<String, BigDecimal> kostenverteilung =
+                ausgabeService.berechneKostenverteilungImZeitraum(
+                        startDatum,
+                        endDatum,
+                        immobilieId
+                );
+
+        this.kostenverteilungLabels =
+                kostenverteilung.keySet().toArray(new String[0]);
+
+        this.kostenverteilungDaten =
+                kostenverteilung.values()
+                        .stream()
+                        .mapToDouble(BigDecimal::doubleValue)
+                        .toArray();
+    }
+
+    private boolean hatKostenverteilungDaten() {
+        if (kostenverteilungDaten == null || kostenverteilungDaten.length == 0) {
+            return false;
+        }
+
+        double summe = 0;
+
+        for (double wert : kostenverteilungDaten) {
+            summe += wert;
+        }
+
+        return summe > 0;
+    }
+
     private Component createFilterBar() {
         Div filterBar = new Div();
         filterBar.addClassName("finance-filter-bar");
@@ -237,6 +286,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         immobilieFilter = new ComboBox<>();
         List<FilterOption<Immobilie>> immobilienOptionen = new ArrayList<>();
         immobilienOptionen.add(new FilterOption<>(null, "Alle Immobilien", null));
+
         immobilieService.findeAlleImmobilien().forEach(immobilie ->
                 immobilienOptionen.add(
                         new FilterOption<>(
@@ -246,6 +296,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                         )
                 )
         );
+
         immobilieFilter.setItems(immobilienOptionen);
         immobilieFilter.setItemLabelGenerator(FilterOption::label);
         immobilieFilter.addClassName("dashboard-filter-combo");
@@ -269,6 +320,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                         )
                 )
         );
+
         einheitFilter.setItems(einheitenOptionen);
         einheitFilter.setItemLabelGenerator(FilterOption::label);
         einheitFilter.addClassName("dashboard-filter-combo");
@@ -305,34 +357,43 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         immobilieFilter.addValueChangeListener(event -> {
             FilterOption<Immobilie> option = event.getValue();
+
             ausgewaehlteImmobilieId =
                     option == null || option.isAll()
                             ? null
                             : option.id();
+
             ausgewaehlteMieteinheitId = null;
             ausgewaehlterMieterId = null;
+
             baueSeiteNeu();
         });
 
         einheitFilter.addValueChangeListener(event -> {
             FilterOption<Mieteinheit> option = event.getValue();
+
             ausgewaehlteMieteinheitId =
                     option == null || option.isAll()
                             ? null
                             : option.id();
+
             ausgewaehlteImmobilieId = null;
             ausgewaehlterMieterId = null;
+
             baueSeiteNeu();
         });
 
         mieterFilter.addValueChangeListener(event -> {
             FilterOption<Mieter> option = event.getValue();
+
             ausgewaehlterMieterId =
                     option == null || option.isAll()
                             ? null
                             : option.id();
+
             ausgewaehlteImmobilieId = null;
             ausgewaehlteMieteinheitId = null;
+
             baueSeiteNeu();
         });
 
@@ -345,7 +406,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 einheitFilter,
                 mieterFilter
         );
-
 
         Button addBooking = new Button("Buchung anlegen", new Icon(VaadinIcon.PLUS));
         Button showBookings = new Button("Alle Buchungen anzeigen", new Icon(VaadinIcon.PLUS));
@@ -383,13 +443,11 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                     return id.equals(option.id());
                 })
                 .findFirst()
-                .orElse(optionen.get(0));
+                .orElse(optionen.getFirst());
     }
 
     private void wechselZeitraum(ZeitraumFilter filter) {
         this.aktuellerFilter = filter;
-
-        ladeFinanzdaten(null, null, null);
         baueSeiteNeu();
     }
 
@@ -441,6 +499,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                         cashflow.signum() >= 0 ? "primary" : "danger"
                 )
         );
+
         return grid;
     }
 
@@ -453,7 +512,13 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         };
     }
 
-    private Component kpiCard(String title, String value, String trend, VaadinIcon icon, String color) {
+    private Component kpiCard(
+            String title,
+            String value,
+            String trend,
+            VaadinIcon icon,
+            String color
+    ) {
         Div card = new Div();
         card.addClassNames("finance-kpi-card", color);
 
@@ -500,9 +565,16 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         Div side = new Div();
         side.addClassName("finance-side-column");
 
-        side.add(createPaymentStatusCard(), createCostDistributionCard());
+        side.add(createPaymentStatusCard());
+
+        Component costDistributionCard = createCostDistributionCard();
+
+        if (costDistributionCard != null) {
+            side.add(costDistributionCard);
+        }
 
         grid.add(chartCard, side);
+
         return grid;
     }
 
@@ -626,10 +698,15 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         stats.add(miniBox("Offen", String.format(Locale.GERMANY, "%.1f %%", zahlungsstatusOffen)));
 
         card.add(header, chartWrapper, stats);
+
         return card;
     }
 
     private Component createCostDistributionCard() {
+        if (!hatKostenverteilungDaten()) {
+            return null;
+        }
+
         Div card = new Div();
         card.addClassName("card");
 
@@ -655,14 +732,9 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 new Chart(ctx, {
                     type: 'doughnut',
                     data: {
-                        labels: [
-                            'Instandhaltung',
-                            'Reparatur',
-                            'Versicherung',
-                            'Sonstiges'
-                        ],
+                        labels: $0,
                         datasets: [{
-                            data: [30, 25, 25, 20],
+                            data: $1,
                             borderWidth: 0
                         }]
                     },
@@ -678,9 +750,10 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                     }
                 });
             }, 300);
-        """);
+        """, kostenverteilungLabels, kostenverteilungDaten);
 
         card.add(title, wrapper);
+
         return card;
     }
 
@@ -694,6 +767,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         Span valueStrong = new Span(value);
 
         box.add(labelSpan, valueStrong);
+
         return box;
     }
 
@@ -740,7 +814,11 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         return grid;
     }
 
-    private Component transactionTable(String title, String subtitle, String[][] rows) {
+    private Component transactionTable(
+            String title,
+            String subtitle,
+            String[][] rows
+    ) {
         Div card = new Div();
         card.addClassName("table-card");
 
@@ -764,6 +842,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         }
 
         card.add(titleBox, table);
+
         return card;
     }
 
@@ -808,7 +887,10 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
     private double[] berechneEinnahmenChartDaten(
             LocalDate startDatum,
             LocalDate endDatum,
-            Long immobilieId, Long mieteinheitId, Long mieterId) {
+            Long immobilieId,
+            Long mieteinheitId,
+            Long mieterId
+    ) {
         List<YearMonth> monate = ermittleMonateImZeitraum(startDatum, endDatum);
         double[] daten = new double[monate.size()];
 
@@ -819,7 +901,10 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                     zahlungsEingangService.berechneBezahlteZahlungseingaengeImZeitraum(
                             monat.atDay(1),
                             monat.atEndOfMonth(),
-                            immobilieId, mieteinheitId, mieterId);
+                            immobilieId,
+                            mieteinheitId,
+                            mieterId
+                    );
 
             daten[i] = summe.doubleValue();
         }
@@ -830,7 +915,8 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
     private double[] berechneAusgabenChartDaten(
             LocalDate startDatum,
             LocalDate endDatum,
-            Long immobilieId) {
+            Long immobilieId
+    ) {
         List<YearMonth> monate = ermittleMonateImZeitraum(startDatum, endDatum);
         double[] daten = new double[monate.size()];
 
@@ -841,7 +927,8 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                     ausgabeService.berechneBezahlteAusgabenImZeitraum(
                             monat.atDay(1),
                             monat.atEndOfMonth(),
-                            immobilieId);
+                            immobilieId
+                    );
 
             daten[i] = summe.doubleValue();
         }
