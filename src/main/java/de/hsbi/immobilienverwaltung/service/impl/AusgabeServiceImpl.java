@@ -206,4 +206,25 @@ public class AusgabeServiceImpl implements AusgabeService {
 
         return ausgabe.getKategorie().toString();
     }
+
+    @Override
+    public List<Ausgabe> findeAusgabenImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum,
+            Long immobilieId
+    ) {
+        return ausgabeRepository.findAll()
+                .stream()
+                .filter(a -> a.getDatum() != null)
+                .filter(a -> !a.getDatum().isBefore(startDatum))
+                .filter(a -> !a.getDatum().isAfter(endDatum))
+                .filter(a -> immobilieId == null ||
+                        (
+                                a.getImmobilie() != null &&
+                                        a.getImmobilie()
+                                                .getId()
+                                                .equals(immobilieId)
+                        ))
+                .toList();
+    }
 }

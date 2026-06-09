@@ -57,4 +57,10 @@ public interface AusgabeService {
             LocalDate endDatum,
             Long immobilieId
     );
+
+    List<Ausgabe> findeAusgabenImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum,
+            Long immobilieId
+    );
 }

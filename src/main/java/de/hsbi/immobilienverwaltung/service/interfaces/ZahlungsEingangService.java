@@ -47,7 +47,8 @@ public interface ZahlungsEingangService {
     BigDecimal berechneBezahlteZahlungseingaengeImZeitraum(
             LocalDate startDatum,
             LocalDate endDatum,
-            Long immobilieId, Long mieteinheitId, Long mieterId);
+            Long immobilieId, Long mieteinheitId, Long mieterId
+    );
 
     List<Zahlungseingang> findeOffeneZahlungseingaenge();
 
@@ -56,6 +57,15 @@ public interface ZahlungsEingangService {
     BigDecimal berechneOffeneZahlungseingaengeImZeitraum(
             LocalDate startDatum,
             LocalDate endDatum,
-            Long immobilieId, Long mieteinheitId, Long mieterId);
+            Long immobilieId, Long mieteinheitId, Long mieterId
+    );
+
+    List<Zahlungseingang> findeZahlungseingaengeImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum,
+            Long immobilieId,
+            Long mieteinheitId,
+            Long mieterId
+    );
     
 }

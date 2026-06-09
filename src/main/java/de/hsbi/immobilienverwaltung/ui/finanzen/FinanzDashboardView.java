@@ -10,9 +10,7 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.router.Route;
-import de.hsbi.immobilienverwaltung.domain.Immobilie;
-import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
-import de.hsbi.immobilienverwaltung.domain.Mieter;
+import de.hsbi.immobilienverwaltung.domain.*;
 import de.hsbi.immobilienverwaltung.service.interfaces.*;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
@@ -69,6 +67,9 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
     private double zahlungsstatusBezahlt;
     private double zahlungsstatusOffen;
+
+    private String[][] letzteEinnahmenRows;
+    private String[][] letzteAusgabenRows;
 
     private final ImmobilieService immobilieService;
     private final MieteinheitService mieteinheitService;
@@ -175,6 +176,22 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         this.chartMonate =
                 berechneChartMonate(startDatum, endDatum);
 
+        this.letzteEinnahmenRows =
+                berechneLetzteEinnahmenTabellenZeilen(
+                        startDatum,
+                        endDatum,
+                        immobilieId,
+                        mieteinheitId,
+                        mieterId
+                );
+
+        this.letzteAusgabenRows =
+                berechneLetzteAusgabenTabellenZeilen(
+                        startDatum,
+                        endDatum,
+                        immobilieId
+                );
+
         berechneKostenverteilung(
                 startDatum,
                 endDatum,
@@ -182,6 +199,115 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         );
 
         berechneZahlungsstatus();
+    }
+
+    private String[][] berechneLetzteEinnahmenTabellenZeilen(
+            LocalDate startDatum,
+            LocalDate endDatum,
+            Long immobilieId,
+            Long mieteinheitId,
+            Long mieterId
+    ) {
+        List<Zahlungseingang> zahlungseingaenge =
+                zahlungsEingangService.findeZahlungseingaengeImZeitraum(
+                        startDatum,
+                        endDatum,
+                        immobilieId,
+                        mieteinheitId,
+                        mieterId
+                );
+
+        return zahlungseingaenge.stream()
+                .filter(z -> z.getZahlungsdatum() != null)
+                .sorted((z1, z2) -> z2.getZahlungsdatum().compareTo(z1.getZahlungsdatum()))
+                .limit(5)
+                .map(zahlung -> new String[]{
+                        formatiereDatum(zahlung.getZahlungsdatum()),
+                        ermittleZahlungObjektText(zahlung),
+                        zahlung.getTyp() == null
+                                ? "Einnahme"
+                                : zahlung.getTyp().toString(),
+                        zahlung.getStatus() == null
+                                ? "-"
+                                : zahlung.getStatus(),
+                        formatEuro(zahlung.getBetrag())
+                })
+                .toArray(String[][]::new);
+    }
+
+    private String ermittleZahlungObjektText(Zahlungseingang zahlung) {
+        if (zahlung.getMietvertrag() == null) {
+            return "-";
+        }
+
+        if (zahlung.getMietvertrag().getMieter() != null) {
+            return zahlung.getMietvertrag()
+                    .getMieter()
+                    .getVorname()
+                    + " "
+                    + zahlung.getMietvertrag()
+                    .getMieter()
+                    .getNachname();
+        }
+
+        if (zahlung.getMietvertrag().getMieteinheit() != null) {
+            return zahlung.getMietvertrag()
+                    .getMieteinheit()
+                    .getBezeichnung();
+        }
+
+        return "-";
+    }
+
+    private String[][] berechneLetzteAusgabenTabellenZeilen(
+            LocalDate startDatum,
+            LocalDate endDatum,
+            Long immobilieId
+    ) {
+        List<Ausgabe> ausgaben =
+                ausgabeService.findeAusgabenImZeitraum(
+                        startDatum,
+                        endDatum,
+                        immobilieId
+                );
+
+        return ausgaben.stream()
+                .sorted((a1, a2) -> a2.getDatum().compareTo(a1.getDatum()))
+                .limit(5)
+                .map(ausgabe -> new String[]{
+                        formatiereDatum(ausgabe.getDatum()),
+                        ermittleAusgabeObjektText(ausgabe),
+                        ausgabe.getKategorie() == null
+                                ? "-"
+                                : ausgabe.getKategorie().toString(),
+                        ausgabe.getStatus() == null
+                                ? "-"
+                                : ausgabe.getStatus(),
+                        "- " + formatEuro(ausgabe.getBetrag())
+                })
+                .toArray(String[][]::new);
+    }
+
+    private String ermittleAusgabeObjektText(Ausgabe ausgabe) {
+        if (ausgabe.getMieteinheit() != null) {
+            return ausgabe.getMieteinheit().getBezeichnung();
+        }
+
+        if (ausgabe.getImmobilie() != null) {
+            return ausgabe.getImmobilie().getBezeichnung();
+        }
+
+        return "-";
+    }
+
+    private String formatiereDatum(LocalDate datum) {
+        if (datum == null) {
+            return "-";
+        }
+
+        return datum.format(
+                DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.GERMANY)
+        );
     }
 
     private LocalDate ermittleStartDatum() {
@@ -779,46 +905,19 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 transactionTable(
                         "Letzte Einnahmen",
                         "Mieten & Nebenkosten",
-                        new String[][]{
-                                {
-                                        getZeitraumText(),
-                                        "Alle Mieter",
-                                        "Einnahmen",
-                                        "Bezahlt / Erledigt",
-                                        formatEuro(summeEinnahmen)
-                                },
-                                {
-                                        getZeitraumText(),
-                                        "Alle Mieter",
-                                        "Rückstände",
-                                        "Offen / Ausstehend",
-                                        formatEuro(rueckstaende)
-                                }
-                        }
+                        letzteEinnahmenRows
                 ),
                 transactionTable(
                         "Letzte Ausgaben",
                         "Instandhaltung & Verwaltung",
-                        new String[][]{
-                                {
-                                        getZeitraumText(),
-                                        "Alle Immobilien",
-                                        "Ausgaben",
-                                        "Bezahlt / Erledigt",
-                                        "- " + formatEuro(summeAusgaben)
-                                }
-                        }
+                        letzteAusgabenRows
                 )
         );
 
         return grid;
     }
 
-    private Component transactionTable(
-            String title,
-            String subtitle,
-            String[][] rows
-    ) {
+    private Component transactionTable(String title, String subtitle, String[][] rows) {
         Div card = new Div();
         card.addClassName("table-card");
 
@@ -837,12 +936,21 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         table.add(tableHeader());
 
-        for (String[] row : rows) {
-            table.add(tableRow(row));
+        if (rows == null || rows.length == 0) {
+            table.add(tableRow(new String[]{
+                    getZeitraumText(),
+                    "-",
+                    "Keine Daten",
+                    "-",
+                    formatEuro(BigDecimal.ZERO)
+            }));
+        } else {
+            for (String[] row : rows) {
+                table.add(tableRow(row));
+            }
         }
 
         card.add(titleBox, table);
-
         return card;
     }
 

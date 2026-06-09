@@ -234,4 +234,51 @@ public class ZahlungsEingangServiceImpl implements ZahlungsEingangService {
     public List<Zahlungseingang> findeOffeneZahlungseingaenge() {
         return zahlungsEingangRepository.findByStatus("Offen / Ausstehend");
     }
+
+    @Override
+    public List<Zahlungseingang> findeZahlungseingaengeImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum,
+            Long immobilieId,
+            Long mieteinheitId,
+            Long mieterId
+    ) {
+        return zahlungsEingangRepository.findAll()
+                .stream()
+                .filter(z -> z.getZahlungsdatum() != null)
+                .filter(z -> !z.getZahlungsdatum().isBefore(startDatum))
+                .filter(z -> !z.getZahlungsdatum().isAfter(endDatum))
+                .filter(z -> immobilieId == null ||
+                        (
+                                z.getMietvertrag() != null &&
+                                        z.getMietvertrag().getMieteinheit() != null &&
+                                        z.getMietvertrag()
+                                                .getMieteinheit()
+                                                .getImmobilie() != null &&
+                                        z.getMietvertrag()
+                                                .getMieteinheit()
+                                                .getImmobilie()
+                                                .getId()
+                                                .equals(immobilieId)
+                        ))
+                .filter(z -> mieteinheitId == null ||
+                        (
+                                z.getMietvertrag() != null &&
+                                        z.getMietvertrag().getMieteinheit() != null &&
+                                        z.getMietvertrag()
+                                                .getMieteinheit()
+                                                .getId()
+                                                .equals(mieteinheitId)
+                        ))
+                .filter(z -> mieterId == null ||
+                        (
+                                z.getMietvertrag() != null &&
+                                        z.getMietvertrag().getMieter() != null &&
+                                        z.getMietvertrag()
+                                                .getMieter()
+                                                .getId()
+                                                .equals(mieterId)
+                        ))
+                .toList();
+    }
 }
