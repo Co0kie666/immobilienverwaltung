@@ -4,8 +4,10 @@ import de.hsbi.immobilienverwaltung.domain.Immobilie;
 import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
 import de.hsbi.immobilienverwaltung.domain.enums.MieteinheitTyp;
 import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
+import de.hsbi.immobilienverwaltung.domain.enums.Vertragsstatus;
 import de.hsbi.immobilienverwaltung.repository.ImmobilieRepository;
 import de.hsbi.immobilienverwaltung.repository.MieteinheitRepository;
+import de.hsbi.immobilienverwaltung.repository.MietvertragRepository;
 import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,10 +21,12 @@ public class MieteinheitServiceImpl implements MieteinheitService {
 
     private final MieteinheitRepository mieteinheitRepository;
     private final ImmobilieRepository immobilieRepository;
+    private final MietvertragRepository mietvertragRepository;
 
-    public MieteinheitServiceImpl(MieteinheitRepository mieteinheitRepository, ImmobilieRepository immobilieRepository) {
+    public MieteinheitServiceImpl(MieteinheitRepository mieteinheitRepository, ImmobilieRepository immobilieRepository, MietvertragRepository mietvertragRepository) {
         this.mieteinheitRepository = mieteinheitRepository;
         this.immobilieRepository = immobilieRepository;
+        this.mietvertragRepository = mietvertragRepository;
     }
 
     @Override
@@ -48,9 +52,16 @@ public class MieteinheitServiceImpl implements MieteinheitService {
         }
 
         if (mieteinheit.getStatus() == null) {
-            mieteinheit.setStatus(Mieteinheitstatus.FREI);
+            throw new IllegalStateException("Status muss ausgewählt werden.");
         }
-
+        // Wenn ein Mietvertrag aktiv ist, darf man den Status der Mieteinheit NICHT auf frei setzen
+        if (mieteinheit.getId() != null
+                && mieteinheit.getStatus() == Mieteinheitstatus.FREI
+                && mietvertragRepository.existsByMieteinheit_IdAndStatus(mieteinheit.getId(), Vertragsstatus.AKTIV)) {
+            throw new IllegalStateException(
+                    "Der Status kann nicht auf frei gesetzt werden, da für diese Mieteinheit noch ein aktiver Mietvertrag läuft."
+            );
+        }
         pruefeGesamtobjektRegel(immobilieId, mieteinheit);
         mieteinheit.setImmobilie(immobilie);
 
@@ -94,6 +105,14 @@ public class MieteinheitServiceImpl implements MieteinheitService {
     @Override
     @Transactional
     public void loescheMieteinheit(Long id) {
+        boolean hatAktivenMietvertrag = mietvertragRepository.existsByMieteinheit_IdAndStatus(id, Vertragsstatus.AKTIV);
+
+        if (hatAktivenMietvertrag) {
+            throw new IllegalStateException(
+                    "Diese Mieteinheit kann nicht gelöscht werden, da noch ein aktiver Mietvertrag läuft."
+            );
+        }
+
         mieteinheitRepository.deleteById(id);
     }
 

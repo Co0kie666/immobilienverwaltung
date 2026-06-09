@@ -205,9 +205,13 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                     "Immobilie löschen?",
                     "Möchtest du die Immobilie \"" + immobilie.getBezeichnung() + "\" wirklich löschen?",
                     () -> {
-                        immobilieService.loescheImmobilie(immobilieId);
-                        Notification.show("Immobilie wurde gelöscht: " + immobilie.getBezeichnung());
-                        getUI().ifPresent(ui -> ui.navigate(ImmobilienListView.class));
+                        try {
+                            immobilieService.loescheImmobilie(immobilieId);
+                            Notification.show("Immobilie wurde gelöscht.");
+                            getUI().ifPresent(ui -> ui.navigate("immobilien"));
+                        } catch (Exception ex) {
+                            Notification.show(ex.getMessage(), 4000, Notification.Position.MIDDLE);
+                        }
                     }
             );
 
