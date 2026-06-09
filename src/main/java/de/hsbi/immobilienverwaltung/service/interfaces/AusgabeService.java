@@ -38,7 +38,7 @@ public interface AusgabeService {
 
     long zaehleOffeneAusgaben();
 
-    BigDecimal berechneOffeneAusgabenImZeitraum(
+    BigDecimal berechneAusgabenImZeitraum(
             LocalDate startDatum,
             LocalDate endDatum
     );
@@ -48,5 +48,6 @@ public interface AusgabeService {
     BigDecimal berechneBezahlteAusgabenImZeitraum(
             LocalDate startDatum,
             LocalDate endDatum,
-            Long immobilieId);
+            Long immobilieId
+    );
 }

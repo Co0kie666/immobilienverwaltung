@@ -136,13 +136,12 @@ public class AusgabeServiceImpl implements AusgabeService {
     }
 
     @Override
-    public BigDecimal berechneOffeneAusgabenImZeitraum(
+    public BigDecimal berechneAusgabenImZeitraum(
             LocalDate startDatum,
             LocalDate endDatum
     ) {
         return ausgabeRepository
-                .findByStatusAndDatumBetween(
-                        "Offen / Ausstehend",
+                .findByDatumBetween(
                         startDatum,
                         endDatum
                 )

@@ -183,7 +183,7 @@ public class DashboardView extends Div implements HasPageHeader {
                 ),
 
                 kpiCard(
-                        "Offene Zahlungen",
+                        "Offene Ausgaben",
                         formatEuro(offeneAusgaben),
                         "",
                         formatAnzahlOffeneAusgaben(anzahlOffeneAusgaben),
@@ -242,7 +242,7 @@ public class DashboardView extends Div implements HasPageHeader {
             java.time.YearMonth monat = java.time.YearMonth.of(jahr, i + 1);
 
             BigDecimal summe =
-                    ausgabeService.berechneOffeneAusgabenImZeitraum(
+                    ausgabeService.berechneAusgabenImZeitraum(
                             monat.atDay(1),
                             monat.atEndOfMonth()
                     );
