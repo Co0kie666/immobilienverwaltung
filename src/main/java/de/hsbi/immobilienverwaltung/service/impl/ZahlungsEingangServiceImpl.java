@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -118,5 +119,166 @@ public class ZahlungsEingangServiceImpl implements ZahlungsEingangService {
     @Transactional
     public void loescheZahlungseingang(Long id) {
         zahlungsEingangRepository.deleteById(id);
+    }
+
+    @Override
+    public BigDecimal berechneOffeneZahlungenFuerImmobilie(Long immobilieId) {
+        List<Zahlungseingang> offeneZahlungen =
+                zahlungsEingangRepository.findByMietvertrag_Mieteinheit_Immobilie_IdAndStatus(
+                        immobilieId,
+                        "Offen / Ausstehend"
+                );
+
+        BigDecimal summe = BigDecimal.ZERO;
+
+        for (Zahlungseingang zahlung : offeneZahlungen) {
+            if (zahlung.getBetrag() != null) {
+                summe = summe.add(zahlung.getBetrag());
+            }
+        }
+
+        return summe;
+    }
+
+    @Override
+    public long zaehleOffeneZahlungenFuerImmobilie(Long immobilieId) {
+        return zahlungsEingangRepository.countByMietvertrag_Mieteinheit_Immobilie_IdAndStatus(
+                immobilieId,
+                "Offen / Ausstehend"
+        );
+    }
+
+    @Override
+    public BigDecimal berechneGesamteBezahlteZahlungseingaenge() {
+        return zahlungsEingangRepository.findByStatus("Bezahlt / Erledigt")
+                .stream()
+                .map(Zahlungseingang::getBetrag)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Override
+    public BigDecimal berechneOffeneZahlungseingaenge() {
+        return zahlungsEingangRepository.findByStatus("Offen / Ausstehend")
+                .stream()
+                .map(Zahlungseingang::getBetrag)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Override
+    public BigDecimal berechneBezahlteZahlungseingaengeImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum,
+            Long immobilieId,
+            Long mieteinheitId,
+            Long mieterId
+    ) {
+        return zahlungsEingangRepository.findAll()
+                .stream()
+                .filter(z -> !z.getZahlungsdatum().isBefore(startDatum))
+                .filter(z -> !z.getZahlungsdatum().isAfter(endDatum))
+                .filter(z -> z.getStatus().equals("Bezahlt / Erledigt"))
+                .filter(z -> immobilieId == null ||
+                        z.getMietvertrag()
+                                .getMieteinheit()
+                                .getImmobilie()
+                                .getId()
+                                .equals(immobilieId))
+                .filter(z -> mieteinheitId == null ||
+                        z.getMietvertrag()
+                                .getMieteinheit()
+                                .getId()
+                                .equals(mieteinheitId))
+                .filter(z -> mieterId == null ||
+                        z.getMietvertrag()
+                                .getMieter()
+                                .getId()
+                                .equals(mieterId))
+                .map(Zahlungseingang::getBetrag)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+    @Override
+    public BigDecimal berechneOffeneZahlungseingaengeImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum,
+            Long immobilieId,
+            Long mieteinheitId,
+            Long mieterId
+    ) {
+        return zahlungsEingangRepository.findAll()
+                .stream()
+                .filter(z -> !z.getZahlungsdatum().isBefore(startDatum))
+                .filter(z -> !z.getZahlungsdatum().isAfter(endDatum))
+                .filter(z -> !z.getStatus().equals("Bezahlt / Erledigt"))
+                .filter(z -> immobilieId == null ||
+                        z.getMietvertrag()
+                                .getMieteinheit()
+                                .getImmobilie()
+                                .getId()
+                                .equals(immobilieId))
+                .filter(z -> mieteinheitId == null ||
+                        z.getMietvertrag()
+                                .getMieteinheit()
+                                .getId()
+                                .equals(mieteinheitId))
+                .filter(z -> mieterId == null ||
+                        z.getMietvertrag()
+                                .getMieter()
+                                .getId()
+                                .equals(mieterId))
+                .map(Zahlungseingang::getBetrag)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+    @Override
+    public List<Zahlungseingang> findeOffeneZahlungseingaenge() {
+        return zahlungsEingangRepository.findByStatus("Offen / Ausstehend");
+    }
+
+    @Override
+    public List<Zahlungseingang> findeZahlungseingaengeImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum,
+            Long immobilieId,
+            Long mieteinheitId,
+            Long mieterId
+    ) {
+        return zahlungsEingangRepository.findAll()
+                .stream()
+                .filter(z -> z.getZahlungsdatum() != null)
+                .filter(z -> !z.getZahlungsdatum().isBefore(startDatum))
+                .filter(z -> !z.getZahlungsdatum().isAfter(endDatum))
+                .filter(z -> immobilieId == null ||
+                        (
+                                z.getMietvertrag() != null &&
+                                        z.getMietvertrag().getMieteinheit() != null &&
+                                        z.getMietvertrag()
+                                                .getMieteinheit()
+                                                .getImmobilie() != null &&
+                                        z.getMietvertrag()
+                                                .getMieteinheit()
+                                                .getImmobilie()
+                                                .getId()
+                                                .equals(immobilieId)
+                        ))
+                .filter(z -> mieteinheitId == null ||
+                        (
+                                z.getMietvertrag() != null &&
+                                        z.getMietvertrag().getMieteinheit() != null &&
+                                        z.getMietvertrag()
+                                                .getMieteinheit()
+                                                .getId()
+                                                .equals(mieteinheitId)
+                        ))
+                .filter(z -> mieterId == null ||
+                        (
+                                z.getMietvertrag() != null &&
+                                        z.getMietvertrag().getMieter() != null &&
+                                        z.getMietvertrag()
+                                                .getMieter()
+                                                .getId()
+                                                .equals(mieterId)
+                        ))
+                .toList();
     }
 }

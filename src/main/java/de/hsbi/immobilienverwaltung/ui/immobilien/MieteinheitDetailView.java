@@ -102,9 +102,13 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
                     "Mieteinheit löschen?",
                     "Möchtest du die Mieteinheit \"" + mieteinheit.getBezeichnung() + "\" wirklich löschen?",
                     () -> {
-                        mieteinheitService.loescheMieteinheit(mieteinheitId);
-                        Notification.show("Mieteinheit wurde gelöscht: " + mieteinheit.getBezeichnung());
-                        getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilieId));
+                        try {
+                            mieteinheitService.loescheMieteinheit(mieteinheitId);
+                            Notification.show("Mieteinheit wurde gelöscht.");
+                            getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilieId));
+                        } catch (Exception ex) {
+                            Notification.show(ex.getMessage(), 4000, Notification.Position.MIDDLE);
+                        }
                     }
             );
 
@@ -173,8 +177,11 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         Button createContractButton = new Button("Mietvertrag anlegen", VaadinIcon.PLUS.create());
         createContractButton.addClassName("primary-button");
 
+        // übergebe immobilieId und mieteinheitId damit diese autmatisch ausgewählt werden
         createContractButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate("mietvertrag-anlegen"))
+                getUI().ifPresent(ui -> ui.navigate(
+                        "mietvertrag-anlegen?immobilieId=" + immobilieId + "&mieteinheitId=" + mieteinheitId
+                ))
         );
 
         card.add(title, text, createContractButton);

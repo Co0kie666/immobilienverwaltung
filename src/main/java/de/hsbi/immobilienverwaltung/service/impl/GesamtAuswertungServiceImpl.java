@@ -7,6 +7,7 @@ import de.hsbi.immobilienverwaltung.repository.MietvertragRepository;
 import de.hsbi.immobilienverwaltung.service.interfaces.GesamtAuswertungService;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -55,4 +56,5 @@ public class GesamtAuswertungServiceImpl implements GesamtAuswertungService {
     public long berechneAnzahlAktiveVertraege() {
         return mietvertragRepository.countByStatus(Vertragsstatus.AKTIV);
     }
+
 }

@@ -1,5 +1,7 @@
 package de.hsbi.immobilienverwaltung.service.interfaces;
 
+import java.math.BigDecimal;
+
 public interface GesamtAuswertungService {
 
     double berechneLeerstandsquote();
@@ -8,4 +10,5 @@ public interface GesamtAuswertungService {
 
     long berechneAnzahlMieteinheiten();
 
-    long berechneAnzahlAktiveVertraege();}
+    long berechneAnzahlAktiveVertraege();
+}

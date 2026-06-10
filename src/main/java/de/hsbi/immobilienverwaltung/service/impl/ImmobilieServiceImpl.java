@@ -5,8 +5,10 @@ import de.hsbi.immobilienverwaltung.domain.Immobilie;
 import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
 import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
 import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
+import de.hsbi.immobilienverwaltung.domain.enums.Vertragsstatus;
 import de.hsbi.immobilienverwaltung.repository.ImmobilieRepository;
 import de.hsbi.immobilienverwaltung.repository.MieteinheitRepository;
+import de.hsbi.immobilienverwaltung.repository.MietvertragRepository;
 import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,10 +22,12 @@ public class ImmobilieServiceImpl implements ImmobilieService {
 
     private final ImmobilieRepository immobilieRepository;
     private final MieteinheitRepository mieteinheitRepository;
+    private final MietvertragRepository mietvertragRepository;
 
-    public ImmobilieServiceImpl(ImmobilieRepository immobilieRepository, MieteinheitRepository mieteinheitRepository) {
+    public ImmobilieServiceImpl(ImmobilieRepository immobilieRepository, MieteinheitRepository mieteinheitRepository, MietvertragRepository mietvertragRepository) {
         this.immobilieRepository = immobilieRepository;
         this.mieteinheitRepository = mieteinheitRepository;
+        this.mietvertragRepository = mietvertragRepository;
     }
 
     @Override
@@ -84,6 +88,14 @@ public class ImmobilieServiceImpl implements ImmobilieService {
     @Override
     @Transactional
     public void loescheImmobilie(Long id) {
+        boolean hatAktiveMietvertraege = mietvertragRepository.existsByMieteinheit_Immobilie_IdAndStatus(id, Vertragsstatus.AKTIV);
+
+        if (hatAktiveMietvertraege) {
+            throw new IllegalStateException(
+                    "Diese Immobilie kann nicht gelöscht werden, da mindestens eine Mieteinheit noch einen aktiven Mietvertrag hat."
+            );
+        }
+
         immobilieRepository.deleteById(id);
     }
 

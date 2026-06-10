@@ -10,8 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class AusgabeServiceImpl implements AusgabeService {
@@ -109,5 +109,122 @@ public class AusgabeServiceImpl implements AusgabeService {
     @Transactional
     public void loescheAusgabe(Long id) {
         ausgabeRepository.deleteById(id);
+    }
+
+    @Override
+    public BigDecimal berechneOffeneAusgaben() {
+        return ausgabeRepository.findByStatus("Offen / Ausstehend")
+                .stream()
+                .map(Ausgabe::getBetrag)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Override
+    public BigDecimal berechneBezahlteAusgaben() {
+        return ausgabeRepository.findByStatus("Bezahlt / Erledigt")
+                .stream()
+                .map(Ausgabe::getBetrag)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Override
+    public long zaehleOffeneAusgaben() {
+        return ausgabeRepository.countByStatus("Offen / Ausstehend");
+    }
+
+    @Override
+    public BigDecimal berechneAusgabenImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum
+    ) {
+        return ausgabeRepository
+                .findByDatumBetween(
+                        startDatum,
+                        endDatum
+                )
+                .stream()
+                .map(Ausgabe::getBetrag)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Override
+    public BigDecimal berechneBezahlteAusgabenImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum,
+            Long immobilieId
+    ) {
+        return ausgabeRepository.findAll()
+                .stream()
+                .filter(a -> !a.getDatum().isBefore(startDatum))
+                .filter(a -> !a.getDatum().isAfter(endDatum))
+                .filter(a -> a.getStatus().equals("Bezahlt / Erledigt"))
+                .filter(a -> immobilieId == null ||
+                        a.getImmobilie()
+                                .getId()
+                                .equals(immobilieId))
+                .map(Ausgabe::getBetrag)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Override
+    public Map<String, BigDecimal> berechneKostenverteilungImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum,
+            Long immobilieId
+    ) {
+        return ausgabeRepository.findAll()
+                .stream()
+                .filter(a -> a.getDatum() != null)
+                .filter(a -> !a.getDatum().isBefore(startDatum))
+                .filter(a -> !a.getDatum().isAfter(endDatum))
+                .filter(a -> immobilieId == null ||
+                        (
+                                a.getImmobilie() != null &&
+                                        a.getImmobilie()
+                                                .getId()
+                                                .equals(immobilieId)
+                        ))
+                .filter(a -> a.getBetrag() != null)
+                .collect(Collectors.groupingBy(
+                        this::ermittleKategorieName,
+                        LinkedHashMap::new,
+                        Collectors.reducing(
+                                BigDecimal.ZERO,
+                                Ausgabe::getBetrag,
+                                BigDecimal::add
+                        )
+                ));
+    }
+
+    private String ermittleKategorieName(Ausgabe ausgabe) {
+        if (ausgabe.getKategorie() == null) {
+            return "Ohne Kategorie";
+        }
+
+        return ausgabe.getKategorie().toString();
+    }
+
+    @Override
+    public List<Ausgabe> findeAusgabenImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum,
+            Long immobilieId
+    ) {
+        return ausgabeRepository.findAll()
+                .stream()
+                .filter(a -> a.getDatum() != null)
+                .filter(a -> !a.getDatum().isBefore(startDatum))
+                .filter(a -> !a.getDatum().isAfter(endDatum))
+                .filter(a -> immobilieId == null ||
+                        (
+                                a.getImmobilie() != null &&
+                                        a.getImmobilie()
+                                                .getId()
+                                                .equals(immobilieId)
+                        ))
+                .toList();
     }
 }

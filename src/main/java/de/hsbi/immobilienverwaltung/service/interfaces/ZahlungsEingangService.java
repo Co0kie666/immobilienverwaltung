@@ -37,4 +37,35 @@ public interface ZahlungsEingangService {
     );
 
     void loescheZahlungseingang(Long id);
+
+    BigDecimal berechneOffeneZahlungenFuerImmobilie(Long immobilieId);
+
+    long zaehleOffeneZahlungenFuerImmobilie(Long immobilieId);
+
+    BigDecimal berechneGesamteBezahlteZahlungseingaenge();
+
+    BigDecimal berechneBezahlteZahlungseingaengeImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum,
+            Long immobilieId, Long mieteinheitId, Long mieterId
+    );
+
+    List<Zahlungseingang> findeOffeneZahlungseingaenge();
+
+    BigDecimal berechneOffeneZahlungseingaenge();
+
+    BigDecimal berechneOffeneZahlungseingaengeImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum,
+            Long immobilieId, Long mieteinheitId, Long mieterId
+    );
+
+    List<Zahlungseingang> findeZahlungseingaengeImZeitraum(
+            LocalDate startDatum,
+            LocalDate endDatum,
+            Long immobilieId,
+            Long mieteinheitId,
+            Long mieterId
+    );
+    
 }

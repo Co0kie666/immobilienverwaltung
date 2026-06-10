@@ -7,7 +7,7 @@ import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.select.Select;
-import com.vaadin.flow.component.textfield.NumberField;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
@@ -19,6 +19,8 @@ import de.hsbi.immobilienverwaltung.domain.enums.MieteinheitTyp;
 import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
 import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
 import jakarta.annotation.security.PermitAll;
+import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.binder.ValidationException;
 
 @Route(value = "immobilien/:immobilieId/einheiten/:mieteinheitId/bearbeiten", layout = MainLayout.class)
 @PermitAll
@@ -31,15 +33,17 @@ public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnt
 
     private final TextField nummerField = new TextField("Einheit-Nr.");
     private final Select<MieteinheitTyp> typSelect = new Select<>();
-    private final NumberField groesseField = new NumberField("Größe in m²");
+    private final IntegerField groesseField = new IntegerField("Größe in m²");
     private final TextField stockwerkField = new TextField("Stockwerk");
-    private final NumberField zimmeranzahlField = new NumberField("Zimmeranzahl");
+    private final IntegerField zimmeranzahlField = new IntegerField("Zimmeranzahl");
     private final Select<Mieteinheitstatus> statusSelect = new Select<>();
+    private final Binder<Mieteinheit> binder = new Binder<>(Mieteinheit.class);
 
     public MieteinheitEditView(MieteinheitService mieteinheitService) {
         this.mieteinheitService = mieteinheitService;
         addClassName("page-content");
         addClassName("mieteinheit-edit-view");
+        konfiguriereBinder();
 
         add(createFormCard());
     }
@@ -49,28 +53,49 @@ public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnt
         this.immobilieId = event.getRouteParameters()
                 .get("immobilieId")
                 .map(Long::valueOf)
-                .orElse(null);
+                .orElseThrow(() -> new IllegalArgumentException("Immobilie-ID fehlt."));
 
         this.mieteinheitId = event.getRouteParameters()
                 .get("mieteinheitId")
                 .map(Long::valueOf)
-                .orElse(null);
+                .orElseThrow(() -> new IllegalArgumentException("Mieteinheit-ID fehlt."));
 
         this.mieteinheit = mieteinheitService.findeMieteinheitNachId(mieteinheitId)
                 .orElseThrow(() -> new IllegalArgumentException("Mieteinheit wurde nicht gefunden."));
 
-        fuelleFelder();
+        binder.readBean(mieteinheit); // fuellt die Felder
     }
 
-    private void fuelleFelder() {
-        nummerField.setValue(mieteinheit.getBezeichnung());
-        typSelect.setValue(mieteinheit.getTyp());
-        groesseField.setValue(mieteinheit.getGroesse() != null ? mieteinheit.getGroesse().doubleValue() : null);
-        stockwerkField.setValue(mieteinheit.getStockwerk());
-        zimmeranzahlField.setValue(mieteinheit.getZimmerzahl() != null ? mieteinheit.getZimmerzahl().doubleValue() : null);
-        statusSelect.setValue(mieteinheit.getStatus());
-    }
+    private void konfiguriereBinder() {
+        binder.forField(nummerField)
+                .asRequired("Bezeichnung darf nicht leer sein.")
+                .bind(Mieteinheit::getBezeichnung, Mieteinheit::setBezeichnung);
 
+        binder.forField(typSelect)
+                .asRequired("Typ muss ausgewählt werden.")
+                .bind(Mieteinheit::getTyp, Mieteinheit::setTyp);
+
+        binder.forField(groesseField)
+                .withValidator(
+                        groesse -> groesse == null || groesse >= 0,
+                        "Größe darf nicht negativ sein."
+                )
+                .bind(Mieteinheit::getGroesse, Mieteinheit::setGroesse);
+
+        binder.forField(stockwerkField)
+                .bind(Mieteinheit::getStockwerk, Mieteinheit::setStockwerk);
+
+        binder.forField(zimmeranzahlField)
+                .withValidator(
+                        zimmerzahl -> zimmerzahl == null || zimmerzahl >= 0,
+                        "Zimmeranzahl darf nicht negativ sein."
+                )
+                .bind(Mieteinheit::getZimmerzahl, Mieteinheit::setZimmerzahl);
+
+        binder.forField(statusSelect)
+                .asRequired("Status muss ausgewählt werden.")
+                .bind(Mieteinheit::getStatus, Mieteinheit::setStatus);
+    }
 
     private Div createFormCard() {
         Div card = new Div();
@@ -94,9 +119,11 @@ public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnt
         typSelect.setItemLabelGenerator(MieteinheitTyp::getLabel);
 
         groesseField.setPlaceholder("z. B. 85");
+        groesseField.setMin(0);
 
         stockwerkField.setPlaceholder("z. B. EG, 1. OG");
 
+        zimmeranzahlField.setMin(0);
         zimmeranzahlField.setPlaceholder("z. B. 3");
 
         statusSelect.setLabel("Status");
@@ -131,12 +158,7 @@ public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnt
 
     private void speichereAenderungen() {
         try {
-            mieteinheit.setBezeichnung(nummerField.getValue());
-            mieteinheit.setTyp(typSelect.getValue());
-            mieteinheit.setGroesse(toInteger(groesseField.getValue()));
-            mieteinheit.setStockwerk(stockwerkField.getValue());
-            mieteinheit.setZimmerzahl(toInteger(zimmeranzahlField.getValue()));
-            mieteinheit.setStatus(statusSelect.getValue());
+            binder.writeBean(mieteinheit);
 
             mieteinheitService.speichereMieteinheit(immobilieId, mieteinheit);
 
@@ -146,13 +168,12 @@ public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnt
                     "immobilien/" + immobilieId + "/einheiten/" + mieteinheitId + "/details"
             ));
 
-        } catch (Exception ex) {
-            Notification.show("Fehler beim Speichern: " + ex.getMessage(), 4000, Notification.Position.MIDDLE);
-        }
-    }
+        } catch (ValidationException ex) {
+            Notification.show("Bitte überprüfe die Eingaben.", 4000, Notification.Position.BOTTOM_END);
 
-    private Integer toInteger(Double value) {
-        return value == null ? null : value.intValue();
+        } catch (Exception ex) {
+            Notification.show("Fehler beim Speichern: " + ex.getMessage(), 4000, Notification.Position.BOTTOM_END);
+        }
     }
 
     @Override

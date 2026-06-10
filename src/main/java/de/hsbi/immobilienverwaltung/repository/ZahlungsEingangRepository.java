@@ -22,4 +22,22 @@ public interface ZahlungsEingangRepository extends JpaRepository<Zahlungseingang
             LocalDate startDatum,
             LocalDate endDatum
     );
+
+    List<Zahlungseingang> findByMietvertrag_Mieteinheit_Immobilie_IdAndStatus(
+            Long immobilieId,
+            String status
+    );
+
+    long countByMietvertrag_Mieteinheit_Immobilie_IdAndStatus(
+            Long immobilieId,
+            String status
+    );
+
+    List<Zahlungseingang> findByStatus(String status);
+
+    List<Zahlungseingang> findByStatusAndZahlungsdatumBetween(
+            String status,
+            LocalDate startDatum,
+            LocalDate endDatum
+    );
 }

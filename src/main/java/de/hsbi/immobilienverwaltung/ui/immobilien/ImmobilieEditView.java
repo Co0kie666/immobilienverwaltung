@@ -10,6 +10,8 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
@@ -40,11 +42,14 @@ public class ImmobilieEditView extends Div implements HasPageHeader, BeforeEnter
     private final TextField plzField = new TextField("PLZ");
     private final TextField ortField = new TextField("Ort");
 
+    private final Binder<Immobilie> immobilieBinder = new Binder<>(Immobilie.class);
+    private final Binder<Adresse> adresseBinder = new Binder<>(Adresse.class);
+
     public ImmobilieEditView(ImmobilieService immobilieService) {
         this.immobilieService = immobilieService;
         addClassName("page-content");
         addClassName("immobilie-edit-view");
-
+        konfiguriereBinder();
         add(createFormCard());
     }
 
@@ -53,27 +58,60 @@ public class ImmobilieEditView extends Div implements HasPageHeader, BeforeEnter
         this.immobilieId = event.getRouteParameters()
                 .get("immobilieId")
                 .map(Long::valueOf)
-                .orElse(null);
+                .orElseThrow(() -> new IllegalArgumentException("Immobilie-ID fehlt."));
 
         // Immobilie  laden
         this.immobilie = immobilieService.findeImmobilieNachId(immobilieId)
                 .orElseThrow(() -> new IllegalArgumentException("Immobilie wurde nicht gefunden."));
 
-        fuelleFelder();
+        Adresse adresse = immobilie.getAdresse();
+
+        if (adresse == null) {
+            throw new IllegalStateException("Diese Immobilie hat keine Adresse.");
+        }
+
+        immobilieBinder.readBean(immobilie);
+        adresseBinder.readBean(adresse);
     }
 
-    private void fuelleFelder() {
-        bezeichnungField.setValue(immobilie.getBezeichnung());
-        typSelect.setValue(immobilie.getTyp());
-        baujahrField.setValue(immobilie.getBaujahr());
-        gesamtflaecheField.setValue(immobilie.getFlaeche());
+    private void konfiguriereBinder() {
+        immobilieBinder.forField(bezeichnungField)
+                .asRequired("Bezeichnung darf nicht leer sein.")
+                .bind(Immobilie::getBezeichnung, Immobilie::setBezeichnung);
 
-        if (immobilie.getAdresse() != null) {
-            strasseField.setValue(immobilie.getAdresse().getStrasse());
-            hausnummerField.setValue(immobilie.getAdresse().getHausnummer());
-            plzField.setValue(immobilie.getAdresse().getPlz());
-            ortField.setValue(immobilie.getAdresse().getStadt());
-        }
+        immobilieBinder.forField(typSelect)
+                .asRequired("Immobilientyp muss ausgewählt werden.")
+                .bind(Immobilie::getTyp, Immobilie::setTyp);
+
+        immobilieBinder.forField(baujahrField)
+                .withValidator(
+                        baujahr -> baujahr == null || baujahr >= 0,
+                        "Baujahr darf nicht negativ sein."
+                )
+                .bind(Immobilie::getBaujahr, Immobilie::setBaujahr);
+
+        immobilieBinder.forField(gesamtflaecheField)
+                .withValidator(
+                        flaeche -> flaeche == null || flaeche >= 0,
+                        "Fläche darf nicht negativ sein."
+                )
+                .bind(Immobilie::getFlaeche, Immobilie::setFlaeche);
+
+        adresseBinder.forField(strasseField)
+                .asRequired("Straße darf nicht leer sein.")
+                .bind(Adresse::getStrasse, Adresse::setStrasse);
+
+        adresseBinder.forField(hausnummerField)
+                .asRequired("Hausnummer darf nicht leer sein.")
+                .bind(Adresse::getHausnummer, Adresse::setHausnummer);
+
+        adresseBinder.forField(plzField)
+                .asRequired("PLZ darf nicht leer sein.")
+                .bind(Adresse::getPlz, Adresse::setPlz);
+
+        adresseBinder.forField(ortField)
+                .asRequired("Ort darf nicht leer sein.")
+                .bind(Adresse::getStadt, Adresse::setStadt);
     }
 
     private Component createFormCard() {
@@ -134,22 +172,8 @@ public class ImmobilieEditView extends Div implements HasPageHeader, BeforeEnter
 
     private void speichereAenderungen() {
         try {
-            immobilie.setBezeichnung(bezeichnungField.getValue());
-            immobilie.setTyp(typSelect.getValue());
-            immobilie.setBaujahr(baujahrField.getValue());
-            immobilie.setFlaeche(gesamtflaecheField.getValue());
-
-            Adresse adresse = immobilie.getAdresse();
-
-            if (adresse == null) {
-                adresse = new Adresse();
-                immobilie.setAdresse(adresse);
-            }
-
-            adresse.setStrasse(strasseField.getValue());
-            adresse.setHausnummer(hausnummerField.getValue());
-            adresse.setPlz(plzField.getValue());
-            adresse.setStadt(ortField.getValue());
+            immobilieBinder.writeBean(immobilie);
+            adresseBinder.writeBean(immobilie.getAdresse());
 
             immobilieService.speichereImmobilie(immobilie);
 
@@ -157,8 +181,11 @@ public class ImmobilieEditView extends Div implements HasPageHeader, BeforeEnter
 
             getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilieId));
 
+        } catch (ValidationException ex) {
+            Notification.show("Bitte überprüfe die Eingaben.", 4000, Notification.Position.BOTTOM_END);
+
         } catch (Exception ex) {
-            Notification.show("Fehler beim Speichern: " + ex.getMessage(), 4000, Notification.Position.MIDDLE);
+            Notification.show("Fehler beim Speichern: " + ex.getMessage(), 4000, Notification.Position.BOTTOM_END);
         }
     }
 

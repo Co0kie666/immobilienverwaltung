@@ -10,6 +10,8 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.domain.Adresse;
 import de.hsbi.immobilienverwaltung.domain.Immobilie;
@@ -43,14 +45,58 @@ public class ImmobilieFormView extends Div implements HasPageHeader {
     private final ImmobilieService immobilieService;
     private final MieteinheitService mieteinheitService;
 
+    private final Binder<Immobilie> immobilieBinder = new Binder<>(Immobilie.class);
+    private final Binder<Adresse> adresseBinder = new Binder<>(Adresse.class);
+
     public ImmobilieFormView(ImmobilieService immobilieService, MieteinheitService mieteinheitService) {
         this.immobilieService = immobilieService;
         this.mieteinheitService = mieteinheitService;
 
         addClassName("page-content");
         addClassName("immobilie-form-view");
+        konfiguriereBinder();
 
         add(createFormCard());
+    }
+
+    private void konfiguriereBinder() {
+        immobilieBinder.forField(bezeichnungField)
+                .asRequired("Bezeichnung darf nicht leer sein.")
+                .bind(Immobilie::getBezeichnung, Immobilie::setBezeichnung);
+
+        immobilieBinder.forField(typSelect)
+                .asRequired("Immobilientyp muss ausgewählt werden.")
+                .bind(Immobilie::getTyp, Immobilie::setTyp);
+
+        immobilieBinder.forField(baujahrField)
+                .withValidator(
+                        baujahr -> baujahr == null || baujahr >= 0,
+                        "Baujahr darf nicht negativ sein."
+                )
+                .bind(Immobilie::getBaujahr, Immobilie::setBaujahr);
+
+        immobilieBinder.forField(gesamtflaecheField)
+                .withValidator(
+                        flaeche -> flaeche == null || flaeche >= 0,
+                        "Fläche darf nicht negativ sein."
+                )
+                .bind(Immobilie::getFlaeche, Immobilie::setFlaeche);
+
+        adresseBinder.forField(strasseField)
+                .asRequired("Straße darf nicht leer sein.")
+                .bind(Adresse::getStrasse, Adresse::setStrasse);
+
+        adresseBinder.forField(hausnummerField)
+                .asRequired("Hausnummer darf nicht leer sein.")
+                .bind(Adresse::getHausnummer, Adresse::setHausnummer);
+
+        adresseBinder.forField(plzField)
+                .asRequired("PLZ darf nicht leer sein.")
+                .bind(Adresse::getPlz, Adresse::setPlz);
+
+        adresseBinder.forField(ortField)
+                .asRequired("Ort darf nicht leer sein.")
+                .bind(Adresse::getStadt, Adresse::setStadt);
     }
 
     private Div createFormCard() {
@@ -128,21 +174,13 @@ public class ImmobilieFormView extends Div implements HasPageHeader {
 
     private void speichereImmobilie() {
         try {
-            Adresse adresse = new Adresse(
-                    strasseField.getValue(),
-                    hausnummerField.getValue(),
-                    plzField.getValue(),
-                    ortField.getValue()
-            );
+            Adresse adresse = new Adresse();
+            Immobilie immobilie = new Immobilie();
 
-            Immobilie immobilie = new Immobilie(
-                    bezeichnungField.getValue(),
-                    typSelect.getValue(),
-                    baujahrField.getValue(),
-                    gesamtflaecheField.getValue(),
-                    adresse
-            );
+            immobilieBinder.writeBean(immobilie);
+            adresseBinder.writeBean(adresse);
 
+            immobilie.setAdresse(adresse);
             Immobilie gespeicherteImmobilie = immobilieService.speichereImmobilie(immobilie);
 
             // Wenn die Immobilie nicht in einzelne Einheiten aufgeteilt werden soll,
@@ -164,8 +202,11 @@ public class ImmobilieFormView extends Div implements HasPageHeader {
 
             getUI().ifPresent(ui -> ui.navigate(ImmobilienListView.class));
 
+        } catch (ValidationException ex) {
+        Notification.show("Bitte überprüfe die Eingaben.", 4000, Notification.Position.BOTTOM_END);
+
         } catch (Exception ex) {
-            Notification.show("Fehler beim Speichern: " + ex.getMessage(), 4000, Notification.Position.MIDDLE);
+            Notification.show("Fehler beim Speichern: " + ex.getMessage(), 4000, Notification.Position.BOTTOM_END);
         }
     }
 
