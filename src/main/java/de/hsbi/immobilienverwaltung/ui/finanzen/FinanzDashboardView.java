@@ -74,6 +74,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
     private final ImmobilieService immobilieService;
     private final MieteinheitService mieteinheitService;
     private final MieterService mieterService;
+    private final MietvertragService mietvertragService;
 
     private ComboBox<FilterOption<Immobilie>> immobilieFilter;
     private ComboBox<FilterOption<Mieteinheit>> einheitFilter;
@@ -88,13 +89,14 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
             AusgabeService ausgabeService,
             ImmobilieService immobilieService,
             MieteinheitService mieteinheitService,
-            MieterService mieterService
+            MieterService mieterService, MietvertragService mietvertragService
     ) {
         this.immobilieService = immobilieService;
         this.mieteinheitService = mieteinheitService;
         this.mieterService = mieterService;
         this.zahlungsEingangService = zahlungsEingangService;
         this.ausgabeService = ausgabeService;
+        this.mietvertragService = mietvertragService;
 
         UI.getCurrent().getPage().addJavaScript(
                 "https://cdn.jsdelivr.net/npm/chart.js"
@@ -409,9 +411,11 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         sixMonths.addClickListener(e -> wechselZeitraum(ZeitraumFilter.SECHS_MONATE));
         ytd.addClickListener(e -> wechselZeitraum(ZeitraumFilter.YTD));
 
-        immobilieFilter = new ComboBox<>();
         List<FilterOption<Immobilie>> immobilienOptionen = new ArrayList<>();
-        immobilienOptionen.add(new FilterOption<>(null, "Alle Immobilien", null));
+
+        immobilienOptionen.add(
+                new FilterOption<>(null, "Alle Immobilien", null)
+        );
 
         immobilieService.findeAlleImmobilien().forEach(immobilie ->
                 immobilienOptionen.add(
@@ -423,6 +427,78 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 )
         );
 
+
+        List<FilterOption<Mieteinheit>> einheitenOptionen = new ArrayList<>();
+
+        einheitenOptionen.add(
+                new FilterOption<>(null, "Alle Einheiten", null)
+        );
+
+        mieteinheitService.findeAlleMieteinheiten()
+                .stream()
+                .filter(mieteinheit ->
+                        ausgewaehlteImmobilieId == null
+                                || (
+                                mieteinheit.getImmobilie() != null
+                                        && ausgewaehlteImmobilieId.equals(
+                                        mieteinheit.getImmobilie().getId()
+                                )
+                        )
+                )
+                .forEach(mieteinheit ->
+                        einheitenOptionen.add(
+                                new FilterOption<>(
+                                        mieteinheit.getId(),
+                                        mieteinheit.getBezeichnung(),
+                                        mieteinheit
+                                )
+                        )
+                );
+
+        List<FilterOption<Mieter>> mieterOptionen = new ArrayList<>();
+
+        mieterOptionen.add(
+                new FilterOption<>(null, "Alle Mieter", null)
+        );
+
+        mietvertragService.findeAlleMietvertraege()
+                .stream()
+                .filter(mietvertrag -> mietvertrag.getMieter() != null)
+                .filter(mietvertrag -> mietvertrag.getMieteinheit() != null)
+                .filter(mietvertrag -> {
+                    Mieteinheit mieteinheit = mietvertrag.getMieteinheit();
+
+                    if (ausgewaehlteMieteinheitId != null) {
+                        return ausgewaehlteMieteinheitId.equals(
+                                mieteinheit.getId()
+                        );
+                    }
+
+                    if (ausgewaehlteImmobilieId != null) {
+                        return mieteinheit.getImmobilie() != null
+                                && ausgewaehlteImmobilieId.equals(
+                                mieteinheit.getImmobilie().getId()
+                        );
+                    }
+
+                    return true;
+                })
+                .map(mietvertrag -> mietvertrag.getMieter())
+                .filter(mieter -> mieter != null)
+                .distinct()
+                .forEach(mieter ->
+                        mieterOptionen.add(
+                                new FilterOption<>(
+                                        mieter.getId(),
+                                        mieter.getVorname()
+                                                + " "
+                                                + mieter.getNachname(),
+                                        mieter
+                                )
+                        )
+                );
+
+        immobilieFilter = new ComboBox<>();
         immobilieFilter.setItems(immobilienOptionen);
         immobilieFilter.setItemLabelGenerator(FilterOption::label);
         immobilieFilter.addClassName("dashboard-filter-combo");
@@ -434,19 +510,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         );
 
         einheitFilter = new ComboBox<>();
-        List<FilterOption<Mieteinheit>> einheitenOptionen = new ArrayList<>();
-        einheitenOptionen.add(new FilterOption<>(null, "Alle Einheiten", null));
-
-        mieteinheitService.findeAlleMieteinheiten().forEach(mieteinheit ->
-                einheitenOptionen.add(
-                        new FilterOption<>(
-                                mieteinheit.getId(),
-                                mieteinheit.getBezeichnung(),
-                                mieteinheit
-                        )
-                )
-        );
-
         einheitFilter.setItems(einheitenOptionen);
         einheitFilter.setItemLabelGenerator(FilterOption::label);
         einheitFilter.addClassName("dashboard-filter-combo");
@@ -458,19 +521,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         );
 
         mieterFilter = new ComboBox<>();
-        List<FilterOption<Mieter>> mieterOptionen = new ArrayList<>();
-        mieterOptionen.add(new FilterOption<>(null, "Alle Mieter", null));
-
-        mieterService.findeAlleMieter().forEach(mieter ->
-                mieterOptionen.add(
-                        new FilterOption<>(
-                                mieter.getId(),
-                                mieter.getVorname() + " " + mieter.getNachname(),
-                                mieter
-                        )
-                )
-        );
-
         mieterFilter.setItems(mieterOptionen);
         mieterFilter.setItemLabelGenerator(FilterOption::label);
         mieterFilter.addClassName("dashboard-filter-combo");
@@ -498,13 +548,21 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         einheitFilter.addValueChangeListener(event -> {
             FilterOption<Mieteinheit> option = event.getValue();
 
-            ausgewaehlteMieteinheitId =
-                    option == null || option.isAll()
-                            ? null
-                            : option.id();
+            if (option == null || option.isAll()) {
+                ausgewaehlteMieteinheitId = null;
+                ausgewaehlterMieterId = null;
+            } else {
+                Mieteinheit mieteinheit = option.value();
 
-            ausgewaehlteImmobilieId = null;
-            ausgewaehlterMieterId = null;
+                ausgewaehlteMieteinheitId = mieteinheit.getId();
+
+                if (mieteinheit.getImmobilie() != null) {
+                    ausgewaehlteImmobilieId =
+                            mieteinheit.getImmobilie().getId();
+                }
+
+                ausgewaehlterMieterId = null;
+            }
 
             baueSeiteNeu();
         });
@@ -516,9 +574,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                     option == null || option.isAll()
                             ? null
                             : option.id();
-
-            ausgewaehlteImmobilieId = null;
-            ausgewaehlteMieteinheitId = null;
 
             baueSeiteNeu();
         });
@@ -561,15 +616,11 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
             Long id
     ) {
         return optionen.stream()
-                .filter(option -> {
-                    if (id == null) {
-                        return option.id() == null;
-                    }
-
-                    return id.equals(option.id());
-                })
+                .filter(option -> id == null
+                        ? option.id() == null
+                        : id.equals(option.id()))
                 .findFirst()
-                .orElse(optionen.getFirst());
+                .orElse(optionen.get(0));
     }
 
     private void wechselZeitraum(ZeitraumFilter filter) {

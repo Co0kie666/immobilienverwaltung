@@ -2,11 +2,7 @@ package de.hsbi.immobilienverwaltung.ui.finanzen;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
-import de.hsbi.immobilienverwaltung.service.interfaces.AusgabeService;
-import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
-import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
-import de.hsbi.immobilienverwaltung.service.interfaces.MieterService;
-import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
+import de.hsbi.immobilienverwaltung.service.interfaces.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -26,6 +22,7 @@ class FinanzDashboardViewTest {
     private ImmobilieService immobilieService;
     private MieteinheitService mieteinheitService;
     private MieterService mieterService;
+    private MietvertragService mietvertragService;
 
     @BeforeEach
     void setUp() {
@@ -96,7 +93,8 @@ class FinanzDashboardViewTest {
                 ausgabeService,
                 immobilieService,
                 mieteinheitService,
-                mieterService
+                mieterService,
+                mietvertragService
         );
     }
 
