@@ -51,7 +51,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
     private DatePicker buchungsdatumField;
     private DatePicker faelligkeitsdatumField;
 
-    private ComboBox<Ausgabenkategorie> kategorieField;
+    private ComboBox<Enum<?>> kategorieField;
     private TextArea beschreibungField;
 
     private ComboBox<Immobilie> immobilieField;
@@ -104,12 +104,19 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
         faelligkeitsdatumField.setWidthFull();
 
         kategorieField = new ComboBox<>("Kategorie");
-        kategorieField.setItems(Ausgabenkategorie.values());
-        kategorieField.setItemLabelGenerator(this::formatiereAusgabenkategorie);
-        kategorieField.setValue(Ausgabenkategorie.SONSTIGES);
+        kategorieField.setItemLabelGenerator(kategorie -> {
+            if (kategorie instanceof Ausgabenkategorie ausgabenkategorie) {
+                return ausgabenkategorie.getLabel();
+            }
+            if (kategorie instanceof Zahlungseingangtyp zahlungseingangtyp) {
+                return zahlungseingangtyp.getLabel();
+            }
+            return "";
+        });
         kategorieField.setAllowCustomValue(false);
         kategorieField.setWidthFull();
         kategorieField.setRequiredIndicatorVisible(true);
+        aktualisiereKategorieField();
 
         beschreibungField = new TextArea("Beschreibung / Notiz");
         beschreibungField.setPlaceholder("Details zur Buchung eingeben...");
@@ -213,6 +220,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
             expenseCard.removeClassName("selected");
 
             mieterVertragField.setEnabled(true);
+            aktualisiereKategorieField();
         });
 
         expenseCard.addClickListener(event -> {
@@ -222,6 +230,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
 
             mieterVertragField.clear();
             mieterVertragField.setEnabled(false);
+            aktualisiereKategorieField();
         });
 
         options.add(incomeCard, expenseCard);
@@ -366,7 +375,12 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
                 if ("Ausgabe".equals(buchungstypGroup.getValue())) {
                     Ausgabe ausgabe = new Ausgabe();
 
-                    ausgabe.setKategorie(kategorieField.getValue());
+                    Enum<?> ausgewaehlteKategorie = kategorieField.getValue();
+                    if (!(ausgewaehlteKategorie instanceof Ausgabenkategorie ausgabenkategorie)) {
+                        throw new IllegalArgumentException("Bitte eine gültige Ausgabenkategorie auswählen.");
+                    }
+                    ausgabe.setKategorie(ausgabenkategorie);
+                    ausgabe.setKategorie(ausgabenkategorie);
                     ausgabe.setBetrag(betragField.getValue());
                     ausgabe.setDatum(buchungsdatumField.getValue());
                     ausgabe.setFaelligkeitsdatum(faelligkeitsdatumField.getValue());
@@ -381,7 +395,11 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
                 } else if ("Einnahme".equals(buchungstypGroup.getValue())) {
                     Zahlungseingang zahlungseingang = new Zahlungseingang();
 
-                    zahlungseingang.setTyp(Zahlungseingangtyp.SONSTIGES);
+                    Enum<?> ausgewaehlteKategorie = kategorieField.getValue();
+                    if (!(ausgewaehlteKategorie instanceof Zahlungseingangtyp zahlungseingangtyp)) {
+                        throw new IllegalArgumentException("Bitte eine gültige Einnahmenkategorie auswählen.");
+                    }
+                    zahlungseingang.setTyp(zahlungseingangtyp);
                     zahlungseingang.setBetrag(betragField.getValue());
                     zahlungseingang.setZahlungsdatum(buchungsdatumField.getValue());
                     zahlungseingang.setLeistungsmonat(faelligkeitsdatumField.getValue());
@@ -471,6 +489,17 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
         card.add(heading, divider);
 
         return card;
+    }
+
+    private void aktualisiereKategorieField() {
+        kategorieField.clear();
+        if ("Ausgabe".equals(buchungstypGroup.getValue())) {
+            kategorieField.setItems(Ausgabenkategorie.values());
+            kategorieField.setValue(Ausgabenkategorie.SONSTIGES);
+        } else {
+            kategorieField.setItems(Zahlungseingangtyp.values());
+            kategorieField.setValue(Zahlungseingangtyp.SONSTIGES);
+        }
     }
 
     @Override
