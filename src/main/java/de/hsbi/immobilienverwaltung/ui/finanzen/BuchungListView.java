@@ -15,9 +15,11 @@ import de.hsbi.immobilienverwaltung.domain.Ausgabe;
 import de.hsbi.immobilienverwaltung.domain.Zahlungseingang;
 import de.hsbi.immobilienverwaltung.service.interfaces.AusgabeService;
 import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
+import java.util.stream.Stream;
 import de.hsbi.immobilienverwaltung.ui.components.ConfirmDeleteDialog;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
+import com.vaadin.flow.component.html.Span;
 import jakarta.annotation.security.PermitAll;
 
 import java.text.NumberFormat;
@@ -31,6 +33,12 @@ public class BuchungListView extends Div implements HasPageHeader {
 
     private final Grid<BuchungRow> grid = new Grid<>(BuchungRow.class, false);
 
+    private List<BuchungRow> alleBuchungen = new ArrayList<>();
+
+    private final TextField searchField = new TextField("Suche");
+    private final Select<String> typSelect = new Select<>();
+    private final Select<String> statusSelect = new Select<>();
+    private final Select<String> kategorieSelect = new Select<>();
     private final AusgabeService ausgabeService;
     private final ZahlungsEingangService zahlungsEingangService;
 
@@ -79,31 +87,36 @@ public class BuchungListView extends Div implements HasPageHeader {
         Div filterCard = new Div();
         filterCard.addClassName("filter-card");
 
-        TextField searchField = new TextField("Suche");
+
         searchField.setPlaceholder("Beschreibung, Kategorie...");
         searchField.setPrefixComponent(VaadinIcon.SEARCH.create());
+        searchField.setClearButtonVisible(true);
+        searchField.addValueChangeListener(event -> filtereBuchungen());
 
-        Select<String> typSelect = new Select<>();
         typSelect.setLabel("Typ");
         typSelect.setItems("Alle", "Einnahme", "Ausgabe");
         typSelect.setValue("Alle");
+        typSelect.addValueChangeListener(event -> filtereBuchungen());
 
-        Select<String> statusSelect = new Select<>();
         statusSelect.setLabel("Status");
         statusSelect.setItems("Alle", "Bezahlt", "Offen");
         statusSelect.setValue("Alle");
+        statusSelect.addValueChangeListener(event -> filtereBuchungen());
 
-        Select<String> kategorieSelect = new Select<>();
         kategorieSelect.setLabel("Kategorie");
         kategorieSelect.setItems(
                 "Alle Kategorien",
-                "Kaution",
-                "Instandhaltung",
-                "Hausmeister",
-                "Verwaltungskosten",
-                "Sonstiges"
+                "KALTMIETE",
+                "NEBENKOSTEN",
+                "KAUTION",
+                "INSTANDHALTUNG",
+                "REPARATUR",
+                "VERSICHERUNG",
+                "VERWALTUNG",
+                "SONSTIGES"
         );
         kategorieSelect.setValue("Alle Kategorien");
+        kategorieSelect.addValueChangeListener(event -> filtereBuchungen());
 
         filterCard.add(searchField, typSelect, statusSelect, kategorieSelect);
 
@@ -123,6 +136,7 @@ public class BuchungListView extends Div implements HasPageHeader {
 
     private void configureGrid() {
         grid.addClassName("buchung-grid");
+        grid.addClassName("clickable-booking-grid");
         grid.setAllRowsVisible(true);
 
         grid.addColumn(BuchungRow::datum)
@@ -147,23 +161,48 @@ public class BuchungListView extends Div implements HasPageHeader {
                 .setHeader("Betrag")
                 .setAutoWidth(true);
 
-        grid.addColumn(BuchungRow::status)
+        grid.addComponentColumn(buchung -> createStatusBadge(buchung.status()))
                 .setHeader("Status")
                 .setAutoWidth(true);
 
-        grid.addColumn(new ComponentRenderer<>(this::createActionButtons))
-                .setHeader("Aktionen")
-                .setAutoWidth(true)
-                .setFlexGrow(0);
+        grid.addItemClickListener(event -> {
+            BuchungRow buchung = event.getItem();
+
+            if ("Ausgabe".equals(buchung.typ())) {
+                getUI().ifPresent(ui ->
+                        ui.navigate("finanzen/buchungen/ausgabe/" + buchung.id())
+                );
+            } else if ("Einnahme".equals(buchung.typ())) {
+                getUI().ifPresent(ui ->
+                        ui.navigate("finanzen/buchungen/einnahme/" + buchung.id())
+                );
+            }
+        });
 
         aktualisiereGrid();
     }
+    private Span createStatusBadge(String status) {
+        Span badge = new Span(status != null ? status : "-");
+        badge.addClassName("buchung-status-badge");
+
+        if ("Bezahlt / Erledigt".equals(status)) {
+            badge.addClassName("status-bezahlt");
+            badge.setText("Bezahlt");
+        } else if ("Offen / Ausstehend".equals(status)) {
+            badge.addClassName("status-offen");
+            badge.setText("Offen");
+        } else {
+            badge.addClassName("status-unbekannt");
+        }
+
+        return badge;
+    }
 
     private void aktualisiereGrid() {
-        List<BuchungRow> rows = new ArrayList<>();
+        alleBuchungen = new ArrayList<>();
 
         for (Ausgabe ausgabe : ausgabeService.findeAlleAusgaben()) {
-            rows.add(new BuchungRow(
+            alleBuchungen.add(new BuchungRow(
                     ausgabe.getId(),
                     ausgabe.getDatum() != null ? ausgabe.getDatum().toString() : "-",
                     "Ausgabe",
@@ -175,7 +214,7 @@ public class BuchungListView extends Div implements HasPageHeader {
         }
 
         for (Zahlungseingang zahlungseingang : zahlungsEingangService.findeAlleZahlungseingaenge()) {
-            rows.add(new BuchungRow(
+            alleBuchungen.add(new BuchungRow(
                     zahlungseingang.getId(),
                     zahlungseingang.getZahlungsdatum() != null ? zahlungseingang.getZahlungsdatum().toString() : "-",
                     "Einnahme",
@@ -186,7 +225,48 @@ public class BuchungListView extends Div implements HasPageHeader {
             ));
         }
 
-        grid.setItems(rows);
+        filtereBuchungen();
+    }
+    private void filtereBuchungen() {
+        String suchtext = searchField.getValue() != null
+                ? searchField.getValue().trim().toLowerCase()
+                : "";
+
+        String typ = typSelect.getValue();
+        String status = statusSelect.getValue();
+        String kategorie = kategorieSelect.getValue();
+
+        List<BuchungRow> gefilterteBuchungen = alleBuchungen.stream()
+                .filter(buchung -> {
+                    boolean passtZumSuchtext = suchtext.isEmpty()
+                            || buchung.typ().toLowerCase().contains(suchtext)
+                            || buchung.kategorie().toLowerCase().contains(suchtext)
+                            || buchung.beschreibung().toLowerCase().contains(suchtext)
+                            || buchung.betrag().toLowerCase().contains(suchtext)
+                            || buchung.datum().toLowerCase().contains(suchtext)
+                            || buchung.status().toLowerCase().contains(suchtext);
+
+                    boolean passtZumTyp = typ == null
+                            || "Alle".equals(typ)
+                            || buchung.typ().equals(typ);
+
+                    boolean passtZumStatus = status == null
+                            || "Alle".equals(status)
+                            || ("Bezahlt".equals(status) && "Bezahlt / Erledigt".equals(buchung.status()))
+                            || ("Offen".equals(status) && "Offen / Ausstehend".equals(buchung.status()));
+
+                    boolean passtZurKategorie = kategorie == null
+                            || "Alle Kategorien".equals(kategorie)
+                            || buchung.kategorie().equals(kategorie);
+
+                    return passtZumSuchtext
+                            && passtZumTyp
+                            && passtZumStatus
+                            && passtZurKategorie;
+                })
+                .toList();
+
+        grid.setItems(gefilterteBuchungen);
     }
 
     private String formatiereBetrag(java.math.BigDecimal betrag) {

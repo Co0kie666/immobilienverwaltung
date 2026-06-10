@@ -234,3 +234,36 @@
         flex-direction: column;
     }
 }
+.clickable-booking-grid::part(row):hover {
+    background-color: #f3f6fb;
+    cursor: pointer;
+}
+
+.clickable-booking-grid::part(cell):hover {
+    cursor: pointer;
+}
+.buchung-status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 14px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.status-bezahlt {
+    background-color: #e3f8ef;
+    color: #00b86b;
+}
+
+.status-offen {
+    background-color: #fff3e3;
+    color: #f59e0b;
+}
+
+.status-unbekannt {
+    background-color: #edf0f5;
+    color: #64748b;
+}
