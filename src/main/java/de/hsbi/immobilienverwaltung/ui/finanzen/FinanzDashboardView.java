@@ -22,10 +22,7 @@ import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 @Route(value = "finanzen", layout = MainLayout.class)
 @PermitAll
@@ -228,13 +225,22 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                         ermittleZahlungObjektText(zahlung),
                         zahlung.getTyp() == null
                                 ? "Einnahme"
-                                : zahlung.getTyp().toString(),
+                                : formatiereZahlungseingangTyp(zahlung.getTyp().toString()),
                         zahlung.getStatus() == null
                                 ? "-"
                                 : zahlung.getStatus(),
                         formatEuro(zahlung.getBetrag())
                 })
                 .toArray(String[][]::new);
+    }
+
+    private String formatiereZahlungseingangTyp(String typ) {
+        return switch (typ) {
+            case "KALTMIETE" -> "Kaltmiete";
+            case "NEBENKOSTEN" -> "Nebenkosten";
+            case "KAUTION" -> "Kaution";
+            default -> typ;
+        };
     }
 
     private String ermittleZahlungObjektText(Zahlungseingang zahlung) {
@@ -274,6 +280,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 );
 
         return ausgaben.stream()
+                .filter(a -> a.getDatum() != null)
                 .sorted((a1, a2) -> a2.getDatum().compareTo(a1.getDatum()))
                 .limit(5)
                 .map(ausgabe -> new String[]{
@@ -281,13 +288,32 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                         ermittleAusgabeObjektText(ausgabe),
                         ausgabe.getKategorie() == null
                                 ? "-"
-                                : ausgabe.getKategorie().toString(),
+                                : formatiereAusgabeKategorie(ausgabe.getKategorie().toString()),
                         ausgabe.getStatus() == null
                                 ? "-"
                                 : ausgabe.getStatus(),
                         "- " + formatEuro(ausgabe.getBetrag())
                 })
                 .toArray(String[][]::new);
+    }
+
+    private String formatiereAusgabeKategorie(String kategorie) {
+        return switch (kategorie) {
+            case "STROM" -> "Strom";
+            case "WASSER" -> "Wasser";
+            case "HEIZUNG" -> "Heizung";
+            case "INTERNET" -> "Internet";
+            case "VERSICHERUNG" -> "Versicherung";
+            case "REPARATUR" -> "Reparatur";
+            case "INSTANDHALTUNG" -> "Instandhaltung";
+            case "RENOVIERUNG" -> "Renovierung";
+            case "REINIGUNG" -> "Reinigung";
+            case "GRUNDSTEUER" -> "Grundsteuer";
+            case "MUELLABFUHR" -> "Müllabfuhr";
+            case "VERWALTUNGSKOSTEN" -> "Verwaltungskosten";
+            case "SONSTIGES" -> "Sonstiges";
+            default -> kategorie;
+        };
     }
 
     private String ermittleAusgabeObjektText(Ausgabe ausgabe) {
@@ -483,8 +509,8 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
                     return true;
                 })
-                .map(mietvertrag -> mietvertrag.getMieter())
-                .filter(mieter -> mieter != null)
+                .map(Mietvertrag::getMieter)
+                .filter(Objects::nonNull)
                 .distinct()
                 .forEach(mieter ->
                         mieterOptionen.add(
@@ -620,7 +646,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                         ? option.id() == null
                         : id.equals(option.id()))
                 .findFirst()
-                .orElse(optionen.get(0));
+                .orElse(optionen.getFirst());
     }
 
     private void wechselZeitraum(ZeitraumFilter filter) {
