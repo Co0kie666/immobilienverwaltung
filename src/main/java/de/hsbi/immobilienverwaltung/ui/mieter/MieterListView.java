@@ -449,7 +449,7 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
                 .anyMatch(vertrag -> vertrag.getStatus() == Vertragsstatus.GEKUENDIGT);
 
         if (gekuendigt) {
-            return "Gekündigt";
+            return "Läuft aus";
         }
 
         boolean beendet = vertraege.stream()
@@ -465,7 +465,7 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
     private String getStatusStyle(String status) {
         return switch (status) {
             case "Aktiv" -> "success";
-            case "Gekündigt", "Beendet" -> "warning";
+            case "Läuft aus", "Beendet" -> "warning";
             default -> "neutral";
         };
     }
@@ -531,11 +531,7 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
             return "-";
         }
 
-        return switch (mietvertrag.getStatus()) {
-            case AKTIV -> "Aktiv";
-            case GEKUENDIGT -> "Gekündigt";
-            case BEENDET -> "Beendet";
-        };
+        return mietvertrag.getStatus().getLabel();
     }
 
     private String textOderLeer(String text) {

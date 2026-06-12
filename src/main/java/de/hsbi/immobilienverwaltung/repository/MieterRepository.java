@@ -10,6 +10,8 @@ public interface MieterRepository extends JpaRepository<Mieter, Long> {
 
     List<Mieter> findByArchiviertFalse();
 
+    List<Mieter> findByArchiviertTrue();
+
     List<Mieter> findByVornameContainingIgnoreCaseOrNachnameContainingIgnoreCase(
             String vorname,
             String nachname

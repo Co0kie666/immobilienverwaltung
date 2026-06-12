@@ -5,6 +5,11 @@ import de.hsbi.immobilienverwaltung.repository.MieterRepository;
 import de.hsbi.immobilienverwaltung.service.interfaces.MieterService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import de.hsbi.immobilienverwaltung.domain.Mietvertrag;
+import de.hsbi.immobilienverwaltung.domain.enums.Vertragsstatus;
+import de.hsbi.immobilienverwaltung.repository.MietvertragRepository;
+
+import java.time.LocalDate;
 
 import java.util.List;
 import java.util.Optional;
@@ -13,9 +18,14 @@ import java.util.Optional;
 public class MieterServiceImpl implements MieterService {
 
     private final MieterRepository mieterRepository;
+    private final MietvertragRepository mietvertragRepository;
 
-    public MieterServiceImpl(MieterRepository mieterRepository) {
+    public MieterServiceImpl(
+            MieterRepository mieterRepository,
+            MietvertragRepository mietvertragRepository
+    ) {
         this.mieterRepository = mieterRepository;
+        this.mietvertragRepository = mietvertragRepository;
     }
 
     @Override
@@ -36,6 +46,12 @@ public class MieterServiceImpl implements MieterService {
 
         if (!mieter.getEmail().contains("@")) {
             throw new IllegalArgumentException("E-Mail ist ungültig.");
+        }
+
+        if (mieter.getTelefonnummer() != null
+                && !mieter.getTelefonnummer().isBlank()
+                && !mieter.getTelefonnummer().matches("\\+?[0-9]*")) {
+            throw new IllegalArgumentException("Telefonnummer darf nur Zahlen und optional ein + am Anfang enthalten.");
         }
 
         Optional<Mieter> vorhandenerMieter = mieterRepository.findByEmailIgnoreCase(mieter.getEmail());
@@ -67,6 +83,11 @@ public class MieterServiceImpl implements MieterService {
     }
 
     @Override
+    public List<Mieter> findeArchivierteMieter() {
+        return mieterRepository.findByArchiviertTrue();
+    }
+
+    @Override
     public List<Mieter> sucheMieter(String suchbegriff) {
         if (suchbegriff == null || suchbegriff.isBlank()) {
             return findeAlleMieter();
@@ -92,8 +113,36 @@ public class MieterServiceImpl implements MieterService {
         Mieter mieter = mieterRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Mieter wurde nicht gefunden."));
 
+        if (hatLaufendenMietvertrag(id)) {
+            throw new IllegalStateException(
+                    "Mieter kann nicht archiviert werden, da noch ein aktiver oder auslaufender Mietvertrag besteht."
+            );
+        }
+
         mieter.setArchiviert(true);
         mieterRepository.save(mieter);
+    }
+
+    private boolean hatLaufendenMietvertrag(Long mieterId) {
+        return mietvertragRepository.findByMieterId(mieterId)
+                .stream()
+                .anyMatch(this::istLaufenderMietvertrag);
+    }
+
+    private boolean istLaufenderMietvertrag(Mietvertrag mietvertrag) {
+        if (mietvertrag == null || mietvertrag.getStatus() == null) {
+            return false;
+        }
+
+        if (mietvertrag.getStatus() == Vertragsstatus.AKTIV) {
+            return true;
+        }
+
+        return mietvertrag.getStatus() == Vertragsstatus.GEKUENDIGT
+                && (
+                mietvertrag.getEnddatum() == null
+                        || !mietvertrag.getEnddatum().isBefore(LocalDate.now())
+        );
     }
 
     @Override

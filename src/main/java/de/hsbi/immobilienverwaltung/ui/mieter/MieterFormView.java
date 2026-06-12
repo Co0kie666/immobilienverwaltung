@@ -147,7 +147,6 @@ public class MieterFormView extends Div implements HasPageHeader {
 
         return createFormCard(
                 "Personendaten",
-                "Grundlegende Informationen zum Mieter",
                 form
         );
     }
@@ -157,7 +156,8 @@ public class MieterFormView extends Div implements HasPageHeader {
         emailField.setRequiredIndicatorVisible(true);
         emailField.setWidthFull();
 
-        telefonField.setPlaceholder("+49 151 1234567");
+        telefonField.setPlaceholder("+491511234567");
+        telefonField.setAllowedCharPattern("[0-9+]");
         telefonField.setWidthFull();
 
         strasseField.setPlaceholder("Musterstraße");
@@ -185,7 +185,6 @@ public class MieterFormView extends Div implements HasPageHeader {
 
         return createFormCard(
                 "Kontakt & Adresse",
-                "Aktuelle Erreichbarkeit und Wohnanschrift",
                 form
         );
     }
@@ -209,7 +208,6 @@ public class MieterFormView extends Div implements HasPageHeader {
 
         return createFormCard(
                 "Bankverbindung",
-                "Optional für SEPA-Lastschriftmandat",
                 form,
                 bankdatenAktiv
         );
@@ -267,6 +265,14 @@ public class MieterFormView extends Div implements HasPageHeader {
             fehler = true;
         }
 
+        if (!telefonField.getValue().isBlank() && !telefonField.getValue().matches("\\+?[0-9]*")) {
+            telefonField.setInvalid(true);
+            telefonField.setErrorMessage("Telefonnummer darf nur Zahlen und optional ein + am Anfang enthalten");
+            fehler = true;
+        } else {
+            telefonField.setInvalid(false);
+        }
+
         if (bankdatenAktiv.getValue()) {
             fehler |= markierePflichtfeld(kontoinhaberField, "Bitte Kontoinhaber eingeben");
             fehler |= markierePflichtfeld(ibanField, "Bitte IBAN eingeben");
@@ -286,11 +292,11 @@ public class MieterFormView extends Div implements HasPageHeader {
         return leer;
     }
 
-    private Div createFormCard(String titleText, String subtitleText, Component content) {
-        return createFormCard(titleText, subtitleText, content, null);
+    private Div createFormCard(String titleText, Component content) {
+        return createFormCard(titleText, content, null);
     }
 
-    private Div createFormCard(String titleText, String subtitleText, Component content, Component headerAction) {
+    private Div createFormCard(String titleText, Component content, Component headerAction) {
         Div card = new Div();
         card.addClassName("form-card");
         card.setWidthFull();
@@ -298,26 +304,16 @@ public class MieterFormView extends Div implements HasPageHeader {
         HorizontalLayout header = new HorizontalLayout();
         header.addClassName("form-card-header");
         header.setWidthFull();
-        header.setAlignItems(FlexComponent.Alignment.START);
+        header.setAlignItems(FlexComponent.Alignment.CENTER);
         header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
-
-        Div titleArea = new Div();
-        titleArea.getStyle().set("display", "flex");
-        titleArea.getStyle().set("flex-direction", "column");
-        titleArea.getStyle().set("gap", "4px");
 
         Span title = new Span(titleText);
         title.addClassName("form-card-title");
 
-        Span subtitle = new Span(subtitleText);
-        subtitle.addClassName("form-card-subtitle");
-
-        titleArea.add(title, subtitle);
-
         if (headerAction == null) {
-            header.add(titleArea);
+            header.add(title);
         } else {
-            header.add(titleArea, headerAction);
+            header.add(title, headerAction);
         }
 
         Div body = new Div();

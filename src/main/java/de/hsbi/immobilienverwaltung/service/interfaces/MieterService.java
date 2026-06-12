@@ -11,6 +11,8 @@ public interface MieterService {
 
     List<Mieter> findeAlleMieter();
 
+    List<Mieter> findeArchivierteMieter();
+
     List<Mieter> sucheMieter(String suchbegriff);
 
     Optional<Mieter> findeMieterNachId(Long id);

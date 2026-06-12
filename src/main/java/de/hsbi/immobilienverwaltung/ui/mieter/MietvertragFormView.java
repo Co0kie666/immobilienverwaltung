@@ -10,8 +10,6 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.select.Select;
-import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
@@ -27,6 +25,7 @@ import de.hsbi.immobilienverwaltung.service.interfaces.MietvertragService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import jakarta.annotation.security.PermitAll;
+import com.vaadin.flow.component.textfield.NumberField;
 
 import java.text.NumberFormat;
 import java.time.LocalDate;
@@ -52,8 +51,8 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
     private final Select<String> kuendigungsfristSelect = new Select<>();
     private final Select<String> zahlungsintervallSelect = new Select<>();
 
-    private final TextField kaltmieteField = new TextField("Kaltmiete");
-    private final TextField nebenkostenField = new TextField("Nebenkosten-Vorauszahlung");
+    private final NumberField kaltmieteField = new NumberField("Kaltmiete");
+    private final NumberField nebenkostenField = new NumberField("Nebenkosten-Vorauszahlung");
 
     private Long immobilieId;
     private Long mieteinheitId ;
@@ -137,7 +136,6 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
 
         return createFormCard(
                 "Mietobjekt & Mieter",
-                "Zuweisung des Vertrags",
                 form
         );
     }
@@ -197,7 +195,6 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
 
         return createFormCard(
                 "Vertragsdaten",
-                "Laufzeit und Fristen",
                 form
         );
     }
@@ -207,11 +204,17 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         kaltmieteField.setRequiredIndicatorVisible(true);
         kaltmieteField.setSuffixComponent(new Span("€"));
         kaltmieteField.setWidthFull();
+        kaltmieteField.setMin(0);
+        kaltmieteField.setStep(0.01);
+        kaltmieteField.setClearButtonVisible(true);
 
         nebenkostenField.setPlaceholder("0.00");
         nebenkostenField.setRequiredIndicatorVisible(true);
         nebenkostenField.setSuffixComponent(new Span("€"));
         nebenkostenField.setWidthFull();
+        nebenkostenField.setMin(0);
+        nebenkostenField.setStep(0.01);
+        nebenkostenField.setClearButtonVisible(true);
 
         Div warmmieteBox = new Div();
         warmmieteBox.addClassName("money-summary-box");
@@ -241,7 +244,6 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
 
         return createFormCard(
                 "Finanzielle Details",
-                "Miete, Nebenkosten und Kaution",
                 form
         );
     }
@@ -253,8 +255,8 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
             Mietvertrag mietvertrag = new Mietvertrag();
             mietvertrag.setStartdatum(vertragsbeginnPicker.getValue());
             mietvertrag.setEnddatum(vertragsendePicker.getValue());
-            mietvertrag.setKaltmiete(parsePflichtbetrag(kaltmieteField, "Bitte Kaltmiete eingeben"));
-            mietvertrag.setNebenkosten(parsePflichtbetrag(nebenkostenField, "Bitte Nebenkosten eingeben"));
+            mietvertrag.setKaltmiete(lesePflichtbetrag(kaltmieteField, "Bitte Kaltmiete eingeben"));
+            mietvertrag.setNebenkosten(lesePflichtbetrag(nebenkostenField, "Bitte Nebenkosten eingeben"));
             mietvertrag.setKaution(null);
             mietvertrag.setKuendigungsfrist(berechneKuendigungsfrist());
             mietvertrag.setStatus(Vertragsstatus.AKTIV);
@@ -304,14 +306,6 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         }
     }
 
-    private boolean markierePflichtfeld(TextField field, String errorMessage) {
-        boolean leer = field.getValue() == null || field.getValue().isBlank();
-
-        field.setInvalid(leer);
-        field.setErrorMessage(errorMessage);
-
-        return leer;
-    }
 
     private <T> boolean markierePflichtSelect(Select<T> select, String errorMessage) {
         boolean leer = select.getValue() == null;
@@ -322,52 +316,6 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         return leer;
     }
 
-    private Double parsePflichtbetrag(TextField field, String errorMessage) {
-        if (field.getValue() == null || field.getValue().isBlank()) {
-            field.setInvalid(true);
-            field.setErrorMessage(errorMessage);
-            throw new IllegalArgumentException(errorMessage);
-        }
-
-        return parseBetrag(field);
-    }
-
-    private Double parseOptionalerBetrag(TextField field) {
-        if (field.getValue() == null || field.getValue().isBlank()) {
-            return null;
-        }
-
-        return parseBetrag(field);
-    }
-
-    private Double parseBetrag(TextField field) {
-        try {
-            String value = field.getValue()
-                    .replace("€", "")
-                    .replace(" ", "")
-                    .trim();
-
-            if (value.contains(",")) {
-                value = value.replace(".", "").replace(",", ".");
-            }
-
-            Double betrag = Double.parseDouble(value);
-
-            if (betrag < 0) {
-                field.setInvalid(true);
-                field.setErrorMessage("Betrag darf nicht negativ sein");
-                throw new IllegalArgumentException("Betrag darf nicht negativ sein.");
-            }
-
-            field.setInvalid(false);
-            return betrag;
-
-        } catch (NumberFormatException ex) {
-            field.setInvalid(true);
-            field.setErrorMessage("Bitte gültigen Betrag eingeben");
-            throw new IllegalArgumentException("Bitte gültigen Betrag eingeben.");
-        }
-    }
 
     private LocalDate berechneKuendigungsfrist() {
         if (vertragsbeginnPicker.getValue() == null) {
@@ -387,14 +335,43 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         return vertragsbeginnPicker.getValue().plusMonths(3);
     }
 
+    private boolean markierePflichtfeld(NumberField field, String errorMessage) {
+        boolean leer = field.getValue() == null;
+        boolean negativ = !leer && field.getValue() < 0;
+
+        field.setInvalid(leer || negativ);
+
+        if (leer) {
+            field.setErrorMessage(errorMessage);
+        } else if (negativ) {
+            field.setErrorMessage("Betrag darf nicht negativ sein");
+        }
+
+        return leer || negativ;
+    }
+
+    private Double lesePflichtbetrag(NumberField field, String errorMessage) {
+        if (field.getValue() == null) {
+            field.setInvalid(true);
+            field.setErrorMessage(errorMessage);
+            throw new IllegalArgumentException(errorMessage);
+        }
+
+        if (field.getValue() < 0) {
+            field.setInvalid(true);
+            field.setErrorMessage("Betrag darf nicht negativ sein");
+            throw new IllegalArgumentException("Betrag darf nicht negativ sein.");
+        }
+
+        field.setInvalid(false);
+        return field.getValue();
+    }
+
     private void configureWarmmieteCalculation(
-            TextField kaltmieteField,
-            TextField nebenkostenField,
+            NumberField kaltmieteField,
+            NumberField nebenkostenField,
             Span warmmieteValue
     ) {
-        kaltmieteField.setValueChangeMode(ValueChangeMode.EAGER);
-        nebenkostenField.setValueChangeMode(ValueChangeMode.EAGER);
-
         kaltmieteField.addValueChangeListener(event ->
                 updateWarmmiete(kaltmieteField, nebenkostenField, warmmieteValue)
         );
@@ -407,37 +384,20 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
     }
 
     private void updateWarmmiete(
-            TextField kaltmieteField,
-            TextField nebenkostenField,
+            NumberField kaltmieteField,
+            NumberField nebenkostenField,
             Span warmmieteValue
     ) {
-        double kaltmiete = parseMoneyValueForPreview(kaltmieteField.getValue());
-        double nebenkosten = parseMoneyValueForPreview(nebenkostenField.getValue());
+        double kaltmiete = zahlOderNull(kaltmieteField.getValue());
+        double nebenkosten = zahlOderNull(nebenkostenField.getValue());
 
         double warmmiete = kaltmiete + nebenkosten;
 
         warmmieteValue.setText(formatMoneyValue(warmmiete));
     }
 
-    private double parseMoneyValueForPreview(String value) {
-        if (value == null || value.isBlank()) {
-            return 0;
-        }
-
-        try {
-            String normalizedValue = value
-                    .replace("€", "")
-                    .replace(" ", "")
-                    .trim();
-
-            if (normalizedValue.contains(",")) {
-                normalizedValue = normalizedValue.replace(".", "").replace(",", ".");
-            }
-
-            return Double.parseDouble(normalizedValue);
-        } catch (NumberFormatException e) {
-            return 0;
-        }
+    private double zahlOderNull(Double value) {
+        return value == null ? 0 : value;
     }
 
     private String formatMoneyValue(double value) {
@@ -464,7 +424,7 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         return actions;
     }
 
-    private Div createFormCard(String titleText, String subtitleText, Component content) {
+    private Div createFormCard(String titleText, Component content) {
         Div card = new Div();
         card.addClassName("form-card");
         card.setWidthFull();
@@ -475,13 +435,7 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         Span title = new Span(titleText);
         title.addClassName("form-card-title");
 
-        Span subtitle = new Span(subtitleText);
-        subtitle.addClassName("form-card-subtitle");
-
-        Div titleArea = new Div();
-        titleArea.add(title, subtitle);
-
-        header.add(titleArea);
+        header.add(title);
 
         Div body = new Div();
         body.addClassName("form-card-content");

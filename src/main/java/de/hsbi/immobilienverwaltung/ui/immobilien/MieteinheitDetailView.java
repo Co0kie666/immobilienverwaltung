@@ -354,15 +354,11 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
             return "-";
         }
 
-        if (mietvertrag.getStatus() == Vertragsstatus.AKTIV) {
-            return "Aktiv";
+        if (mietvertrag.getStatus() == Vertragsstatus.GEKUENDIGT && !istLaufenderVertrag(mietvertrag)) {
+            return Vertragsstatus.BEENDET.getLabel();
         }
 
-        if (mietvertrag.getStatus() == Vertragsstatus.GEKUENDIGT && istLaufenderVertrag(mietvertrag)) {
-            return "Läuft aus";
-        }
-
-        return "Beendet";
+        return mietvertrag.getStatus().getLabel();
     }
 
     private String getVertragsStatusStyle(Mietvertrag mietvertrag) {
