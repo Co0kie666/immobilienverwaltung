@@ -9,13 +9,11 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.domain.Ausgabe;
 import de.hsbi.immobilienverwaltung.domain.Zahlungseingang;
 import de.hsbi.immobilienverwaltung.service.interfaces.AusgabeService;
 import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
-import java.util.stream.Stream;
 import de.hsbi.immobilienverwaltung.ui.components.ConfirmDeleteDialog;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
@@ -106,14 +104,22 @@ public class BuchungListView extends Div implements HasPageHeader {
         kategorieSelect.setLabel("Kategorie");
         kategorieSelect.setItems(
                 "Alle Kategorien",
-                "KALTMIETE",
-                "NEBENKOSTEN",
-                "KAUTION",
-                "INSTANDHALTUNG",
-                "REPARATUR",
-                "VERSICHERUNG",
-                "VERWALTUNG",
-                "SONSTIGES"
+                "Kaltmiete",
+                "Nebenkosten",
+                "Kaution",
+                "Strom",
+                "Wasser",
+                "Heizung",
+                "Internet",
+                "Versicherung",
+                "Reparatur",
+                "Instandhaltung",
+                "Renovierung",
+                "Reinigung",
+                "Grundsteuer",
+                "Müllabfuhr",
+                "Verwaltungskosten",
+                "Sonstiges"
         );
         kategorieSelect.setValue("Alle Kategorien");
         kategorieSelect.addValueChangeListener(event -> filtereBuchungen());
@@ -206,7 +212,9 @@ public class BuchungListView extends Div implements HasPageHeader {
                     ausgabe.getId(),
                     ausgabe.getDatum() != null ? ausgabe.getDatum().toString() : "-",
                     "Ausgabe",
-                    ausgabe.getKategorie() != null ? ausgabe.getKategorie().name() : "-",
+                    ausgabe.getKategorie() != null
+                            ? formatiereAusgabeKategorie(ausgabe.getKategorie().name())
+                            : "-",
                     ausgabe.getBeschreibung() != null ? ausgabe.getBeschreibung() : "-",
                     formatiereBetrag(ausgabe.getBetrag()),
                     ausgabe.getStatus() != null ? ausgabe.getStatus() : "-"
@@ -216,9 +224,13 @@ public class BuchungListView extends Div implements HasPageHeader {
         for (Zahlungseingang zahlungseingang : zahlungsEingangService.findeAlleZahlungseingaenge()) {
             alleBuchungen.add(new BuchungRow(
                     zahlungseingang.getId(),
-                    zahlungseingang.getZahlungsdatum() != null ? zahlungseingang.getZahlungsdatum().toString() : "-",
+                    zahlungseingang.getZahlungsdatum() != null
+                            ? zahlungseingang.getZahlungsdatum().toString()
+                            : "-",
                     "Einnahme",
-                    zahlungseingang.getTyp() != null ? zahlungseingang.getTyp().name() : "-",
+                    zahlungseingang.getTyp() != null
+                            ? formatiereZahlungseingangTyp(zahlungseingang.getTyp().name())
+                            : "-",
                     zahlungseingang.getBeschreibung() != null ? zahlungseingang.getBeschreibung() : "-",
                     formatiereBetrag(zahlungseingang.getBetrag()),
                     zahlungseingang.getStatus() != null ? zahlungseingang.getStatus() : "-"
@@ -227,6 +239,35 @@ public class BuchungListView extends Div implements HasPageHeader {
 
         filtereBuchungen();
     }
+
+    private String formatiereAusgabeKategorie(String kategorie) {
+        return switch (kategorie) {
+            case "STROM" -> "Strom";
+            case "WASSER" -> "Wasser";
+            case "HEIZUNG" -> "Heizung";
+            case "INTERNET" -> "Internet";
+            case "VERSICHERUNG" -> "Versicherung";
+            case "REPARATUR" -> "Reparatur";
+            case "INSTANDHALTUNG" -> "Instandhaltung";
+            case "RENOVIERUNG" -> "Renovierung";
+            case "REINIGUNG" -> "Reinigung";
+            case "GRUNDSTEUER" -> "Grundsteuer";
+            case "MUELLABFUHR" -> "Müllabfuhr";
+            case "VERWALTUNGSKOSTEN" -> "Verwaltungskosten";
+            case "SONSTIGES" -> "Sonstiges";
+            default -> kategorie;
+        };
+    }
+
+    private String formatiereZahlungseingangTyp(String typ) {
+        return switch (typ) {
+            case "KALTMIETE" -> "Kaltmiete";
+            case "NEBENKOSTEN" -> "Nebenkosten";
+            case "KAUTION" -> "Kaution";
+            default -> typ;
+        };
+    }
+
     private void filtereBuchungen() {
         String suchtext = searchField.getValue() != null
                 ? searchField.getValue().trim().toLowerCase()

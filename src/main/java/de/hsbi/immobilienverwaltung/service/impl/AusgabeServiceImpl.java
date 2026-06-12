@@ -204,7 +204,26 @@ public class AusgabeServiceImpl implements AusgabeService {
             return "Ohne Kategorie";
         }
 
-        return ausgabe.getKategorie().toString();
+        return formatiereKategorieName(ausgabe.getKategorie().toString());
+    }
+
+    private String formatiereKategorieName(String kategorie) {
+        return switch (kategorie) {
+            case "STROM" -> "Strom";
+            case "WASSER" -> "Wasser";
+            case "HEIZUNG" -> "Heizung";
+            case "INTERNET" -> "Internet";
+            case "VERSICHERUNG" -> "Versicherung";
+            case "REPARATUR" -> "Reparatur";
+            case "INSTANDHALTUNG" -> "Instandhaltung";
+            case "RENOVIERUNG" -> "Renovierung";
+            case "REINIGUNG" -> "Reinigung";
+            case "GRUNDSTEUER" -> "Grundsteuer";
+            case "MUELLABFUHR" -> "Müllabfuhr";
+            case "VERWALTUNGSKOSTEN" -> "Verwaltungskosten";
+            case "SONSTIGES" -> "Sonstiges";
+            default -> kategorie;
+        };
     }
 
     @Override

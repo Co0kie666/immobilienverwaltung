@@ -239,9 +239,16 @@
     cursor: pointer;
 }
 
-.clickable-booking-grid::part(cell):hover {
+.clickable-booking-grid::part(body-cell):hover {
     cursor: pointer;
 }
+
+.clickable-booking-grid::part(header-cell),
+.clickable-booking-grid::part(header-cell):hover,
+.clickable-booking-grid::part(header-cell) * {
+    cursor: default;
+}
+
 .buchung-status-badge {
     display: inline-flex;
     align-items: center;

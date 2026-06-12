@@ -1,7 +1,7 @@
 package de.hsbi.immobilienverwaltung.domain.enums;
 
 public enum Zahlungseingangtyp {
-    KALTMIETE("Kaltmite"),
+    KALTMIETE("Kaltmiete"),
     NEBENKOSTEN("Nebenkosten"),
     KAUTION("Kaution"),
     SONSTIGES("Sonstiges");
