@@ -86,7 +86,8 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
             AusgabeService ausgabeService,
             ImmobilieService immobilieService,
             MieteinheitService mieteinheitService,
-            MieterService mieterService, MietvertragService mietvertragService
+            MieterService mieterService,
+            MietvertragService mietvertragService
     ) {
         this.immobilieService = immobilieService;
         this.mieteinheitService = mieteinheitService;
@@ -95,7 +96,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         this.ausgabeService = ausgabeService;
         this.mietvertragService = mietvertragService;
 
-        UI.getCurrent().getPage().addJavaScript(
+        addJavaScriptIfUiAvailable(
                 "https://cdn.jsdelivr.net/npm/chart.js"
         );
 
@@ -103,6 +104,26 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         ladeFinanzdaten(null, null, null);
         baueSeiteNeu();
+    }
+
+    private void addJavaScriptIfUiAvailable(String url) {
+        UI ui = UI.getCurrent();
+
+        if (ui == null || ui.getSession() == null) {
+            return;
+        }
+
+        ui.getPage().addJavaScript(url);
+    }
+
+    private void executeJsIfUiAvailable(String script, Object... arguments) {
+        UI ui = UI.getCurrent();
+
+        if (ui == null || ui.getSession() == null) {
+            return;
+        }
+
+        ui.getPage().executeJs(script, arguments);
     }
 
     private void baueSeiteNeu() {
@@ -453,7 +474,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 )
         );
 
-
         List<FilterOption<Mieteinheit>> einheitenOptionen = new ArrayList<>();
 
         einheitenOptionen.add(
@@ -795,7 +815,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         wrapper.getElement().appendChild(canvas);
 
-        UI.getCurrent().getPage().executeJs("""
+        executeJsIfUiAvailable("""
             setTimeout(() => {
                 const ctx = document.getElementById('financeLineChart');
 
@@ -863,7 +883,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         chartWrapper.getElement().appendChild(canvas);
 
-        UI.getCurrent().getPage().executeJs("""
+        executeJsIfUiAvailable("""
             setTimeout(() => {
                 const ctx = document.getElementById('paymentStatusChart');
 
@@ -926,7 +946,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         wrapper.getElement().appendChild(canvas);
 
-        UI.getCurrent().getPage().executeJs("""
+        executeJsIfUiAvailable("""
             setTimeout(() => {
                 const ctx = document.getElementById('costDistributionChart');
 
