@@ -1,6 +1,8 @@
 package de.hsbi.immobilienverwaltung.domain;
+
 import de.hsbi.immobilienverwaltung.domain.enums.Vertragsstatus;
 import jakarta.persistence.*;
+
 import java.time.LocalDate;
 
 @Entity
@@ -20,10 +22,12 @@ public class Mietvertrag {
     private Double kaution;
     private LocalDate kuendigungsfrist;
 
-    @OneToOne
+    @ManyToOne
+    @JoinColumn(name = "mieter_id", nullable = false)
     private Mieter mieter;
 
-    @OneToOne
+    @ManyToOne
+    @JoinColumn(name = "mieteinheit_id", nullable = false)
     private Mieteinheit mieteinheit;
 
     public Mietvertrag(Vertragsstatus status, LocalDate startdatum, LocalDate enddatum, Double kaltmiete, Double nebenkosten, Double kaution, LocalDate kuendigungsfrist) {
@@ -66,7 +70,9 @@ public class Mietvertrag {
         this.kaltmiete = kaltmiete;
     }
 
-    public Mieter getMieter() {return mieter;}
+    public Mieter getMieter() {
+        return mieter;
+    }
 
     public void setMieter(Mieter mieter) {
         this.mieter = mieter;
@@ -80,19 +86,35 @@ public class Mietvertrag {
         this.mieteinheit = mieteinheit;
     }
 
-    public Double getKaution() {return kaution;}
+    public Double getKaution() {
+        return kaution;
+    }
 
-    public void setKaution(Double kaution) {this.kaution = kaution;}
+    public void setKaution(Double kaution) {
+        this.kaution = kaution;
+    }
 
-    public LocalDate getKuendigungsfrist() {return kuendigungsfrist;}
+    public LocalDate getKuendigungsfrist() {
+        return kuendigungsfrist;
+    }
 
-    public void setKuendigungsfrist(LocalDate kuendigungsfrist) {this.kuendigungsfrist = kuendigungsfrist;}
+    public void setKuendigungsfrist(LocalDate kuendigungsfrist) {
+        this.kuendigungsfrist = kuendigungsfrist;
+    }
 
-    public Double getNebenkosten() {return nebenkosten;}
+    public Double getNebenkosten() {
+        return nebenkosten;
+    }
 
-    public void setNebenkosten(Double nebenkosten) {this.nebenkosten = nebenkosten;}
+    public void setNebenkosten(Double nebenkosten) {
+        this.nebenkosten = nebenkosten;
+    }
 
-    public Vertragsstatus getStatus() {return status;}
+    public Vertragsstatus getStatus() {
+        return status;
+    }
 
-    public void setStatus(Vertragsstatus status) {this.status = status;}
+    public void setStatus(Vertragsstatus status) {
+        this.status = status;
+    }
 }

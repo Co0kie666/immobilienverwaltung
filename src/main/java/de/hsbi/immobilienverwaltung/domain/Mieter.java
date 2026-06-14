@@ -20,7 +20,9 @@ public class Mieter {
     private LocalDate geburtsdatum;
     private String beruf;
 
+    @Column(nullable = false, unique = true)
     private String email;
+
     private String telefonnummer;
 
     @Embedded

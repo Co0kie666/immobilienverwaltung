@@ -11,6 +11,7 @@ import de.hsbi.immobilienverwaltung.repository.MietvertragRepository;
 import de.hsbi.immobilienverwaltung.service.interfaces.MietvertragService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.temporal.ChronoUnit;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -100,16 +101,41 @@ public class MietvertragServiceImpl implements MietvertragService {
             throw new IllegalArgumentException("Beendete Mietverträge können nicht gekündigt werden.");
         }
 
+        LocalDate fristEnde = LocalDate.now().plusMonths(ermittleKuendigungsfristInMonaten(mietvertrag));
+
         mietvertrag.setStatus(Vertragsstatus.GEKUENDIGT);
 
-        if (mietvertrag.getEnddatum() == null) {
-            mietvertrag.setEnddatum(LocalDate.now());
+        if (mietvertrag.getEnddatum() == null || mietvertrag.getEnddatum().isAfter(fristEnde)) {
+            mietvertrag.setEnddatum(fristEnde);
         }
 
         aktualisiereStatusNachDatum(mietvertrag);
         aktualisiereMieteinheitStatus(mietvertrag);
 
         mietvertragRepository.save(mietvertrag);
+    }
+
+    private int ermittleKuendigungsfristInMonaten(Mietvertrag mietvertrag) {
+        if (mietvertrag.getStartdatum() == null || mietvertrag.getKuendigungsfrist() == null) {
+            return 3;
+        }
+
+        for (int monate : new int[]{1, 3, 6}) {
+            if (mietvertrag.getStartdatum().plusMonths(monate).equals(mietvertrag.getKuendigungsfrist())) {
+                return monate;
+            }
+        }
+
+        long monate = ChronoUnit.MONTHS.between(
+                mietvertrag.getStartdatum(),
+                mietvertrag.getKuendigungsfrist()
+        );
+
+        if (monate <= 0) {
+            return 3;
+        }
+
+        return (int) monate;
     }
 
     @Override

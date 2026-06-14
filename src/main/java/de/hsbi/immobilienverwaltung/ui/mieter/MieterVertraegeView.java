@@ -45,11 +45,15 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
     private Button addButton;
     private Grid.Column<Mietvertrag> laufzeitColumn;
 
+    private Tabs archivTabs;
+    private boolean archivierteMieterAnzeigen = false;
+
     private final Grid<Mieter> mieterGrid = new Grid<>(Mieter.class, false);
     private final Grid<Mietvertrag> mietvertragGrid = new Grid<>(Mietvertrag.class, false);
 
     private final TextField searchField = new TextField();
     private final Select<String> statusFilter = new Select<>();
+
 
     private enum TabellenModus {
         MIETER,
@@ -113,8 +117,7 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
                 .setFlexGrow(1);
 
         mieterGrid.addItemClickListener(event ->
-                getUI().ifPresent(ui ->
-                        ui.navigate(MieterListView.class, String.valueOf(event.getItem().getId()))
+                getUI().ifPresent(ui -> ui.navigate(MieterListView.class, String.valueOf(event.getItem().getId()))
                 )
         );
     }
@@ -156,8 +159,7 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
                 .setFlexGrow(1);
 
         mietvertragGrid.addItemClickListener(event ->
-                getUI().ifPresent(ui ->
-                        ui.navigate(MietvertragListView.class, String.valueOf(event.getItem().getId()))
+                getUI().ifPresent(ui -> ui.navigate(MietvertragListView.class, String.valueOf(event.getItem().getId()))
                 )
         );
     }
@@ -185,6 +187,17 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
             }
         });
 
+        archivTabs = new Tabs(
+                new Tab("Verträge"),
+                new Tab("Mieter")
+        );
+        archivTabs.setVisible(false);
+
+        archivTabs.addSelectedChangeListener(event -> {
+            archivierteMieterAnzeigen = archivTabs.getSelectedIndex() == 1;
+            setAktiverModus(TabellenModus.ARCHIV);
+        });
+
         searchField.setPlaceholder("Suchen...");
         searchField.setPrefixComponent(VaadinIcon.SEARCH.create());
         searchField.setClearButtonVisible(true);
@@ -209,7 +222,7 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
         HorizontalLayout rightArea = new HorizontalLayout();
         rightArea.setAlignItems(FlexComponent.Alignment.CENTER);
         rightArea.setSpacing(true);
-        rightArea.add(searchField, statusFilter, addButton);
+        rightArea.add(archivTabs, searchField, statusFilter, addButton);
 
         header.add(tabs, rightArea);
 
@@ -219,7 +232,7 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
     private void setAktiverModus(TabellenModus modus) {
         aktiverModus = modus;
 
-        boolean mieterAktiv = modus == TabellenModus.MIETER;
+        boolean mieterAktiv = modus == TabellenModus.MIETER || (modus == TabellenModus.ARCHIV && archivierteMieterAnzeigen);
 
         mieterGrid.setVisible(mieterAktiv);
         mietvertragGrid.setVisible(!mieterAktiv);
@@ -229,6 +242,10 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
         }
 
         aktualisiereStatusFilterOptionen();
+
+        if (archivTabs != null) {
+            archivTabs.setVisible(aktiverModus == TabellenModus.ARCHIV);
+        }
 
         if (addButton != null) {
             addButton.setVisible(aktiverModus != TabellenModus.ARCHIV);
@@ -281,9 +298,15 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
     private void aktualisiereTabellen() {
         if (aktiverModus == TabellenModus.MIETER) {
             mieterGrid.setItems(filterMieter(mieterService.findeAlleMieter()));
-        } else {
-            mietvertragGrid.setItems(filterMietvertraege(mietvertragService.findeAlleMietvertraege()));
+            return;
         }
+
+        if (aktiverModus == TabellenModus.ARCHIV && archivierteMieterAnzeigen) {
+            mieterGrid.setItems(filterMieter(mieterService.findeArchivierteMieter()));
+            return;
+        }
+
+        mietvertragGrid.setItems(filterMietvertraege(mietvertragService.findeAlleMietvertraege()));
     }
 
     private List<Mieter> filterMieter(List<Mieter> mieterListe) {
@@ -346,26 +369,17 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
     }
 
     private boolean istArchivVertrag(Mietvertrag mietvertrag) {
-        return mietvertrag != null
-                && (
-                mietvertrag.getStatus() == Vertragsstatus.BEENDET
-                        || (
-                        mietvertrag.getStatus() == Vertragsstatus.GEKUENDIGT
-                                && istAusgelaufen(mietvertrag)
-                )
-        );
+        return mietvertrag != null && (mietvertrag.getStatus() == Vertragsstatus.BEENDET || (mietvertrag.getStatus() == Vertragsstatus.GEKUENDIGT && istAusgelaufen(mietvertrag)));
     }
 
     private boolean istAusgelaufen(Mietvertrag mietvertrag) {
-        return mietvertrag.getEnddatum() != null
-                && mietvertrag.getEnddatum().isBefore(LocalDate.now());
+        return mietvertrag.getEnddatum() != null && mietvertrag.getEnddatum().isBefore(LocalDate.now());
     }
 
     private String getSuche() {
         if (searchField.getValue() == null) {
             return "";
         }
-
         return searchField.getValue().trim().toLowerCase();
     }
 
@@ -390,15 +404,13 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
     private String ermittleMieterStatus(Mieter mieter) {
         List<Mietvertrag> vertraege = mietvertragService.findeMietvertraegeNachMieter(mieter.getId());
 
-        boolean hatAktivenVertrag = vertraege.stream()
-                .anyMatch(this::istAktiverVertrag);
+        boolean hatAktivenVertrag = vertraege.stream().anyMatch(this::istAktiverVertrag);
 
         if (hatAktivenVertrag) {
             return "Aktiv";
         }
 
-        boolean hatAuslaufendenVertrag = vertraege.stream()
-                .anyMatch(this::istAuslaufenderVertrag);
+        boolean hatAuslaufendenVertrag = vertraege.stream().anyMatch(this::istAuslaufenderVertrag);
 
         if (hatAuslaufendenVertrag) {
             return "Läuft aus";
@@ -481,15 +493,11 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
             return "-";
         }
 
-        if (istAktiverVertrag(mietvertrag)) {
-            return "Aktiv";
+        if (mietvertrag.getStatus() == Vertragsstatus.GEKUENDIGT && !istAuslaufenderVertrag(mietvertrag)) {
+            return Vertragsstatus.BEENDET.getLabel();
         }
 
-        if (istAuslaufenderVertrag(mietvertrag)) {
-            return "Läuft aus";
-        }
-
-        return "Beendet";
+        return mietvertrag.getStatus().getLabel();
     }
 
     private String getMieterStatusStyle(String status) {
