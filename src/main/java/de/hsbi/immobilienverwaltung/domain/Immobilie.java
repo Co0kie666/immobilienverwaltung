@@ -19,10 +19,19 @@ public class Immobilie {
     private Integer baujahr;
     private Integer flaeche;
 
+    /**
+     * Die Adresse wird direkt in der Immobilientabelle gespeichert,
+     * da Adresse als eingebettetes Objekt modelliert ist.
+     */
     @Embedded
     private Adresse adresse;
 
-    // orphanRemoval löscht Mieteinheiten, die zu keiner Immobilie gehören aus der DB
+    /**
+     * Eine Immobilie kann mehrere Mieteinheiten besitzen.
+     * cascade = ALL sorgt dafür, dass Änderungen an untergeordneten Mieteinheiten
+     * zusammen mit der Immobilie berücksichtigt werden.
+     * orphanRemoval entfernt Mieteinheiten, die keiner Immobilie mehr zugeordnet sind.
+     */
     @OneToMany(mappedBy = "immobilie", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Mieteinheit> mieteinheiten = new ArrayList<>();
 

@@ -24,7 +24,11 @@ public class ImmobilieServiceImpl implements ImmobilieService {
     private final MieteinheitRepository mieteinheitRepository;
     private final MietvertragRepository mietvertragRepository;
 
-    public ImmobilieServiceImpl(ImmobilieRepository immobilieRepository, MieteinheitRepository mieteinheitRepository, MietvertragRepository mietvertragRepository) {
+    public ImmobilieServiceImpl(
+            ImmobilieRepository immobilieRepository,
+            MieteinheitRepository mieteinheitRepository,
+            MietvertragRepository mietvertragRepository
+    ) {
         this.immobilieRepository = immobilieRepository;
         this.mieteinheitRepository = mieteinheitRepository;
         this.mietvertragRepository = mietvertragRepository;
@@ -33,6 +37,12 @@ public class ImmobilieServiceImpl implements ImmobilieService {
     @Override
     @Transactional
     public Immobilie speichereImmobilie(Immobilie immobilie) {
+
+        // Die wichtigsten Pflichtfelder werden zusätzlich im Service geprüft,
+        // damit die Geschäftsregeln nicht nur von der Benutzeroberfläche abhängen.
+        if (immobilie == null) {
+            throw new IllegalArgumentException("Immobilie darf nicht leer sein.");
+        }
 
         Adresse adresse = immobilie.getAdresse();
 
@@ -64,6 +74,7 @@ public class ImmobilieServiceImpl implements ImmobilieService {
             throw new IllegalArgumentException("Stadt darf nicht leer sein.");
         }
 
+        // Optionale Zahlenfelder dürfen leer bleiben, aber keine negativen Werte enthalten.
         if (immobilie.getBaujahr() != null && immobilie.getBaujahr() < 0) {
             throw new IllegalArgumentException("Baujahr darf nicht negativ sein.");
         }
@@ -88,6 +99,8 @@ public class ImmobilieServiceImpl implements ImmobilieService {
     @Override
     @Transactional
     public void loescheImmobilie(Long id) {
+        // Eine Immobilie darf nicht gelöscht werden, wenn mindestens eine ihrer
+        // Mieteinheiten noch durch einen aktiven Mietvertrag belegt ist.
         boolean hatAktiveMietvertraege = mietvertragRepository.existsByMieteinheit_Immobilie_IdAndStatus(id, Vertragsstatus.AKTIV);
 
         if (hatAktiveMietvertraege) {
@@ -100,10 +113,17 @@ public class ImmobilieServiceImpl implements ImmobilieService {
     }
 
     @Override
-    public List<Immobilie> findeGefilterteImmobilien(String ortOderPlz, Immobilientyp typ, String einheitenFilter, String leerstandFilter) {
+    public List<Immobilie> findeGefilterteImmobilien(
+            String ortOderPlz,
+            Immobilientyp typ,
+            String einheitenFilter,
+            String leerstandFilter
+    ) {
         List<Immobilie> alleImmobilien = immobilieRepository.findAll();
         List<Immobilie> gefilterteImmobilien = new ArrayList<>();
 
+        // Die Filter werden nacheinander geprüft. Sobald eine Immobilie ein Kriterium
+        // nicht erfüllt, wird sie übersprungen.
         for (Immobilie immobilie : alleImmobilien) {
 
             if (!passtOrtOderPlzFilter(immobilie, ortOderPlz)) {
@@ -151,6 +171,7 @@ public class ImmobilieServiceImpl implements ImmobilieService {
     }
 
     private boolean passtTypFilter(Immobilie immobilie, Immobilientyp typ) {
+        // null steht hier für "Alle Typen".
         if (typ == null) {
             return true;
         }
@@ -185,9 +206,10 @@ public class ImmobilieServiceImpl implements ImmobilieService {
 
         int leerstand = 0;
 
+        // Für die Übersicht zählen sowohl freie Einheiten als auch Einheiten in Renovierung
+        // als Leerstand, weil beide aktuell nicht regulär vermietet sind.
         for (Mieteinheit mieteinheit : mieteinheiten) {
-            if (mieteinheit.getStatus() == Mieteinheitstatus.FREI || mieteinheit.getStatus() ==
-                    Mieteinheitstatus.IN_RENOVIERUNG) {
+            if (mieteinheit.getStatus() == Mieteinheitstatus.FREI || mieteinheit.getStatus() == Mieteinheitstatus.IN_RENOVIERUNG) {
                 leerstand++;
             }
         }

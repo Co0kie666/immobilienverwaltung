@@ -4,6 +4,10 @@ import de.hsbi.immobilienverwaltung.domain.enums.MieteinheitTyp;
 import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
 import jakarta.persistence.*;
 
+/**
+ * Repräsentiert eine einzelne vermietbare Einheit innerhalb einer Immobilie.
+ * Das kann z. B. eine Wohnung, ein Büro oder ein Gesamtobjekt sein.
+ */
 @Entity
 public class Mieteinheit {
 
@@ -11,6 +15,10 @@ public class Mieteinheit {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /**
+     * Neue Mieteinheiten sind standardmäßig frei,
+     * solange kein anderer Status gesetzt wird.
+     */
     @Enumerated(EnumType.STRING)
     private Mieteinheitstatus status = Mieteinheitstatus.FREI;
 
@@ -22,8 +30,12 @@ public class Mieteinheit {
     private Integer zimmerzahl;
     private String stockwerk;
 
+    /**
+     * Viele Mieteinheiten können zu einer Immobilie gehören.
+     * nullable = false stellt sicher, dass jede Mieteinheit immer einer Immobilie zugeordnet ist.
+     */
     @ManyToOne
-    @JoinColumn(name = "immobilie_id", nullable = false) // foreign key der nicht NULL sein darf
+    @JoinColumn(name = "immobilie_id", nullable = false)
     private Immobilie immobilie;
 
     public Mieteinheit() {}

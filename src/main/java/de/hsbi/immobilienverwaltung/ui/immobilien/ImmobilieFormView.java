@@ -29,131 +29,149 @@ import jakarta.annotation.security.PermitAll;
 @PermitAll
 public class ImmobilieFormView extends Div implements HasPageHeader {
 
-    private final TextField bezeichnungField = new TextField("Bezeichnung");
-    private final Select<Immobilientyp> typSelect = new Select<>();
-    private final IntegerField baujahrField = new IntegerField("Baujahr");
-    private final IntegerField gesamtflaecheField = new IntegerField("Gesamtfläche in m²");
+    private final TextField bezeichnungFeld = new TextField("Bezeichnung");
+    private final Select<Immobilientyp> immobilientypAuswahl = new Select<>();
+    private final IntegerField baujahrFeld = new IntegerField("Baujahr");
+    private final IntegerField gesamtflaecheFeld = new IntegerField("Gesamtfläche in m²");
 
-    private final TextField strasseField = new TextField("Straße");
-    private final TextField hausnummerField = new TextField("Hausnummer");
-    private final TextField plzField = new TextField("PLZ");
-    private final TextField ortField = new TextField("Ort");
+    private final TextField strasseFeld = new TextField("Straße");
+    private final TextField hausnummerFeld = new TextField("Hausnummer");
+    private final TextField plzFeld = new TextField("PLZ");
+    private final TextField ortFeld = new TextField("Ort");
 
-    private final Checkbox gesamtobjektCheckbox =
+    private final Checkbox gesamtobjektErstellenCheckbox =
             new Checkbox("Gesamtobjekt als einzelne Mieteinheit erstellen");
 
     private final ImmobilieService immobilieService;
     private final MieteinheitService mieteinheitService;
 
-    private final Binder<Immobilie> immobilieBinder = new Binder<>(Immobilie.class);
-    private final Binder<Adresse> adresseBinder = new Binder<>(Adresse.class);
+    private final Binder<Immobilie> immobilieFormularBinder = new Binder<>(Immobilie.class);
+    private final Binder<Adresse> adresseFormularBinder = new Binder<>(Adresse.class);
 
-    public ImmobilieFormView(ImmobilieService immobilieService, MieteinheitService mieteinheitService) {
+    public ImmobilieFormView(
+            ImmobilieService immobilieService,
+            MieteinheitService mieteinheitService
+    ) {
         this.immobilieService = immobilieService;
         this.mieteinheitService = mieteinheitService;
 
         addClassName("page-content");
         addClassName("immobilie-form-view");
-        konfiguriereBinder();
 
-        add(createFormCard());
+        konfiguriereFormularBinder();
+
+        add(erstelleFormularKarte());
     }
 
-    private void konfiguriereBinder() {
-        immobilieBinder.forField(bezeichnungField)
+    // Immobilie und Adresse werden getrennt gebunden, weil Adresse als @Embedded
+    // in der Immobilie gespeichert wird und keine eigene Entity ist.
+    private void konfiguriereFormularBinder() {
+        immobilieFormularBinder.forField(bezeichnungFeld)
                 .asRequired("Bezeichnung darf nicht leer sein.")
                 .bind(Immobilie::getBezeichnung, Immobilie::setBezeichnung);
 
-        immobilieBinder.forField(typSelect)
+        immobilieFormularBinder.forField(immobilientypAuswahl)
                 .asRequired("Immobilientyp muss ausgewählt werden.")
                 .bind(Immobilie::getTyp, Immobilie::setTyp);
 
-        immobilieBinder.forField(baujahrField)
+        immobilieFormularBinder.forField(baujahrFeld)
                 .withValidator(
                         baujahr -> baujahr == null || baujahr >= 0,
                         "Baujahr darf nicht negativ sein."
                 )
                 .bind(Immobilie::getBaujahr, Immobilie::setBaujahr);
 
-        immobilieBinder.forField(gesamtflaecheField)
+        immobilieFormularBinder.forField(gesamtflaecheFeld)
                 .withValidator(
                         flaeche -> flaeche == null || flaeche >= 0,
                         "Fläche darf nicht negativ sein."
                 )
                 .bind(Immobilie::getFlaeche, Immobilie::setFlaeche);
 
-        adresseBinder.forField(strasseField)
+        adresseFormularBinder.forField(strasseFeld)
                 .asRequired("Straße darf nicht leer sein.")
                 .bind(Adresse::getStrasse, Adresse::setStrasse);
 
-        adresseBinder.forField(hausnummerField)
+        adresseFormularBinder.forField(hausnummerFeld)
                 .asRequired("Hausnummer darf nicht leer sein.")
                 .bind(Adresse::getHausnummer, Adresse::setHausnummer);
 
-        adresseBinder.forField(plzField)
+        adresseFormularBinder.forField(plzFeld)
                 .asRequired("PLZ darf nicht leer sein.")
                 .bind(Adresse::getPlz, Adresse::setPlz);
 
-        adresseBinder.forField(ortField)
+        adresseFormularBinder.forField(ortFeld)
                 .asRequired("Ort darf nicht leer sein.")
                 .bind(Adresse::getStadt, Adresse::setStadt);
     }
 
-    private Div createFormCard() {
-        Div card = new Div();
-        card.addClassName("form-card");
+    private Div erstelleFormularKarte() {
+        Div formularKarte = new Div();
+        formularKarte.addClassName("form-card");
 
-        Div header = new Div();
-        header.addClassName("form-card-header");
+        Div formularKopf = new Div();
+        formularKopf.addClassName("form-card-header");
 
-        H3 title = new H3("Stammdaten");
-        title.addClassName("form-card-title");
+        H3 titel = new H3("Stammdaten");
+        titel.addClassName("form-card-title");
 
-        header.add(title);
+        formularKopf.add(titel);
 
-        FormLayout form = new FormLayout();
-        form.addClassName("form-card-content");
+        FormLayout formular = new FormLayout();
+        formular.addClassName("form-card-content");
 
-        bezeichnungField.setPlaceholder("z. B. Parkresidenz Süd");
+        konfiguriereFormularFelder();
 
-        typSelect.setLabel("Immobilientyp");
-        typSelect.setItems(Immobilientyp.values());
-        typSelect.setPlaceholder("Typ auswählen");
-        typSelect.setItemLabelGenerator(Immobilientyp::getLabel);
-
-        baujahrField.setPlaceholder("z. B. 1998");
-
-        gesamtflaecheField.setPlaceholder("z. B. 850");
-
-        bezeichnungField.setRequiredIndicatorVisible(true);
-        typSelect.setRequiredIndicatorVisible(true);
-        strasseField.setRequiredIndicatorVisible(true);
-        hausnummerField.setRequiredIndicatorVisible(true);
-        plzField.setRequiredIndicatorVisible(true);
-        ortField.setRequiredIndicatorVisible(true);
-
-        form.add(
-                bezeichnungField,
-                typSelect,
-                baujahrField,
-                gesamtflaecheField,
-                strasseField,
-                hausnummerField,
-                plzField,
-                ortField,
-                gesamtobjektCheckbox
+        formular.add(
+                bezeichnungFeld,
+                immobilientypAuswahl,
+                baujahrFeld,
+                gesamtflaecheFeld,
+                strasseFeld,
+                hausnummerFeld,
+                plzFeld,
+                ortFeld,
+                gesamtobjektErstellenCheckbox
         );
 
-        baujahrField.setMin(0);
-        baujahrField.setErrorMessage("Baujahr darf nicht negativ sein");
+        formular.setColspan(gesamtobjektErstellenCheckbox, 2);
 
-        gesamtflaecheField.setMin(0);
-        gesamtflaecheField.setErrorMessage("Fläche darf nicht negativ sein");
+        formularKarte.add(
+                formularKopf,
+                formular,
+                erstelleFormularAktionen()
+        );
 
-        form.setColspan(gesamtobjektCheckbox, 2);
+        return formularKarte;
+    }
 
-        Div actions = new Div();
-        actions.addClassName("form-actions");
+    private void konfiguriereFormularFelder() {
+        bezeichnungFeld.setPlaceholder("z. B. Parkresidenz Süd");
+
+        immobilientypAuswahl.setLabel("Immobilientyp");
+        immobilientypAuswahl.setItems(Immobilientyp.values());
+        immobilientypAuswahl.setPlaceholder("Typ auswählen");
+        immobilientypAuswahl.setItemLabelGenerator(Immobilientyp::getLabel);
+
+        baujahrFeld.setPlaceholder("z. B. 1998");
+        baujahrFeld.setMin(0);
+        baujahrFeld.setErrorMessage("Baujahr darf nicht negativ sein");
+
+        gesamtflaecheFeld.setPlaceholder("z. B. 850");
+        gesamtflaecheFeld.setMin(0);
+        gesamtflaecheFeld.setErrorMessage("Fläche darf nicht negativ sein");
+
+        bezeichnungFeld.setRequiredIndicatorVisible(true);
+        immobilientypAuswahl.setRequiredIndicatorVisible(true);
+        strasseFeld.setRequiredIndicatorVisible(true);
+        hausnummerFeld.setRequiredIndicatorVisible(true);
+        plzFeld.setRequiredIndicatorVisible(true);
+        ortFeld.setRequiredIndicatorVisible(true);
+    }
+
+    private Div erstelleFormularAktionen() {
+        Div aktionen = new Div();
+        aktionen.addClassName("form-actions");
 
         Button abbrechenButton = new Button("Abbrechen");
         abbrechenButton.addClassName("secondary-button");
@@ -165,49 +183,66 @@ public class ImmobilieFormView extends Div implements HasPageHeader {
         speichernButton.addClassName("primary-button");
         speichernButton.addClickListener(event -> speichereImmobilie());
 
-        actions.add(abbrechenButton, speichernButton);
+        aktionen.add(abbrechenButton, speichernButton);
 
-        card.add(header, form, actions);
-
-        return card;
+        return aktionen;
     }
 
     private void speichereImmobilie() {
         try {
-            Adresse adresse = new Adresse();
             Immobilie immobilie = new Immobilie();
+            Adresse adresse = new Adresse();
 
-            immobilieBinder.writeBean(immobilie);
-            adresseBinder.writeBean(adresse);
+            // Der Binder validiert die Eingaben und schreibt sie erst danach
+            // in die jeweiligen Objekte.
+            immobilieFormularBinder.writeBean(immobilie);
+            adresseFormularBinder.writeBean(adresse);
 
             immobilie.setAdresse(adresse);
+
             Immobilie gespeicherteImmobilie = immobilieService.speichereImmobilie(immobilie);
 
-            // Wenn die Immobilie nicht in einzelne Einheiten aufgeteilt werden soll,
-            // wird automatisch eine einzelne Mieteinheit vom Typ "Gesamtobjekt" erstellt.
-            if (gesamtobjektCheckbox.getValue()) {
-                Mieteinheit gesamtobjekt = new Mieteinheit(
-                        "Gesamtobjekt",
-                        Mieteinheitstatus.FREI,
-                        MieteinheitTyp.GESAMTOBJEKT,
-                        gesamtflaecheField.getValue(),
-                        null,
-                        "Gesamtobjekt"
-                );
+            erstelleGesamtobjektFallsAusgewaehlt(gespeicherteImmobilie);
 
-                // Gesamtobjekt-Mieteinheit mit der gerade gespeicherten Immobilie verknüpfen.
-                mieteinheitService.speichereMieteinheit(gespeicherteImmobilie.getId(), gesamtobjekt);
-            }
-            Notification.show("Immobilie wurde gespeichert: " + bezeichnungField.getValue());
+            Notification.show(
+                    "Immobilie wurde gespeichert: " + gespeicherteImmobilie.getBezeichnung()
+            );
 
             getUI().ifPresent(ui -> ui.navigate(ImmobilienListView.class));
 
         } catch (ValidationException ex) {
-        Notification.show("Bitte überprüfe die Eingaben.", 4000, Notification.Position.BOTTOM_END);
+            Notification.show(
+                    "Bitte überprüfe die Eingaben.",
+                    4000,
+                    Notification.Position.BOTTOM_END
+            );
 
         } catch (Exception ex) {
-            Notification.show("Fehler beim Speichern: " + ex.getMessage(), 4000, Notification.Position.BOTTOM_END);
+            Notification.show(
+                    "Fehler beim Speichern: " + ex.getMessage(),
+                    4000,
+                    Notification.Position.BOTTOM_END
+            );
         }
+    }
+
+    // Diese Option ist für Immobilien gedacht, die nicht in einzelne Wohnungen,
+    // Büros oder Gewerbeflächen aufgeteilt werden sollen.
+    private void erstelleGesamtobjektFallsAusgewaehlt(Immobilie immobilie) {
+        if (!Boolean.TRUE.equals(gesamtobjektErstellenCheckbox.getValue())) {
+            return;
+        }
+
+        Mieteinheit gesamtobjekt = new Mieteinheit(
+                "Gesamtobjekt",
+                Mieteinheitstatus.FREI,
+                MieteinheitTyp.GESAMTOBJEKT,
+                immobilie.getFlaeche(),
+                null,
+                "Gesamtobjekt"
+        );
+
+        mieteinheitService.speichereMieteinheit(immobilie.getId(), gesamtobjekt);
     }
 
     @Override

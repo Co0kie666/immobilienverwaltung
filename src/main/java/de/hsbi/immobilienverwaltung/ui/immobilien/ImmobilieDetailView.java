@@ -12,19 +12,22 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
-import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
-import de.hsbi.immobilienverwaltung.ui.components.ConfirmDeleteDialog;
-import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
-import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
-import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
-import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
 import de.hsbi.immobilienverwaltung.domain.Adresse;
 import de.hsbi.immobilienverwaltung.domain.Immobilie;
+import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
+import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
+import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
 import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
-import com.vaadin.flow.data.value.ValueChangeMode;
+import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
+import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
+import de.hsbi.immobilienverwaltung.ui.components.ConfirmDeleteDialog;
+import de.hsbi.immobilienverwaltung.ui.components.StatusBadge;
+import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
+import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import jakarta.annotation.security.PermitAll;
 
 import java.math.BigDecimal;
@@ -36,15 +39,20 @@ import java.util.Locale;
 public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnterObserver {
 
     private Long immobilieId;
-    private final MieteinheitService mieteinheitService;
-    private final Grid<Mieteinheit> mieteinheitenGrid = new Grid<>(Mieteinheit.class, false);
     private Immobilie immobilie;
-    private final ImmobilieService immobilieService;
 
-    private final TextField mieteinheitenSearchField = new TextField();
+    private final ImmobilieService immobilieService;
+    private final MieteinheitService mieteinheitService;
     private final ZahlungsEingangService zahlungsEingangService;
 
-    public ImmobilieDetailView(MieteinheitService mieteinheitService, ImmobilieService immobilieService, ZahlungsEingangService zahlungsEingangService) {
+    private final Grid<Mieteinheit> mieteinheitenTabelle = new Grid<>(Mieteinheit.class, false);
+    private final TextField mieteinheitenSuchfeld = new TextField();
+
+    public ImmobilieDetailView(
+            MieteinheitService mieteinheitService,
+            ImmobilieService immobilieService,
+            ZahlungsEingangService zahlungsEingangService
+    ) {
         this.mieteinheitService = mieteinheitService;
         this.immobilieService = immobilieService;
         this.zahlungsEingangService = zahlungsEingangService;
@@ -53,25 +61,32 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         addClassName("immobilie-detail-view");
 
         konfiguriereMieteinheitenSuchfeld();
+
+        // Die Tabelle wird nur einmal konfiguriert. Beim Laden der Seite werden später
+        // nur noch die angezeigten Daten über setItems(...) aktualisiert.
+        konfiguriereMieteinheitenTabelle();
     }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        // Die ID stammt aus der URL, die beim Klick in der ImmobilienListView erzeugt wurde.
+        // Beispiel: /immobilien/3 -> immobilieId = 3
         this.immobilieId = event.getRouteParameters()
                 .get("immobilieId")
                 .map(Long::valueOf)
-                .orElse(null);
+                .orElseThrow(() -> new IllegalArgumentException("Immobilie-ID fehlt."));
 
         ladeImmobilie();
 
-        // Vaadin Methode -> verhindert dass Komponenten doppelt angezeigt werden
+        // Vor dem Neuaufbau wird die View geleert, damit bei erneutem Aufruf
+        // keine alten Komponenten aus einer vorherigen Anzeige bestehen bleiben.
         removeAll();
 
         add(
-                createTopActions(),
-                createKpiSection(),
-                createOverviewSection(),
-                createMieteinheitenCard()
+                erstelleAktionsleiste(),
+                erstelleKennzahlenBereich(),
+                erstelleUebersichtsBereich(),
+                erstelleMieteinheitenKarte()
         );
 
         ladeMieteinheiten();
@@ -82,92 +97,436 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                 .orElseThrow(() -> new IllegalArgumentException("Immobilie wurde nicht gefunden."));
     }
 
+    private void ladeMieteinheiten() {
+        wendeMieteinheitenSucheAn();
+    }
+
     private void wendeMieteinheitenSucheAn() {
         if (immobilieId == null) {
             return;
         }
 
-        mieteinheitenGrid.setItems(mieteinheitService.sucheMieteinheitenDerImmobilie(
-                        immobilieId,
-                        mieteinheitenSearchField.getValue()
+        mieteinheitenTabelle.setItems(
+                mieteinheitService.sucheMieteinheitenDerImmobilie(immobilieId, mieteinheitenSuchfeld.getValue())
+        );
+    }
+
+    private Component erstelleAktionsleiste() {
+        HorizontalLayout aktionsleiste = new HorizontalLayout();
+        aktionsleiste.addClassName("detail-action-row");
+
+        Button zurueckButton = new Button("Zurück", VaadinIcon.ARROW_LEFT.create());
+        zurueckButton.addClassName("secondary-button");
+        zurueckButton.addClickListener(event ->
+                getUI().ifPresent(ui -> ui.navigate(ImmobilienListView.class))
+        );
+
+        Button bearbeitenButton = new Button("Bearbeiten", VaadinIcon.EDIT.create());
+        bearbeitenButton.addClassName("secondary-button");
+        bearbeitenButton.addClickListener(event ->
+                getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilieId + "/bearbeiten"))
+        );
+
+        Button loeschenButton = new Button("Löschen", VaadinIcon.TRASH.create());
+        loeschenButton.addClassName("danger-button");
+        loeschenButton.addClickListener(event -> oeffneLoeschDialog());
+
+        Button einheitHinzufuegenButton = new Button("Einheit hinzufügen", VaadinIcon.PLUS.create());
+        einheitHinzufuegenButton.addClassName("primary-button");
+        einheitHinzufuegenButton.addClickListener(event ->
+                getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilieId + "/einheiten/neu"))
+        );
+
+        aktionsleiste.add(
+                zurueckButton,
+                bearbeitenButton,
+                loeschenButton,
+                einheitHinzufuegenButton
+        );
+
+        return aktionsleiste;
+    }
+
+    private void oeffneLoeschDialog() {
+        ConfirmDeleteDialog dialog = new ConfirmDeleteDialog(
+                "Immobilie löschen?",
+                "Möchtest du die Immobilie \"" + immobilie.getBezeichnung() + "\" wirklich löschen?",
+                () -> {
+                    try {
+                        immobilieService.loescheImmobilie(immobilieId);
+                        Notification.show("Immobilie wurde gelöscht.");
+                        getUI().ifPresent(ui -> ui.navigate("immobilien"));
+
+                    } catch (Exception ex) {
+                        Notification.show(ex.getMessage(), 4000, Notification.Position.MIDDLE);
+                    }
+                }
+        );
+
+        dialog.open();
+    }
+
+    private Component erstelleKennzahlenBereich() {
+        Div kennzahlenBereich = new Div();
+        kennzahlenBereich.addClassName("detail-kpi-grid");
+
+        long einheitenGesamt = mieteinheitService.zaehleMieteinheiten(immobilieId);
+        long freieEinheiten = mieteinheitService.zaehleFreieMieteinheiten(immobilieId);
+        long einheitenInRenovierung = mieteinheitService.zaehleMieteinheitenInRenovierung(immobilieId);
+        long vermieteteEinheiten = mieteinheitService.zaehleVermieteteMieteinheiten(immobilieId);
+
+        long leerstand = freieEinheiten + einheitenInRenovierung;
+        double leerstandsquote = mieteinheitService.berechneLeerstandsquote(immobilieId);
+
+        BigDecimal offeneZahlungenSumme = zahlungsEingangService.berechneOffeneZahlungenFuerImmobilie(immobilieId);
+
+        long offeneZahlungenAnzahl = zahlungsEingangService.zaehleOffeneZahlungenFuerImmobilie(immobilieId);
+
+        kennzahlenBereich.add(
+                erstelleKennzahlenKarte(
+                        "Einheiten Gesamt",
+                        String.valueOf(einheitenGesamt),
+                        vermieteteEinheiten + " vermietet, " + einheitenInRenovierung + " in Renovierung",
+                        "primary",
+                        VaadinIcon.BUILDING
+                ),
+                erstelleKennzahlenKarte(
+                        "Leerstand",
+                        String.valueOf(leerstand),
+                        String.format("%.1f%% Leerstandsquote", leerstandsquote),
+                        "warning",
+                        VaadinIcon.HOME
+                ),
+                erstelleKennzahlenKarte(
+                        "Offene Zahlungen",
+                        formatiereBetrag(offeneZahlungenSumme),
+                        offeneZahlungenAnzahl + " offene Buchung(en)",
+                        "danger",
+                        VaadinIcon.WARNING
                 )
         );
+
+        return kennzahlenBereich;
     }
 
-    private void ladeMieteinheiten() {
-        wendeMieteinheitenSucheAn();
+    private Component erstelleKennzahlenKarte(String titel, String wert, String untertitel, String typ, VaadinIcon symbol) {
+        Div karte = new Div();
+        karte.addClassNames("card", "detail-kpi-card");
+
+        Paragraph titelText = new Paragraph(titel);
+        titelText.addClassName("kpi-title");
+
+        Span wertText = new Span(wert);
+        wertText.addClassName("kpi-value");
+
+        Paragraph untertitelText = new Paragraph(untertitel);
+        untertitelText.addClassName("kpi-subtitle");
+
+        Div symbolBox = new Div();
+        symbolBox.addClassNames("kpi-icon-box", typ);
+        symbolBox.add(symbol.create());
+
+        karte.add(titelText, wertText, untertitelText, symbolBox);
+
+        return karte;
     }
 
-    // ImmobilienCard und BelegungsCard nebeneinander
-    private Component createOverviewSection() {
-        Div overview = new Div();
-        overview.addClassName("detail-overview-grid");
+    private Component erstelleUebersichtsBereich() {
+        Div uebersicht = new Div();
+        uebersicht.addClassName("detail-overview-grid");
 
-        overview.add(
-                createImmobilieInfoCard(),
-                createBelegungCard()
+        uebersicht.add(
+                erstelleImmobilienInfoKarte(),
+                erstelleBelegungsKarte()
         );
 
-        return overview;
+        return uebersicht;
     }
 
-    private Component createImmobilieInfoCard() {
-        Div card = new Div();
-        card.addClassNames("card", "immobilie-info-card");
+    private Component erstelleImmobilienInfoKarte() {
+        Div karte = new Div();
+        karte.addClassNames("card", "immobilie-info-card");
 
-        H3 title = new H3("Stammdaten");
-        title.addClassName("card-title");
+        H3 titel = new H3("Stammdaten");
+        titel.addClassName("card-title");
 
-        card.add(
-                title,
-                createInfoItem("Bezeichnung", valueOrDash(immobilie.getBezeichnung())),
-                createInfoItem("Typ",valueOrDash(immobilie.getTyp().getLabel())),
-                createInfoItem("Baujahr", valueOrDash(immobilie.getBaujahr())),
-                createInfoItem("Fläche", formatFlaeche(immobilie.getFlaeche())),
-                createInfoItem("Adresse", formatAdresse(immobilie))
+        karte.add(
+                titel,
+                erstelleInfoEintrag("Bezeichnung", wertOderStrich(immobilie.getBezeichnung())),
+                erstelleInfoEintrag("Typ", formatiereImmobilientyp(immobilie.getTyp())),
+                erstelleInfoEintrag("Baujahr", wertOderStrich(immobilie.getBaujahr())),
+                erstelleInfoEintrag("Fläche", formatiereFlaeche(immobilie.getFlaeche())),
+                erstelleInfoEintrag("Adresse", formatiereAdresse(immobilie))
         );
 
-        return card;
+        return karte;
     }
 
-    private Component createInfoItem(String label, String value) {
-        Div item = new Div();
-        item.addClassName("info-item");
+    private Component erstelleInfoEintrag(String beschriftung, String wert) {
+        Div eintrag = new Div();
+        eintrag.addClassName("info-item");
 
-        Span labelText = new Span(label);
-        labelText.addClassName("info-label");
+        Span beschriftungText = new Span(beschriftung);
+        beschriftungText.addClassName("info-label");
 
-        Span valueText = new Span(value);
-        valueText.addClassName("info-value");
+        Span wertText = new Span(wert);
+        wertText.addClassName("info-value");
 
-        item.add(labelText, valueText);
+        eintrag.add(beschriftungText, wertText);
 
-        return item;
+        return eintrag;
     }
 
-    private String formatAdresse(Immobilie immobilie) {
+    private void konfiguriereMieteinheitenSuchfeld() {
+        mieteinheitenSuchfeld.addClassName("detail-table-search");
+        mieteinheitenSuchfeld.setPlaceholder("Suchen...");
+        mieteinheitenSuchfeld.setPrefixComponent(VaadinIcon.SEARCH.create());
+        mieteinheitenSuchfeld.setClearButtonVisible(true);
+
+        // Die Suche wird erst nach einer kurzen Eingabepause ausgelöst,
+        // damit nicht bei jedem einzelnen Tastendruck neu geladen wird.
+        mieteinheitenSuchfeld.setValueChangeMode(ValueChangeMode.LAZY);
+
+        mieteinheitenSuchfeld.addValueChangeListener(event -> wendeMieteinheitenSucheAn());
+    }
+
+    private Component erstelleMieteinheitenKarte() {
+        Div karte = new Div();
+        karte.addClassName("table-card");
+
+        HorizontalLayout kopfbereich = new HorizontalLayout();
+        kopfbereich.addClassName("detail-table-header");
+
+        H3 titel = new H3("Mieteinheiten");
+        titel.addClassName("card-title");
+
+        kopfbereich.add(titel, mieteinheitenSuchfeld);
+
+        karte.add(kopfbereich, mieteinheitenTabelle);
+
+        return karte;
+    }
+
+    private void konfiguriereMieteinheitenTabelle() {
+        mieteinheitenTabelle.addClassName("mieteinheiten-grid");
+        mieteinheitenTabelle.setAllRowsVisible(true);
+
+        mieteinheitenTabelle.addColumn(mieteinheit -> wertOderStrich(mieteinheit.getBezeichnung()))
+                .setHeader("Bezeichnung")
+                .setAutoWidth(true);
+
+        mieteinheitenTabelle.addColumn(mieteinheit ->
+                        mieteinheit.getTyp() == null ? "-" : mieteinheit.getTyp().getLabel()
+                )
+                .setHeader("Typ")
+                .setAutoWidth(true);
+
+        mieteinheitenTabelle.addColumn(mieteinheit ->
+                        formatiereFlaeche(mieteinheit.getGroesse())
+                )
+                .setHeader("Größe")
+                .setAutoWidth(true);
+
+        mieteinheitenTabelle.addColumn(mieteinheit -> wertOderStrich(mieteinheit.getStockwerk()))
+                .setHeader("Stockwerk")
+                .setAutoWidth(true);
+
+        mieteinheitenTabelle.addColumn(mieteinheit -> wertOderStrich(mieteinheit.getZimmerzahl()))
+                .setHeader("Zimmer")
+                .setAutoWidth(true);
+
+        mieteinheitenTabelle.addComponentColumn(this::erstelleMieteinheitStatusBadge)
+                .setHeader("Status")
+                .setAutoWidth(true);
+
+        mieteinheitenTabelle.addItemClickListener(event ->
+                getUI().ifPresent(ui -> ui.navigate(
+                        "immobilien/" + immobilieId + "/einheiten/" + event.getItem().getId() + "/details"
+                ))
+        );
+    }
+
+    private Component erstelleMieteinheitStatusBadge(Mieteinheit mieteinheit) {
+        if (mieteinheit.getStatus() == null) {
+            return StatusBadge.neutral("-");
+        }
+
+        Mieteinheitstatus status = mieteinheit.getStatus();
+
+        return switch (status) {
+            case FREI -> StatusBadge.success(status.getLabel());
+            case IN_RENOVIERUNG -> StatusBadge.warning(status.getLabel());
+            case VERMIETET -> StatusBadge.danger(status.getLabel());
+        };
+    }
+
+    private Component erstelleBelegungsKarte() {
+        Div karte = new Div();
+        karte.addClassNames("card", "belegung-card");
+
+        H3 titel = new H3("Leerstandsquote");
+        titel.addClassName("card-title");
+
+        long vermietet = mieteinheitService.zaehleVermieteteMieteinheiten(immobilieId);
+        long frei = mieteinheitService.zaehleFreieMieteinheiten(immobilieId);
+        long inRenovierung = mieteinheitService.zaehleMieteinheitenInRenovierung(immobilieId);
+        long leerstand = frei + inRenovierung;
+
+        double leerstandsquote = mieteinheitService.berechneLeerstandsquote(immobilieId);
+        String mittentext = String.format("%.1f%%", leerstandsquote);
+
+        Html canvas = new Html("""
+                <div style="width:100%; max-width:280px; margin:auto;">
+                    <canvas id="belegungChart"></canvas>
+                </div>
+                """);
+
+        karte.add(titel, canvas);
+
+        // charts js
+        karte.getElement().executeJs("""
+                const vermietet = Number($0);
+                const leerstand = Number($1);
+                const centerText = $2;
+
+                function renderBelegungChart() {
+                    const ctx = document.getElementById('belegungChart');
+
+                    if (window.belegungChartInstance) {
+                        window.belegungChartInstance.destroy();
+                    }
+
+                    window.belegungChartInstance = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Vermietet', 'Leerstand'],
+                            datasets: [{
+                                data: [vermietet, leerstand],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            cutout: '70%',
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+
+                                            if (total === 0) {
+                                                return context.label + ': 0%';
+                                            }
+
+                                            const value = context.raw;
+                                            const percent = ((value / total) * 100).toFixed(1);
+
+                                            return context.label + ': ' + value + ' Einheit(en), ' + percent + '%';
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        plugins: [{
+                            id: 'centerText',
+                            beforeDraw(chart) {
+                                const { width, height, ctx } = chart;
+                                ctx.restore();
+
+                                const fontSize = (height / 120).toFixed(2);
+                                ctx.font = `bold ${fontSize}em sans-serif`;
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'middle';
+
+                                const centerX = (chart.chartArea.left + chart.chartArea.right) / 2;
+                                const centerY = (chart.chartArea.top + chart.chartArea.bottom) / 2;
+
+                                ctx.fillText(centerText, centerX, centerY);
+                                ctx.save();
+                            }
+                        }]
+                    });
+                }
+
+                if (!window.Chart) {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+                    script.onload = () => renderBelegungChart();
+                    document.head.appendChild(script);
+                } else {
+                    renderBelegungChart();
+                }
+                """, vermietet, leerstand, mittentext);
+
+        return karte;
+    }
+
+    // Formatierungsmethoden für eine bessere Darstellung
+    // TODO eventuell noch auslagern
+    private String formatiereImmobilientyp(Immobilientyp typ) {
+        return typ == null ? "-" : typ.getLabel();
+    }
+
+    private String formatiereAdresse(Immobilie immobilie) {
         Adresse adresse = immobilie.getAdresse();
 
         if (adresse == null) {
             return "-";
         }
 
-        return adresse.getStrasse() + " "
-                + adresse.getHausnummer() + ", "
-                + adresse.getPlz() + " "
-                + adresse.getStadt();
-    }
+        String strasseUndHausnummer = (
+                wertOderLeer(adresse.getStrasse()) + " " + wertOderLeer(adresse.getHausnummer())
+        ).trim();
 
-    private String formatFlaeche(Integer flaeche) {
-        if (flaeche == null) {
+        String plzUndStadt = (
+                wertOderLeer(adresse.getPlz()) + " " + wertOderLeer(adresse.getStadt())
+        ).trim();
+
+        if (strasseUndHausnummer.isBlank() && plzUndStadt.isBlank()) {
             return "-";
         }
 
-        return flaeche + " m²";
+        if (strasseUndHausnummer.isBlank()) {
+            return plzUndStadt;
+        }
+
+        if (plzUndStadt.isBlank()) {
+            return strasseUndHausnummer;
+        }
+
+        return strasseUndHausnummer + ", " + plzUndStadt;
     }
 
-    private String valueOrDash(Object value) {
-        return value == null ? "-" : value.toString();
+    private String formatiereFlaeche(Integer flaeche) {
+        return flaeche == null ? "-" : flaeche + " m²";
+    }
+
+    private String formatiereBetrag(BigDecimal betrag) {
+        if (betrag == null) {
+            return "0,00 €";
+        }
+
+        NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.GERMANY);
+        return formatter.format(betrag);
+    }
+
+    private String wertOderStrich(Object wert) {
+        if (wert == null) {
+            return "-";
+        }
+
+        if (wert instanceof String text && text.isBlank()) {
+            return "-";
+        }
+
+        return wert.toString();
+    }
+
+    private String wertOderLeer(String wert) {
+        return wert == null ? "" : wert;
     }
 
     @Override
@@ -180,299 +539,5 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         return immobilie != null
                 ? "Immobilien > " + immobilie.getBezeichnung()
                 : "Immobilien > Detailansicht";
-    }
-
-    private Component createTopActions() {
-        HorizontalLayout actionRow = new HorizontalLayout();
-        actionRow.addClassName("detail-action-row");
-
-        Button backButton = new Button("Zurück", VaadinIcon.ARROW_LEFT.create());
-        backButton.addClassName("secondary-button");
-        backButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate(ImmobilienListView.class))
-        );
-
-        Button editButton = new Button("Bearbeiten", VaadinIcon.EDIT.create());
-        editButton.addClassName("secondary-button");
-        editButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilieId + "/bearbeiten"))
-        );
-
-        Button deleteButton = new Button("Löschen", VaadinIcon.TRASH.create());
-        deleteButton.addClassName("danger-button");
-        deleteButton.addClickListener(event -> {
-            ConfirmDeleteDialog dialog = new ConfirmDeleteDialog(
-                    "Immobilie löschen?",
-                    "Möchtest du die Immobilie \"" + immobilie.getBezeichnung() + "\" wirklich löschen?",
-                    () -> {
-                        try {
-                            immobilieService.loescheImmobilie(immobilieId);
-                            Notification.show("Immobilie wurde gelöscht.");
-                            getUI().ifPresent(ui -> ui.navigate("immobilien"));
-                        } catch (Exception ex) {
-                            Notification.show(ex.getMessage(), 4000, Notification.Position.MIDDLE);
-                        }
-                    }
-            );
-
-            dialog.open();
-        });
-
-        Button addUnitButton = new Button("Einheit hinzufügen", VaadinIcon.PLUS.create());
-        addUnitButton.addClassName("primary-button");
-        addUnitButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilieId + "/einheiten/neu"))
-        );
-
-        actionRow.add(backButton, editButton, deleteButton, addUnitButton);
-
-        return actionRow;
-    }
-
-    private Component createKpiSection() {
-        Div kpiGrid = new Div();
-        kpiGrid.addClassName("detail-kpi-grid");
-
-        long einheitenGesamt = mieteinheitService.zaehleMieteinheiten(immobilieId);
-        long frei = mieteinheitService.zaehleFreieMieteinheiten(immobilieId);
-        long inRenovierung = mieteinheitService.zaehleMieteinheitenInRenovierung(immobilieId);
-        long leerstand = frei + inRenovierung;
-        long vermietet = mieteinheitService.zaehleVermieteteMieteinheiten(immobilieId);
-
-        double leerstandsquote = mieteinheitService.berechneLeerstandsquote(immobilieId);
-
-        BigDecimal offeneZahlungenSumme = zahlungsEingangService.berechneOffeneZahlungenFuerImmobilie(immobilieId);
-
-        long offeneZahlungenAnzahl = zahlungsEingangService.zaehleOffeneZahlungenFuerImmobilie(immobilieId);
-
-        kpiGrid.add(
-                createKpiCard(
-                        "Einheiten Gesamt",
-                        String.valueOf(einheitenGesamt),
-                        vermietet + " vermietet, " + inRenovierung + " in Renovierung",
-                        "primary",
-                        VaadinIcon.BUILDING
-                ),
-                createKpiCard(
-                        "Leerstand",
-                        String.valueOf(leerstand),
-                        String.format("%.1f%% Leerstandsquote", leerstandsquote),
-                        "warning",
-                        VaadinIcon.HOME
-                ),
-                createKpiCard(
-                        "Offene Zahlungen",
-                        formatiereBetrag(offeneZahlungenSumme),
-                        offeneZahlungenAnzahl + " offene Buchung(en)",
-                        "danger",
-                        VaadinIcon.WARNING
-                )
-        );
-
-        return kpiGrid;
-    }
-
-    private Component createKpiCard(String title, String value, String subtitle, String type, VaadinIcon icon) {
-        Div card = new Div();
-        card.addClassNames("card", "detail-kpi-card");
-
-        Paragraph titleText = new Paragraph(title);
-        titleText.addClassName("kpi-title");
-
-        Span valueText = new Span(value);
-        valueText.addClassName("kpi-value");
-
-        Paragraph subtitleText = new Paragraph(subtitle);
-        subtitleText.addClassName("kpi-subtitle");
-
-        Div iconBox = new Div();
-        iconBox.addClassNames("kpi-icon-box", type);
-        iconBox.add(icon.create());
-
-        card.add(titleText, valueText, subtitleText, iconBox);
-
-        return card;
-    }
-
-    private void konfiguriereMieteinheitenSuchfeld() {
-        mieteinheitenSearchField.addClassName("detail-table-search");
-        mieteinheitenSearchField.setPlaceholder("Suchen...");
-        mieteinheitenSearchField.setPrefixComponent(VaadinIcon.SEARCH.create());
-        mieteinheitenSearchField.setClearButtonVisible(true);
-        mieteinheitenSearchField.setValueChangeMode(ValueChangeMode.LAZY);
-
-        mieteinheitenSearchField.addValueChangeListener(event -> wendeMieteinheitenSucheAn());
-    }
-
-    private Component createMieteinheitenCard() {
-        Div card = new Div();
-        card.addClassName("table-card");
-
-        HorizontalLayout header = new HorizontalLayout();
-        header.addClassName("detail-table-header");
-
-        H3 title = new H3("Mieteinheiten");
-        title.addClassName("card-title");
-
-        header.add(title, mieteinheitenSearchField);
-
-        configureMieteinheitenGrid();
-
-        card.add(header, mieteinheitenGrid);
-
-        return card;
-    }
-
-    private void configureMieteinheitenGrid() {
-        mieteinheitenGrid.removeAllColumns();
-
-        mieteinheitenGrid.addClassName("mieteinheiten-grid");
-        mieteinheitenGrid.setAllRowsVisible(true);
-
-        mieteinheitenGrid.addColumn(Mieteinheit::getBezeichnung)
-                .setHeader("Bezeichnung")
-                .setAutoWidth(true);
-
-        mieteinheitenGrid.addColumn(mieteinheit -> mieteinheit.getTyp().getLabel())
-                .setHeader("Typ")
-                .setAutoWidth(true);
-
-        mieteinheitenGrid.addColumn(mieteinheit -> valueOrDash(mieteinheit.getGroesse()) + " m²")
-                .setHeader("Größe")
-                .setAutoWidth(true);
-
-        mieteinheitenGrid.addColumn(mieteinheit -> valueOrDash(mieteinheit.getStockwerk()))
-                .setHeader("Stockwerk")
-                .setAutoWidth(true);
-
-        mieteinheitenGrid.addColumn(mieteinheit -> valueOrDash(mieteinheit.getZimmerzahl()))
-                .setHeader("Zimmer")
-                .setAutoWidth(true);
-
-        mieteinheitenGrid.addColumn(mieteinheit -> mieteinheit.getStatus().getLabel())
-                .setHeader("Status")
-                .setAutoWidth(true);
-
-        mieteinheitenGrid.addItemClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate(
-                        "immobilien/" + immobilieId + "/einheiten/" + event.getItem().getId() + "/details"
-                ))
-        );
-    }
-
-    private Component createBelegungCard() {
-        Div card = new Div();
-        card.addClassNames("card", "belegung-card");
-
-        H3 title = new H3("Leerstandsquote");
-        title.addClassName("card-title");
-
-        long vermietet = mieteinheitService.zaehleVermieteteMieteinheiten(immobilieId);
-        long frei = mieteinheitService.zaehleFreieMieteinheiten(immobilie.getId());
-        long inRenovierung = mieteinheitService.zaehleMieteinheitenInRenovierung(immobilie.getId());
-        long leerstand = frei + inRenovierung;
-        double leerstandsquote = mieteinheitService.berechneLeerstandsquote(immobilieId);
-
-        String centerText = String.format("%.1f%%", leerstandsquote);
-
-        Html canvas = new Html("""
-        <div style="width:100%; max-width:280px; margin:auto;">
-            <canvas id="belegungChart"></canvas>
-        </div>
-    """);
-
-        card.add(title, canvas);
-
-        card.getElement().executeJs("""
-        const vermietet = Number($0);
-        const leerstand = Number($1);
-        const centerText = $2;
-
-        function renderBelegungChart() {
-            const ctx = document.getElementById('belegungChart');
-
-            if (window.belegungChartInstance) {
-                window.belegungChartInstance.destroy();
-            }
-
-            window.belegungChartInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Vermietet', 'Leerstand'],
-                    datasets: [{
-                        data: [vermietet, leerstand],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    cutout: '70%',
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-    
-                                    if (total === 0) {
-                                        return context.label + ': 0%';
-                                    }
-
-                                    const value = context.raw;
-                                    const percent = ((value / total) * 100).toFixed(1);
-
-                                    return context.label + ': ' + value + ' Einheit(en), ' + percent + '%';
-                                }
-                            }
-                        }
-                    }
-                },
-                plugins: [{
-                    id: 'centerText',
-                    beforeDraw(chart) {
-                        const { width, height, ctx } = chart;
-                        ctx.restore();
-
-                        const fontSize = (height / 120).toFixed(2);
-                        ctx.font = `bold ${fontSize}em sans-serif`;
-                        ctx.textBaseline = 'middle';
-
-                        const text = centerText;
-   
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-    
-                        const centerX = (chart.chartArea.left + chart.chartArea.right) / 2;
-                        const centerY = (chart.chartArea.top + chart.chartArea.bottom) / 2;
-    
-                        ctx.fillText(text, centerX, centerY);
-                        ctx.save();
-                    }
-                }]
-            });
-        }
-
-        if (!window.Chart) {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-            script.onload = () => renderBelegungChart();
-            document.head.appendChild(script);
-        } else {
-            renderBelegungChart();
-        }
-    """, vermietet, leerstand, centerText);
-
-        return card;
-    }
-
-    private String formatiereBetrag(BigDecimal betrag) {
-        if (betrag == null) {
-            return "0,00 €";
-        }
-
-        NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.GERMANY);
-        return formatter.format(betrag);
     }
 }

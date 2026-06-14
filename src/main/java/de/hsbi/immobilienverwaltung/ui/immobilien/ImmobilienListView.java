@@ -22,6 +22,8 @@ import jakarta.annotation.security.PermitAll;
 import java.util.ArrayList;
 import java.util.List;
 
+// Die View zeigt Immobilien nicht direkt aus dem Repository an,
+// sondern nutzt den Service, damit Filter- und Berechnungslogik zentral bleibt.
 @Route(value = "immobilien", layout = MainLayout.class)
 @PermitAll
 public class ImmobilienListView extends Div implements HasPageHeader {
@@ -35,7 +37,7 @@ public class ImmobilienListView extends Div implements HasPageHeader {
     private final Select<String> vacancySelect = new Select<>();
     private final TextField locationField = new TextField();
 
-    // Attribute fuer Pagination
+    // Pagination Attribute
     private static final int IMMOBILIEN_PRO_SEITE = 12;
     private int aktuelleSeite = 0;
     private List<Immobilie> gefilterteImmobilien = new ArrayList<>();
@@ -50,43 +52,15 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         addClassName("page-content");
 
         add(
-                createProperty(),
-                createFilterCard(),
-                createTableCard()
+                immobilieAnlegen(),
+                erstelleFilterKarten(),
+                erstelleTabellenKarten()
         );
 
-        ladeImmobilien();
-    }
-
-    private void ladeImmobilien() {
         wendeFilterAn();
     }
 
-    private String formatAdresse(Immobilie immobilie) {
-        Adresse adresse = immobilie.getAdresse();
-
-        if (adresse == null) {
-            return "-";
-        }
-
-        return adresse.getStrasse() + " "
-                + adresse.getHausnummer() + ", "
-                + adresse.getPlz() + " "
-                + adresse.getStadt();
-    }
-
-    @Override
-    public String getPageTitle() {
-        return "Immobilienübersicht";
-    }
-
-    @Override
-    public String getPageSubtitle() {
-        return "Hier werden alle Immobilien angezeigt";
-    }
-
-    // Immobilie anlegen Button
-    private Div createProperty() {
+    private Div immobilieAnlegen() {
         Div createButton = new Div();
         createButton.addClassName("immobilien-action-bar");
 
@@ -102,8 +76,8 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         return createButton;
     }
 
-    // Filter mit Ort, Status, Einheiten und Leerstand
-    private Div createFilterCard() {
+    // Filter für Ort, Status, Einheiten und Leerstand
+    private Div erstelleFilterKarten() {
         Div filterCard = new Div();
         filterCard.addClassName("filter-card");
 
@@ -111,7 +85,9 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         locationField.setPlaceholder("Alle Orte");
         locationField.setPrefixComponent(VaadinIcon.MAP_MARKER.create());
         locationField.setClearButtonVisible(true);
-        locationField.setValueChangeMode(ValueChangeMode.LAZY); // Filter erst nach kurzer Pause anwenden
+        // Filter wird erst nach einer kurzen Eingabepause angewendet,
+        // damit nicht bei jedem einzelnen Tastendruck sofort neu gefiltert wird.
+        locationField.setValueChangeMode(ValueChangeMode.LAZY);
 
         typSelect.setLabel("Immobilientyp");
         typSelect.setItems(Immobilientyp.values());
@@ -137,6 +113,8 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         return filterCard;
     }
 
+    // Die eigentliche Filterlogik liegt im Service.
+    // Nach jeder Filteränderung wird wieder auf die erste Seite gewechselt.
     private void wendeFilterAn() {
         gefilterteImmobilien = immobilieService.findeGefilterteImmobilien(
                 locationField.getValue(),
@@ -149,24 +127,24 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         aktualisiereTabellenSeite();
     }
 
-    // Tabelle erstellen
-    private Div createTableCard() {
+    private Div erstelleTabellenKarten() {
         Div tableCard = new Div();
         tableCard.addClassName("table-card");
 
-        configureGrid();
+        konfiguriereImmobilienTabelle();
 
-        tableCard.add(grid, createPaginationBar());
+        tableCard.add(grid, erstelleSeitennavigation());
 
         return tableCard;
     }
 
-    private HorizontalLayout createPaginationBar() {
+    private HorizontalLayout erstelleSeitennavigation() {
         HorizontalLayout paginationBar = new HorizontalLayout();
         paginationBar.addClassName("pagination-bar");
 
         vorherigeSeiteButton.addClassName("secondary-button");
         naechsteSeiteButton.addClassName("secondary-button");
+        naechsteSeiteButton.setIconAfterText(true);
         seitenInfo.addClassName("pagination-info");
 
         vorherigeSeiteButton.addClickListener(event -> {
@@ -188,6 +166,8 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         return paginationBar;
     }
 
+    // Schneidet aus der gefilterten Gesamtliste nur die Einträge heraus,
+    // die auf der aktuellen Seite angezeigt werden sollen
     private void aktualisiereTabellenSeite() {
         if (gefilterteImmobilien.isEmpty()) {
             grid.setItems(new ArrayList<>());
@@ -199,6 +179,8 @@ public class ImmobilienListView extends Div implements HasPageHeader {
 
         int gesamtSeiten = berechneGesamtSeiten();
 
+        // Falls sich die Anzahl der Seiten durch Filtern oder Löschen verkleinert,
+        // wird die aktuelle Seite auf die letzte noch vorhandene Seite korrigiert.
         if (aktuelleSeite >= gesamtSeiten) {
             aktuelleSeite = gesamtSeiten - 1;
         }
@@ -216,11 +198,12 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         naechsteSeiteButton.setEnabled(aktuelleSeite < gesamtSeiten - 1);
     }
 
+    // Aufrunden ist notwendig, damit auch eine nicht vollständig gefüllte letzte Seite angezeigt wird.
     private int berechneGesamtSeiten() {
         return (int) Math.ceil((double) gefilterteImmobilien.size() / IMMOBILIEN_PRO_SEITE);
     }
 
-    private void configureGrid() {
+    private void konfiguriereImmobilienTabelle() {
         grid.addClassName("immobilien-grid");
         grid.setAllRowsVisible(true);
 
@@ -257,8 +240,33 @@ public class ImmobilienListView extends Div implements HasPageHeader {
             .setHeader("Offene Posten")
             .setAutoWidth(true);
 
+        // Beim Klick auf eine Tabellenzeile wird die ID der gewählten Immobilie
+        // in die URL geschrieben. Die DetailView liest diese ID später als Route-Parameter aus.
         grid.addItemClickListener(event ->
             getUI().ifPresent(ui -> ui.navigate("immobilien/" + event.getItem().getId()))
         );
+    }
+
+    private String formatAdresse(Immobilie immobilie) {
+        Adresse adresse = immobilie.getAdresse();
+
+        if (adresse == null) {
+            return "-";
+        }
+
+        return adresse.getStrasse() + " "
+                + adresse.getHausnummer() + ", "
+                + adresse.getPlz() + " "
+                + adresse.getStadt();
+    }
+
+    @Override
+    public String getPageTitle() {
+        return "Immobilienübersicht";
+    }
+
+    @Override
+    public String getPageSubtitle() {
+        return "Hier werden alle Immobilien angezeigt";
     }
 }

@@ -28,41 +28,44 @@ import jakarta.annotation.security.PermitAll;
 public class ImmobilieEditView extends Div implements HasPageHeader, BeforeEnterObserver {
 
     private final ImmobilieService immobilieService;
-    private Immobilie immobilie;
 
     private Long immobilieId;
+    private Immobilie immobilie;
 
-    private final TextField bezeichnungField = new TextField("Bezeichnung");
-    private final Select<Immobilientyp> typSelect = new Select<>();
-    private final IntegerField baujahrField = new IntegerField("Baujahr");
-    private final IntegerField gesamtflaecheField = new IntegerField("Gesamtfläche in m²");
+    private final TextField bezeichnungFeld = new TextField("Bezeichnung");
+    private final Select<Immobilientyp> immobilientypAuswahl = new Select<>();
+    private final IntegerField baujahrFeld = new IntegerField("Baujahr");
+    private final IntegerField gesamtflaecheFeld = new IntegerField("Gesamtfläche in m²");
 
-    private final TextField strasseField = new TextField("Straße");
-    private final TextField hausnummerField = new TextField("Hausnummer");
-    private final TextField plzField = new TextField("PLZ");
-    private final TextField ortField = new TextField("Ort");
+    private final TextField strasseFeld = new TextField("Straße");
+    private final TextField hausnummerFeld = new TextField("Hausnummer");
+    private final TextField plzFeld = new TextField("PLZ");
+    private final TextField ortFeld = new TextField("Ort");
 
-    private final Binder<Immobilie> immobilieBinder = new Binder<>(Immobilie.class);
-    private final Binder<Adresse> adresseBinder = new Binder<>(Adresse.class);
+    private final Binder<Immobilie> immobilieFormularBinder = new Binder<>(Immobilie.class);
+    private final Binder<Adresse> adresseFormularBinder = new Binder<>(Adresse.class);
 
     public ImmobilieEditView(ImmobilieService immobilieService) {
         this.immobilieService = immobilieService;
+
         addClassName("page-content");
         addClassName("immobilie-edit-view");
-        konfiguriereBinder();
-        add(createFormCard());
+
+        konfiguriereFormularBinder();
+
+        add(erstelleFormularKarte());
     }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        // Die ID stammt aus der URL.
+        // Beispiel: /immobilien/5/bearbeiten -> immobilieId = 5
         this.immobilieId = event.getRouteParameters()
                 .get("immobilieId")
                 .map(Long::valueOf)
                 .orElseThrow(() -> new IllegalArgumentException("Immobilie-ID fehlt."));
 
-        // Immobilie  laden
-        this.immobilie = immobilieService.findeImmobilieNachId(immobilieId)
-                .orElseThrow(() -> new IllegalArgumentException("Immobilie wurde nicht gefunden."));
+        ladeImmobilie();
 
         Adresse adresse = immobilie.getAdresse();
 
@@ -70,88 +73,121 @@ public class ImmobilieEditView extends Div implements HasPageHeader, BeforeEnter
             throw new IllegalStateException("Diese Immobilie hat keine Adresse.");
         }
 
-        immobilieBinder.readBean(immobilie);
-        adresseBinder.readBean(adresse);
+        // Die vorhandenen Daten werden in die Formularfelder geladen.
+        immobilieFormularBinder.readBean(immobilie);
+        adresseFormularBinder.readBean(adresse);
     }
 
-    private void konfiguriereBinder() {
-        immobilieBinder.forField(bezeichnungField)
+    private void ladeImmobilie() {
+        this.immobilie = immobilieService.findeImmobilieNachId(immobilieId)
+                .orElseThrow(() -> new IllegalArgumentException("Immobilie wurde nicht gefunden."));
+    }
+
+    // Immobilie und Adresse werden getrennt gebunden, weil Adresse als @Embedded
+    // in der Immobilie gespeichert wird und keine eigene Entity ist.
+    private void konfiguriereFormularBinder() {
+        immobilieFormularBinder.forField(bezeichnungFeld)
                 .asRequired("Bezeichnung darf nicht leer sein.")
                 .bind(Immobilie::getBezeichnung, Immobilie::setBezeichnung);
 
-        immobilieBinder.forField(typSelect)
+        immobilieFormularBinder.forField(immobilientypAuswahl)
                 .asRequired("Immobilientyp muss ausgewählt werden.")
                 .bind(Immobilie::getTyp, Immobilie::setTyp);
 
-        immobilieBinder.forField(baujahrField)
+        immobilieFormularBinder.forField(baujahrFeld)
                 .withValidator(
                         baujahr -> baujahr == null || baujahr >= 0,
                         "Baujahr darf nicht negativ sein."
                 )
                 .bind(Immobilie::getBaujahr, Immobilie::setBaujahr);
 
-        immobilieBinder.forField(gesamtflaecheField)
+        immobilieFormularBinder.forField(gesamtflaecheFeld)
                 .withValidator(
                         flaeche -> flaeche == null || flaeche >= 0,
                         "Fläche darf nicht negativ sein."
                 )
                 .bind(Immobilie::getFlaeche, Immobilie::setFlaeche);
 
-        adresseBinder.forField(strasseField)
+        adresseFormularBinder.forField(strasseFeld)
                 .asRequired("Straße darf nicht leer sein.")
                 .bind(Adresse::getStrasse, Adresse::setStrasse);
 
-        adresseBinder.forField(hausnummerField)
+        adresseFormularBinder.forField(hausnummerFeld)
                 .asRequired("Hausnummer darf nicht leer sein.")
                 .bind(Adresse::getHausnummer, Adresse::setHausnummer);
 
-        adresseBinder.forField(plzField)
+        adresseFormularBinder.forField(plzFeld)
                 .asRequired("PLZ darf nicht leer sein.")
                 .bind(Adresse::getPlz, Adresse::setPlz);
 
-        adresseBinder.forField(ortField)
+        adresseFormularBinder.forField(ortFeld)
                 .asRequired("Ort darf nicht leer sein.")
                 .bind(Adresse::getStadt, Adresse::setStadt);
     }
 
-    private Component createFormCard() {
-        Div card = new Div();
-        card.addClassName("form-card");
+    private Component erstelleFormularKarte() {
+        Div formularKarte = new Div();
+        formularKarte.addClassName("form-card");
 
-        Div header = new Div();
-        header.addClassName("form-card-header");
+        Div formularKopf = new Div();
+        formularKopf.addClassName("form-card-header");
 
-        H3 title = new H3("Immobilie bearbeiten");
-        title.addClassName("form-card-title");
+        H3 titel = new H3("Immobilie bearbeiten");
+        titel.addClassName("form-card-title");
 
-        header.add(title);
+        formularKopf.add(titel);
 
-        FormLayout form = new FormLayout();
-        form.addClassName("form-card-content");
+        FormLayout formular = new FormLayout();
+        formular.addClassName("form-card-content");
 
-        bezeichnungField.setPlaceholder("z. B. Parkresidenz Süd");
+        konfiguriereFormularFelder();
 
-        typSelect.setLabel("Immobilientyp");
-        typSelect.setItems(Immobilientyp.values());
-        typSelect.setItemLabelGenerator(Immobilientyp::getLabel);
-
-        baujahrField.setPlaceholder("z. B. 1998");
-
-        gesamtflaecheField.setPlaceholder("z. B. 850");
-
-        form.add(
-                bezeichnungField,
-                typSelect,
-                baujahrField,
-                gesamtflaecheField,
-                strasseField,
-                hausnummerField,
-                plzField,
-                ortField
+        formular.add(
+                bezeichnungFeld,
+                immobilientypAuswahl,
+                baujahrFeld,
+                gesamtflaecheFeld,
+                strasseFeld,
+                hausnummerFeld,
+                plzFeld,
+                ortFeld
         );
 
-        Div actions = new Div();
-        actions.addClassName("form-actions");
+        formularKarte.add(
+                formularKopf,
+                formular,
+                erstelleFormularAktionen()
+        );
+
+        return formularKarte;
+    }
+
+    private void konfiguriereFormularFelder() {
+        bezeichnungFeld.setPlaceholder("z. B. Parkresidenz Süd");
+
+        immobilientypAuswahl.setLabel("Immobilientyp");
+        immobilientypAuswahl.setItems(Immobilientyp.values());
+        immobilientypAuswahl.setItemLabelGenerator(Immobilientyp::getLabel);
+
+        baujahrFeld.setPlaceholder("z. B. 1998");
+        baujahrFeld.setMin(0);
+        baujahrFeld.setErrorMessage("Baujahr darf nicht negativ sein");
+
+        gesamtflaecheFeld.setPlaceholder("z. B. 850");
+        gesamtflaecheFeld.setMin(0);
+        gesamtflaecheFeld.setErrorMessage("Fläche darf nicht negativ sein");
+
+        bezeichnungFeld.setRequiredIndicatorVisible(true);
+        immobilientypAuswahl.setRequiredIndicatorVisible(true);
+        strasseFeld.setRequiredIndicatorVisible(true);
+        hausnummerFeld.setRequiredIndicatorVisible(true);
+        plzFeld.setRequiredIndicatorVisible(true);
+        ortFeld.setRequiredIndicatorVisible(true);
+    }
+
+    private Div erstelleFormularAktionen() {
+        Div aktionen = new Div();
+        aktionen.addClassName("form-actions");
 
         Button abbrechenButton = new Button("Abbrechen");
         abbrechenButton.addClassName("secondary-button");
@@ -163,17 +199,17 @@ public class ImmobilieEditView extends Div implements HasPageHeader, BeforeEnter
         speichernButton.addClassName("primary-button");
         speichernButton.addClickListener(event -> speichereAenderungen());
 
-        actions.add(abbrechenButton, speichernButton);
+        aktionen.add(abbrechenButton, speichernButton);
 
-        card.add(header, form, actions);
-
-        return card;
+        return aktionen;
     }
 
     private void speichereAenderungen() {
         try {
-            immobilieBinder.writeBean(immobilie);
-            adresseBinder.writeBean(immobilie.getAdresse());
+            // Der Binder validiert die Eingaben und schreibt sie erst danach
+            // zurück in die bereits geladene Immobilie und Adresse.
+            immobilieFormularBinder.writeBean(immobilie);
+            adresseFormularBinder.writeBean(immobilie.getAdresse());
 
             immobilieService.speichereImmobilie(immobilie);
 
@@ -182,10 +218,18 @@ public class ImmobilieEditView extends Div implements HasPageHeader, BeforeEnter
             getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilieId));
 
         } catch (ValidationException ex) {
-            Notification.show("Bitte überprüfe die Eingaben.", 4000, Notification.Position.BOTTOM_END);
+            Notification.show(
+                    "Bitte überprüfe die Eingaben.",
+                    4000,
+                    Notification.Position.BOTTOM_END
+            );
 
         } catch (Exception ex) {
-            Notification.show("Fehler beim Speichern: " + ex.getMessage(), 4000, Notification.Position.BOTTOM_END);
+            Notification.show(
+                    "Fehler beim Speichern: " + ex.getMessage(),
+                    4000,
+                    Notification.Position.BOTTOM_END
+            );
         }
     }
 
@@ -198,5 +242,4 @@ public class ImmobilieEditView extends Div implements HasPageHeader, BeforeEnter
     public String getPageSubtitle() {
         return "Immobilien > Immobilie bearbeiten";
     }
-
 }

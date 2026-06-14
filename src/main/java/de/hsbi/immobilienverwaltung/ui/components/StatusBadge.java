@@ -5,7 +5,7 @@ import com.vaadin.flow.component.html.Span;
 public class StatusBadge extends Span {
 
     public StatusBadge(String text, String type) {
-        setText("● " + text);
+        setText(text);
         addClassNames("status-badge", type);
     }
 

@@ -189,7 +189,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
         return userProfile;
     }
 
-    /*Aktualisiert den Titel im Header passend zur aktuellen Seite
+    /* Aktualisiert den Titel im Header passend zur aktuellen Seite
     Wird nach jeder Navigation automatisch aufgerufen */
     @Override
     public void afterNavigation(AfterNavigationEvent event) {

@@ -14,6 +14,7 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
 import de.hsbi.immobilienverwaltung.domain.Mietvertrag;
+import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
 import de.hsbi.immobilienverwaltung.domain.enums.Vertragsstatus;
 import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
 import de.hsbi.immobilienverwaltung.service.interfaces.MietvertragService;
@@ -43,7 +44,10 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
     private Mieteinheit mieteinheit;
     private List<Mietvertrag> mietvertraege = List.of();
 
-    public MieteinheitDetailView(MieteinheitService mieteinheitService, MietvertragService mietvertragService) {
+    public MieteinheitDetailView(
+            MieteinheitService mieteinheitService,
+            MietvertragService mietvertragService
+    ) {
         this.mieteinheitService = mieteinheitService;
         this.mietvertragService = mietvertragService;
 
@@ -63,96 +67,113 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
                 .map(Long::valueOf)
                 .orElseThrow(() -> new IllegalArgumentException("Mieteinheit-ID fehlt."));
 
-        this.mieteinheit = mieteinheitService.findeMieteinheitNachId(mieteinheitId)
-                .orElseThrow(() -> new IllegalArgumentException("Mieteinheit wurde nicht gefunden."));
-
-        this.mietvertraege = mietvertragService.findeMietvertraegeNachMieteinheit(mieteinheitId);
+        ladeMieteinheit();
+        ladeMietvertraege();
 
         removeAll();
 
         add(
-                createTopActions(),
-                createInfoGrid(),
-                createMietvertragHistorieCard()
+                erstelleAktionsleiste(),
+                erstelleInfoBereich(),
+                erstelleMietvertragHistorieKarte()
         );
     }
 
-    private Component createTopActions() {
-        HorizontalLayout actionRow = new HorizontalLayout();
-        actionRow.addClassName("detail-action-row");
+    private void ladeMieteinheit() {
+        this.mieteinheit = mieteinheitService.findeMieteinheitNachId(mieteinheitId)
+                .orElseThrow(() -> new IllegalArgumentException("Mieteinheit wurde nicht gefunden."));
+    }
 
-        Button backButton = new Button("Zurück", VaadinIcon.ARROW_LEFT.create());
-        backButton.addClassName("secondary-button");
-        backButton.addClickListener(event ->
+    private void ladeMietvertraege() {
+        this.mietvertraege = mietvertragService.findeMietvertraegeNachMieteinheit(mieteinheitId);
+    }
+
+    private Component erstelleAktionsleiste() {
+        HorizontalLayout aktionsleiste = new HorizontalLayout();
+        aktionsleiste.addClassName("detail-action-row");
+
+        Button zurueckButton = new Button("Zurück", VaadinIcon.ARROW_LEFT.create());
+        zurueckButton.addClassName("secondary-button");
+        zurueckButton.addClickListener(event ->
                 getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilieId))
         );
 
-        Button editButton = new Button("Bearbeiten", VaadinIcon.EDIT.create());
-        editButton.addClassName("primary-button");
-        editButton.addClickListener(event ->
+        Button bearbeitenButton = new Button("Bearbeiten", VaadinIcon.EDIT.create());
+        bearbeitenButton.addClassName("primary-button");
+        bearbeitenButton.addClickListener(event ->
                 getUI().ifPresent(ui -> ui.navigate(
                         "immobilien/" + immobilieId + "/einheiten/" + mieteinheitId + "/bearbeiten"
                 ))
         );
 
-        Button deleteButton = new Button("Löschen", VaadinIcon.TRASH.create());
-        deleteButton.addClassName("danger-button");
-        deleteButton.addClickListener(event -> {
-            ConfirmDeleteDialog dialog = new ConfirmDeleteDialog(
-                    "Mieteinheit löschen?",
-                    "Möchtest du die Mieteinheit \"" + mieteinheit.getBezeichnung() + "\" wirklich löschen?",
-                    () -> {
-                        try {
-                            mieteinheitService.loescheMieteinheit(mieteinheitId);
-                            Notification.show("Mieteinheit wurde gelöscht.");
-                            getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilieId));
-                        } catch (Exception ex) {
-                            Notification.show(ex.getMessage(), 4000, Notification.Position.MIDDLE);
-                        }
-                    }
-            );
+        Button loeschenButton = new Button("Löschen", VaadinIcon.TRASH.create());
+        loeschenButton.addClassName("danger-button");
+        loeschenButton.addClickListener(event -> oeffneLoeschDialog());
 
-            dialog.open();
-        });
+        aktionsleiste.add(zurueckButton, bearbeitenButton, loeschenButton);
 
-        actionRow.add(backButton, editButton, deleteButton);
-
-        return actionRow;
+        return aktionsleiste;
     }
 
-    private Component createInfoGrid() {
-        Div grid = new Div();
-        grid.addClassName("mieteinheit-info-grid");
+    private void oeffneLoeschDialog() {
+        ConfirmDeleteDialog dialog = new ConfirmDeleteDialog(
+                "Mieteinheit löschen?",
+                "Möchtest du die Mieteinheit \"" + mieteinheit.getBezeichnung() + "\" wirklich löschen?",
+                () -> {
+                    try {
+                        mieteinheitService.loescheMieteinheit(mieteinheitId);
+                        Notification.show("Mieteinheit wurde gelöscht.");
+                        getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilieId));
 
-        Div stammdatenCard = new Div();
-        stammdatenCard.addClassNames("card", "mieteinheit-info-card");
-
-        H3 stammdatenTitle = new H3("Stammdaten");
-        stammdatenTitle.addClassName("card-title");
-
-        stammdatenCard.add(
-                stammdatenTitle,
-                createInfoItem("Einheit-Nr.", valueOrDash(mieteinheit.getBezeichnung())),
-                createInfoItem("Typ", mieteinheit.getTyp() == null ? "-" : mieteinheit.getTyp().getLabel()),
-                createInfoItem("Größe", mieteinheit.getGroesse() == null ? "-" : mieteinheit.getGroesse() + " m²"),
-                createInfoItem("Stockwerk", valueOrDash(mieteinheit.getStockwerk())),
-                createInfoItem("Zimmeranzahl", valueOrDash(mieteinheit.getZimmerzahl())),
-                createStatusItem("Status", StatusBadge.neutral(mieteinheit.getStatus().getLabel()))
+                    } catch (Exception ex) {
+                        Notification.show(ex.getMessage(), 4000, Notification.Position.MIDDLE);
+                    }
+                }
         );
 
-        grid.add(stammdatenCard, createAktuellerMietvertragCard());
-
-        return grid;
+        dialog.open();
     }
 
-    private Component createAktuellerMietvertragCard() {
+    private Component erstelleInfoBereich() {
+        Div infoBereich = new Div();
+        infoBereich.addClassName("mieteinheit-info-grid");
+
+        infoBereich.add(
+                erstelleStammdatenKarte(),
+                erstelleAktuellerMietvertragKarte()
+        );
+
+        return infoBereich;
+    }
+
+    private Component erstelleStammdatenKarte() {
+        Div stammdatenKarte = new Div();
+        stammdatenKarte.addClassNames("card", "mieteinheit-info-card");
+
+        H3 titel = new H3("Stammdaten");
+        titel.addClassName("card-title");
+
+        stammdatenKarte.add(
+                titel,
+                erstelleInfoEintrag("Einheit-Nr.", wertOderStrich(mieteinheit.getBezeichnung())),
+                erstelleInfoEintrag("Typ", formatiereMieteinheitTyp()),
+                erstelleInfoEintrag("Größe", formatiereFlaeche(mieteinheit.getGroesse())),
+                erstelleInfoEintrag("Stockwerk", wertOderStrich(mieteinheit.getStockwerk())),
+                erstelleInfoEintrag("Zimmeranzahl", wertOderStrich(mieteinheit.getZimmerzahl())),
+                erstelleStatusEintrag("Status", erstelleMieteinheitStatusBadge())
+        );
+
+        return stammdatenKarte;
+    }
+
+    private Component erstelleAktuellerMietvertragKarte() {
         Mietvertrag aktuellerMietvertrag = findeAktuellenMietvertrag();
 
         if (aktuellerMietvertrag == null) {
-            return createKeinMietvertragCard();
+            return erstelleLeereMietvertragKarte();
         }
 
-        return createAktiverMietvertragCard(aktuellerMietvertrag);
+        return erstelleLaufenderMietvertragKarte(aktuellerMietvertrag);
     }
 
     private Mietvertrag findeAktuellenMietvertrag() {
@@ -162,109 +183,122 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
                 .orElse(null);
     }
 
-    private Component createKeinMietvertragCard() {
-        Div card = new Div();
-        card.addClassNames("card", "mieteinheit-info-card");
+    private Component erstelleLeereMietvertragKarte() {
+        Div karte = new Div();
+        karte.addClassNames("card", "mieteinheit-info-card");
 
-        H3 title = new H3("Aktueller Mietvertrag");
-        title.addClassName("card-title");
+        H3 titel = new H3("Aktueller Mietvertrag");
+        titel.addClassName("card-title");
 
         Paragraph text = new Paragraph(
                 "Für diese Mieteinheit ist aktuell kein laufender Mietvertrag vorhanden."
         );
         text.addClassName("card-subtitle");
 
-        Button createContractButton = new Button("Mietvertrag anlegen", VaadinIcon.PLUS.create());
-        createContractButton.addClassName("primary-button");
+        Button mietvertragAnlegenButton = new Button("Mietvertrag anlegen", VaadinIcon.PLUS.create());
+        mietvertragAnlegenButton.addClassName("primary-button");
 
-        // übergebe immobilieId und mieteinheitId damit diese autmatisch ausgewählt werden
-        createContractButton.addClickListener(event ->
+        // Die IDs werden als Query-Parameter übergeben, damit Immobilie und Mieteinheit
+        // im Mietvertragsformular direkt vorausgewählt werden können.
+        mietvertragAnlegenButton.addClickListener(event ->
                 getUI().ifPresent(ui -> ui.navigate(
                         "mietvertrag-anlegen?immobilieId=" + immobilieId + "&mieteinheitId=" + mieteinheitId
                 ))
         );
 
-        card.add(title, text, createContractButton);
+        karte.add(titel, text, mietvertragAnlegenButton);
 
-        return card;
+        return karte;
     }
 
-    private Component createAktiverMietvertragCard(Mietvertrag mietvertrag) {
-        Div card = new Div();
-        card.addClassNames("card", "mieteinheit-info-card");
+    private Component erstelleLaufenderMietvertragKarte(Mietvertrag mietvertrag) {
+        Div karte = new Div();
+        karte.addClassNames("card", "mieteinheit-info-card");
 
-        H3 title = new H3("Aktueller Mietvertrag");
-        title.addClassName("card-title");
+        H3 titel = new H3("Aktueller Mietvertrag");
+        titel.addClassName("card-title");
 
-        card.add(
-                title,
-                createInfoItem("Mieter", formatMieterName(mietvertrag)),
-                createStatusItem("Status", createVertragsStatusBadge(mietvertrag)),
-                createInfoItem("Vertragsbeginn", formatDatum(mietvertrag.getStartdatum())),
-                createInfoItem("Vertragsende", mietvertrag.getEnddatum() == null ? "unbefristet" : formatDatum(mietvertrag.getEnddatum())),
-                createInfoItem("Kaltmiete", formatEuro(mietvertrag.getKaltmiete())),
-                createInfoItem("Nebenkosten", formatEuro(mietvertrag.getNebenkosten())),
-                createInfoItem("Warmmiete", formatWarmmiete(mietvertrag))
+        karte.add(
+                titel,
+                erstelleInfoEintrag("Mieter", formatiereMieterName(mietvertrag)),
+                erstelleStatusEintrag("Status", erstelleVertragsStatusBadge(mietvertrag)),
+                erstelleInfoEintrag("Vertragsbeginn", formatiereDatum(mietvertrag.getStartdatum())),
+                erstelleInfoEintrag("Vertragsende", formatiereVertragsende(mietvertrag)),
+                erstelleInfoEintrag("Kaltmiete", formatiereEuro(mietvertrag.getKaltmiete())),
+                erstelleInfoEintrag("Nebenkosten", formatiereEuro(mietvertrag.getNebenkosten())),
+                erstelleInfoEintrag("Warmmiete", formatiereWarmmiete(mietvertrag))
         );
 
-        Button showContractButton = new Button("Mietvertrag anzeigen", VaadinIcon.EYE.create());
-        showContractButton.addClassName("secondary-button");
-        showContractButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate(MietvertragListView.class, String.valueOf(mietvertrag.getId())))
+        Button mietvertragAnzeigenButton = new Button("Mietvertrag anzeigen", VaadinIcon.EYE.create());
+        mietvertragAnzeigenButton.addClassName("secondary-button");
+        mietvertragAnzeigenButton.addClickListener(event ->
+                getUI().ifPresent(ui -> ui.navigate(
+                        MietvertragListView.class,
+                        String.valueOf(mietvertrag.getId())
+                ))
         );
 
-        card.add(showContractButton);
+        karte.add(mietvertragAnzeigenButton);
 
-        return card;
+        return karte;
     }
 
-    private Component createMietvertragHistorieCard() {
-        Div card = new Div();
-        card.addClassNames("card", "mieteinheit-contract-card");
+    private Component erstelleMietvertragHistorieKarte() {
+        Div karte = new Div();
+        karte.addClassNames("card", "mieteinheit-contract-card");
 
-        H3 title = new H3("Mietvertragshistorie");
-        title.addClassName("card-title");
+        H3 titel = new H3("Mietvertragshistorie");
+        titel.addClassName("card-title");
 
         List<Mietvertrag> historischeVertraege = mietvertraege.stream()
                 .filter(this::istHistorischerVertrag)
                 .sorted(this::vergleicheNachEnddatumAbsteigend)
                 .toList();
 
-        card.add(title);
+        karte.add(titel);
 
         if (historischeVertraege.isEmpty()) {
-            Paragraph text = new Paragraph("Bisher sind keine beendeten Mietverträge für diese Mieteinheit vorhanden.");
+            Paragraph text = new Paragraph(
+                    "Bisher sind keine beendeten Mietverträge für diese Mieteinheit vorhanden."
+            );
             text.addClassName("card-subtitle");
-            card.add(text);
-            return card;
+            karte.add(text);
+            return karte;
         }
 
-        historischeVertraege.forEach(mietvertrag -> card.add(createHistorieEintrag(mietvertrag)));
+        historischeVertraege.forEach(mietvertrag ->
+                karte.add(erstelleHistorieEintrag(mietvertrag))
+        );
 
-        return card;
+        return karte;
     }
 
-    private Component createHistorieEintrag(Mietvertrag mietvertrag) {
+    private Component erstelleHistorieEintrag(Mietvertrag mietvertrag) {
         Div eintrag = new Div();
         eintrag.addClassName("contract-history-row");
 
-        Button showButton = new Button("Anzeigen", VaadinIcon.EYE.create());
-        showButton.addClassName("secondary-button");
-        showButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate(MietvertragListView.class, String.valueOf(mietvertrag.getId())))
+        Button anzeigenButton = new Button("Anzeigen", VaadinIcon.EYE.create());
+        anzeigenButton.addClassName("secondary-button");
+        anzeigenButton.addClickListener(event ->
+                getUI().ifPresent(ui -> ui.navigate(
+                        MietvertragListView.class,
+                        String.valueOf(mietvertrag.getId())
+                ))
         );
 
         eintrag.add(
-                createInfoItem("Mieter", formatMieterName(mietvertrag)),
-                createInfoItem("Zeitraum", formatZeitraum(mietvertrag)),
-                createInfoItem("Warmmiete", formatWarmmiete(mietvertrag)),
-                createStatusItem("Status", createVertragsStatusBadge(mietvertrag)),
-                showButton
+                erstelleInfoEintrag("Mieter", formatiereMieterName(mietvertrag)),
+                erstelleInfoEintrag("Zeitraum", formatiereZeitraum(mietvertrag)),
+                erstelleInfoEintrag("Warmmiete", formatiereWarmmiete(mietvertrag)),
+                erstelleStatusEintrag("Status", erstelleVertragsStatusBadge(mietvertrag)),
+                anzeigenButton
         );
 
         return eintrag;
     }
 
+    // Ein gekündigter Vertrag gilt noch als laufend, solange sein Enddatum
+    // nicht in der Vergangenheit liegt.
     private boolean istLaufenderVertrag(Mietvertrag mietvertrag) {
         if (mietvertrag == null || mietvertrag.getStatus() == null) {
             return false;
@@ -281,6 +315,8 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         );
     }
 
+    // Historisch sind beendete Verträge oder gekündigte Verträge,
+    // deren Enddatum bereits überschritten wurde.
     private boolean istHistorischerVertrag(Mietvertrag mietvertrag) {
         if (mietvertrag == null || mietvertrag.getStatus() == null) {
             return false;
@@ -294,109 +330,124 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         );
     }
 
-    private int vergleicheNachEnddatumAbsteigend(Mietvertrag a, Mietvertrag b) {
-        LocalDate aEnde = a.getEnddatum();
-        LocalDate bEnde = b.getEnddatum();
+    // Die neuesten historischen Verträge sollen oben stehen.
+    private int vergleicheNachEnddatumAbsteigend(Mietvertrag ersterVertrag, Mietvertrag zweiterVertrag) {
+        LocalDate erstesEnddatum = ersterVertrag.getEnddatum();
+        LocalDate zweitesEnddatum = zweiterVertrag.getEnddatum();
 
-        if (aEnde == null && bEnde == null) {
+        if (erstesEnddatum == null && zweitesEnddatum == null) {
             return 0;
         }
 
-        if (aEnde == null) {
+        if (erstesEnddatum == null) {
             return 1;
         }
 
-        if (bEnde == null) {
+        if (zweitesEnddatum == null) {
             return -1;
         }
 
-        return bEnde.compareTo(aEnde);
+        return zweitesEnddatum.compareTo(erstesEnddatum);
     }
 
-    private Component createInfoItem(String label, String value) {
-        Div item = new Div();
-        item.addClassName("info-item");
+    private Component erstelleInfoEintrag(String beschriftung, String wert) {
+        Div eintrag = new Div();
+        eintrag.addClassName("info-item");
 
-        Span labelText = new Span(label);
-        labelText.addClassName("info-label");
+        Span beschriftungText = new Span(beschriftung);
+        beschriftungText.addClassName("info-label");
 
-        Span valueText = new Span(value);
-        valueText.addClassName("info-value");
+        Span wertText = new Span(wert);
+        wertText.addClassName("info-value");
 
-        item.add(labelText, valueText);
+        eintrag.add(beschriftungText, wertText);
 
-        return item;
+        return eintrag;
     }
 
-    private Component createStatusItem(String label, Component statusBadge) {
-        Div item = new Div();
-        item.addClassName("info-item");
+    private Component erstelleStatusEintrag(String beschriftung, Component statusBadge) {
+        Div eintrag = new Div();
+        eintrag.addClassName("info-item");
 
-        Span labelText = new Span(label);
-        labelText.addClassName("info-label");
+        Span beschriftungText = new Span(beschriftung);
+        beschriftungText.addClassName("info-label");
 
-        item.add(labelText, statusBadge);
+        eintrag.add(beschriftungText, statusBadge);
 
-        return item;
+        return eintrag;
     }
 
-    private Component createVertragsStatusBadge(Mietvertrag mietvertrag) {
-        String status = formatVertragsstatus(mietvertrag);
+    private Component erstelleMieteinheitStatusBadge() {
+        if (mieteinheit == null || mieteinheit.getStatus() == null) {
+            return StatusBadge.neutral("-");
+        }
 
-        Span badge = new Span(status);
-        badge.addClassNames("status-badge", getVertragsStatusStyle(mietvertrag));
+        Mieteinheitstatus status = mieteinheit.getStatus();
 
-        return badge;
+        return switch (status) {
+            case FREI -> StatusBadge.success(status.getLabel());
+            case IN_RENOVIERUNG -> StatusBadge.warning(status.getLabel());
+            case VERMIETET -> StatusBadge.danger(status.getLabel());
+        };
     }
 
-    private String formatVertragsstatus(Mietvertrag mietvertrag) {
+    private Component erstelleVertragsStatusBadge(Mietvertrag mietvertrag) {
         if (mietvertrag == null || mietvertrag.getStatus() == null) {
+            return StatusBadge.neutral("-");
+        }
+
+        if (mietvertrag.getStatus() == Vertragsstatus.AKTIV) {
+            return StatusBadge.success("Aktiv");
+        }
+
+        if (mietvertrag.getStatus() == Vertragsstatus.GEKUENDIGT && istLaufenderVertrag(mietvertrag)) {
+            return StatusBadge.warning("Läuft aus");
+        }
+
+        return StatusBadge.neutral("Beendet");
+    }
+
+    private String formatiereMieteinheitTyp() {
+        if (mieteinheit == null || mieteinheit.getTyp() == null) {
             return "-";
         }
 
-        if (mietvertrag.getStatus() == Vertragsstatus.AKTIV) {
-            return "Aktiv";
-        }
-
-        if (mietvertrag.getStatus() == Vertragsstatus.GEKUENDIGT && istLaufenderVertrag(mietvertrag)) {
-            return "Läuft aus";
-        }
-
-        return "Beendet";
+        return mieteinheit.getTyp().getLabel();
     }
 
-    private String getVertragsStatusStyle(Mietvertrag mietvertrag) {
-        if (mietvertrag == null || mietvertrag.getStatus() == null) {
-            return "neutral";
-        }
-
-        if (mietvertrag.getStatus() == Vertragsstatus.AKTIV) {
-            return "success";
-        }
-
-        if (mietvertrag.getStatus() == Vertragsstatus.GEKUENDIGT && istLaufenderVertrag(mietvertrag)) {
-            return "warning";
-        }
-
-        return "neutral";
-    }
-
-    private String formatMieterName(Mietvertrag mietvertrag) {
+    private String formatiereMieterName(Mietvertrag mietvertrag) {
         if (mietvertrag == null || mietvertrag.getMieter() == null) {
             return "-";
         }
 
-        String vorname = mietvertrag.getMieter().getVorname() == null ? "" : mietvertrag.getMieter().getVorname();
-        String nachname = mietvertrag.getMieter().getNachname() == null ? "" : mietvertrag.getMieter().getNachname();
+        String vorname = mietvertrag.getMieter().getVorname() == null
+                ? ""
+                : mietvertrag.getMieter().getVorname();
 
-        return (vorname + " " + nachname).trim();
+        String nachname = mietvertrag.getMieter().getNachname() == null
+                ? ""
+                : mietvertrag.getMieter().getNachname();
+
+        String name = (vorname + " " + nachname).trim();
+
+        return name.isBlank() ? "-" : name;
     }
 
-    private String formatZeitraum(Mietvertrag mietvertrag) {
-        return formatDatum(mietvertrag.getStartdatum()) + " - " + formatDatum(mietvertrag.getEnddatum());
+    private String formatiereZeitraum(Mietvertrag mietvertrag) {
+        return formatiereDatum(mietvertrag.getStartdatum())
+                + " - "
+                + formatiereDatum(mietvertrag.getEnddatum());
     }
 
-    private String formatDatum(LocalDate datum) {
+    private String formatiereVertragsende(Mietvertrag mietvertrag) {
+        if (mietvertrag.getEnddatum() == null) {
+            return "unbefristet";
+        }
+
+        return formatiereDatum(mietvertrag.getEnddatum());
+    }
+
+    private String formatiereDatum(LocalDate datum) {
         if (datum == null) {
             return "-";
         }
@@ -404,20 +455,36 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         return datum.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
     }
 
-    private String formatWarmmiete(Mietvertrag mietvertrag) {
+    private String formatiereFlaeche(Integer flaeche) {
+        if (flaeche == null) {
+            return "-";
+        }
+
+        return flaeche + " m²";
+    }
+
+    private String formatiereWarmmiete(Mietvertrag mietvertrag) {
         double kaltmiete = mietvertrag.getKaltmiete() == null ? 0 : mietvertrag.getKaltmiete();
         double nebenkosten = mietvertrag.getNebenkosten() == null ? 0 : mietvertrag.getNebenkosten();
 
-        return formatEuro(kaltmiete + nebenkosten);
+        return formatiereEuro(kaltmiete + nebenkosten);
     }
 
-    private String formatEuro(Double betrag) {
+    private String formatiereEuro(Double betrag) {
         double wert = betrag == null ? 0 : betrag;
         return NumberFormat.getCurrencyInstance(Locale.GERMANY).format(wert);
     }
 
-    private String valueOrDash(Object value) {
-        return value == null ? "-" : value.toString();
+    private String wertOderStrich(Object wert) {
+        if (wert == null) {
+            return "-";
+        }
+
+        if (wert instanceof String text && text.isBlank()) {
+            return "-";
+        }
+
+        return wert.toString();
     }
 
     @Override
