@@ -105,11 +105,12 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
 
         ausgabeKategorieField = new ComboBox<>("Kategorie");
         ausgabeKategorieField.setItems(Ausgabenkategorie.values());
-        ausgabeKategorieField.setItemLabelGenerator(this::formatiereAusgabenkategorie);
+        ausgabeKategorieField.setItemLabelGenerator(Ausgabenkategorie::getLabel);
         ausgabeKategorieField.setWidthFull();
 
         zahlungseingangTypField = new ComboBox<>("Zahlungstyp");
         zahlungseingangTypField.setItems(Zahlungseingangtyp.values());
+        zahlungseingangTypField.setItemLabelGenerator(Zahlungseingangtyp::getLabel);
         zahlungseingangTypField.setWidthFull();
 
         statusField = new ComboBox<>("Status");
@@ -297,20 +298,6 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         }
     }
 
-    private String formatiereAusgabenkategorie(Ausgabenkategorie kategorie) {
-        if (kategorie == null) {
-            return "";
-        }
-
-        return switch (kategorie) {
-            case INSTANDHALTUNG -> "Instandhaltung";
-            case VERWALTUNG -> "Verwaltungskosten";
-            case REPARATUR -> "Reparatur / Handwerker";
-            case VERSICHERUNG -> "Versicherung";
-            case SONSTIGES -> "Sonstiges";
-            default -> kategorie.name();
-        };
-    }
 
     private Div createCard(String title) {
         Div card = new Div();
