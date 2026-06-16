@@ -76,6 +76,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
         setSpacing(false);
 
         createFields();
+        aktualisiereKategorieFelder();
 
         add(createContent());
     }
