@@ -1,12 +1,9 @@
 package de.hsbi.immobilienverwaltung.ui.finanzen;
 
-import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
@@ -14,8 +11,6 @@ import de.hsbi.immobilienverwaltung.domain.Ausgabe;
 import de.hsbi.immobilienverwaltung.domain.Zahlungseingang;
 import de.hsbi.immobilienverwaltung.service.interfaces.AusgabeService;
 import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
-import de.hsbi.immobilienverwaltung.ui.components.ConfirmDeleteDialog;
-import de.hsbi.immobilienverwaltung.ui.immobilien.ImmobilienListView;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import com.vaadin.flow.component.html.Span;
@@ -330,46 +325,6 @@ public class BuchungListView extends Div implements HasPageHeader {
 
         NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.GERMANY);
         return formatter.format(betrag);
-    }
-
-    private Component createActionButtons(BuchungRow buchung) {
-        HorizontalLayout actions = new HorizontalLayout();
-        actions.setSpacing(true);
-        actions.setPadding(false);
-
-        Button anzeigenButton = new Button("Anzeigen", VaadinIcon.EYE.create());
-        Button bearbeitenButton = new Button("Bearbeiten", VaadinIcon.EDIT.create());
-        Button loeschenButton = new Button("Löschen", VaadinIcon.TRASH.create());
-
-        anzeigenButton.addClickListener(event ->
-                Notification.show("Details sind noch nicht verbunden.")
-        );
-
-        bearbeitenButton.addClickListener(event ->
-                Notification.show("Bearbeiten ist noch nicht verbunden.")
-        );
-
-        loeschenButton.addClickListener(event -> {
-            ConfirmDeleteDialog dialog = new ConfirmDeleteDialog(
-                    "Buchung löschen?",
-                    "Möchtest du die Buchung \"" + buchung.beschreibung() + "\" wirklich löschen?",
-                    () -> {
-                        if ("Ausgabe".equals(buchung.typ())) {
-                            ausgabeService.loescheAusgabe(buchung.id());
-                            aktualisiereGrid();
-                            Notification.show("Ausgabe gelöscht: " + buchung.beschreibung());
-                        } else if ("Einnahme".equals(buchung.typ())) {
-                            zahlungsEingangService.loescheZahlungseingang(buchung.id());
-                            aktualisiereGrid();
-                            Notification.show("Zahlungseingang gelöscht: " + buchung.beschreibung());
-                        }
-                    }
-            );
-            dialog.open();
-        });
-
-        actions.add(anzeigenButton, bearbeitenButton, loeschenButton);
-        return actions;
     }
 
     private record BuchungRow(
