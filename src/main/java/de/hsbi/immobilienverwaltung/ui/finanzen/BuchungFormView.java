@@ -136,21 +136,27 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
         mieteinheitField.setWidthFull();
         immobilieField.addValueChangeListener(event -> {
             Immobilie selectedImmobilie = event.getValue();
-
             mieteinheitField.clear();
-
+            mieterVertragField.clear();
             if (selectedImmobilie != null) {
                 mieteinheitField.setItems(
-                        mieteinheitService.findeMieteinheitenNachImmobilie(selectedImmobilie.getId())
+                        mieteinheitService.findeMieteinheitenNachImmobilie(
+                                selectedImmobilie.getId()
+                        )
                 );
             }
+            aktualisiereMietvertraege();
         });
 
         mieterVertragField = new ComboBox<>("Mieter / Vertrag");
-        mieterVertragField.setItems(mietvertragService.findeAlleMietvertraege());
         mieterVertragField.setItemLabelGenerator(this::formatiereMietvertrag);
         mieterVertragField.setAllowCustomValue(false);
         mieterVertragField.setWidthFull();
+
+        mieteinheitField.addValueChangeListener(event -> {
+            mieterVertragField.clear();
+            aktualisiereMietvertraege();
+        });
     }
 
     private Component createContent() {
@@ -490,7 +496,39 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
 
         return card;
     }
+    //Filtert alle Mietvertraege die zur ausgewaehlten Immobilie ODER Mieteinheit gehoeren
+    private void aktualisiereMietvertraege() {
+        Immobilie immobilie = immobilieField.getValue();
+        Mieteinheit mieteinheit = mieteinheitField.getValue();
+        mieterVertragField.clear();
+        mieterVertragField.setItems(
+                mietvertragService.findeAlleMietvertraege()
+                        .stream()
+                        .filter(vertrag -> vertrag.getMieteinheit() != null)
+                        .filter(vertrag -> {
+                            Mieteinheit vertragMieteinheit =
+                                    vertrag.getMieteinheit();
+                            if (mieteinheit != null) {
+                                return mieteinheit.getId() != null
+                                        && mieteinheit.getId().equals(
+                                        vertragMieteinheit.getId()
+                                );
+                            }
+                            if (immobilie != null) {
+                                return vertragMieteinheit.getImmobilie() != null
+                                        && immobilie.getId() != null
+                                        && immobilie.getId().equals(
+                                        vertragMieteinheit
+                                                .getImmobilie()
+                                                .getId()
+                                );
+                            }
+                            return true;
+                        })
+                        .toList());
+    }
 
+    //Gibt Kategorien anhand von ausgewaehlte Buchungstyp
     private void aktualisiereKategorieField() {
         kategorieField.clear();
         if ("Ausgabe".equals(buchungstypGroup.getValue())) {
