@@ -21,6 +21,7 @@ import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.domain.Ausgabe;
 import de.hsbi.immobilienverwaltung.domain.Immobilie;
 import de.hsbi.immobilienverwaltung.domain.enums.Ausgabenkategorie;
+import de.hsbi.immobilienverwaltung.domain.enums.Zahlungseingangtyp;
 import de.hsbi.immobilienverwaltung.service.interfaces.AusgabeService;
 import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
@@ -29,7 +30,6 @@ import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
 import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
 import de.hsbi.immobilienverwaltung.domain.Mietvertrag;
 import de.hsbi.immobilienverwaltung.domain.Zahlungseingang;
-import de.hsbi.immobilienverwaltung.domain.enums.Zahlungseingangtyp;
 import de.hsbi.immobilienverwaltung.service.interfaces.MietvertragService;
 import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
 import jakarta.annotation.security.PermitAll;
@@ -51,7 +51,8 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
     private DatePicker buchungsdatumField;
     private DatePicker faelligkeitsdatumField;
 
-    private ComboBox<Enum<?>> kategorieField;
+    private ComboBox<Ausgabenkategorie> kategorieField;
+    private ComboBox<Zahlungseingangtyp> zahlungseingangTypField;
     private TextArea beschreibungField;
 
     private ComboBox<Immobilie> immobilieField;
@@ -104,19 +105,20 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
         faelligkeitsdatumField.setWidthFull();
 
         kategorieField = new ComboBox<>("Kategorie");
-        kategorieField.setItemLabelGenerator(kategorie -> {
-            if (kategorie instanceof Ausgabenkategorie ausgabenkategorie) {
-                return ausgabenkategorie.getLabel();
-            }
-            if (kategorie instanceof Zahlungseingangtyp zahlungseingangtyp) {
-                return zahlungseingangtyp.getLabel();
-            }
-            return "";
-        });
+        kategorieField.setItems(Ausgabenkategorie.values());
+        kategorieField.setItemLabelGenerator(Ausgabenkategorie::getLabel);
+        kategorieField.setValue(Ausgabenkategorie.SONSTIGES);
         kategorieField.setAllowCustomValue(false);
         kategorieField.setWidthFull();
         kategorieField.setRequiredIndicatorVisible(true);
-        aktualisiereKategorieField();
+
+        zahlungseingangTypField = new ComboBox<>("Zahlungstyp");
+        zahlungseingangTypField.setItems(Zahlungseingangtyp.values());
+        zahlungseingangTypField.setItemLabelGenerator(Zahlungseingangtyp::getLabel);
+        zahlungseingangTypField.setValue(Zahlungseingangtyp.SONSTIGES);
+        zahlungseingangTypField.setAllowCustomValue(false);
+        zahlungseingangTypField.setWidthFull();
+        zahlungseingangTypField.setRequiredIndicatorVisible(true);
 
         beschreibungField = new TextArea("Beschreibung / Notiz");
         beschreibungField.setPlaceholder("Details zur Buchung eingeben...");
@@ -224,19 +226,18 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
             buchungstypGroup.setValue("Einnahme");
             incomeCard.addClassName("selected");
             expenseCard.removeClassName("selected");
-
+            aktualisiereKategorieFelder();
             mieterVertragField.setEnabled(true);
-            aktualisiereKategorieField();
+
         });
 
         expenseCard.addClickListener(event -> {
             buchungstypGroup.setValue("Ausgabe");
             expenseCard.addClassName("selected");
             incomeCard.removeClassName("selected");
-
+            aktualisiereKategorieFelder();
             mieterVertragField.clear();
             mieterVertragField.setEnabled(false);
-            aktualisiereKategorieField();
         });
 
         options.add(incomeCard, expenseCard);
@@ -244,6 +245,13 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
 
         return card;
     }
+    private void aktualisiereKategorieFelder() {
+        boolean istAusgabe = "Ausgabe".equals(buchungstypGroup.getValue());
+
+        kategorieField.setVisible(istAusgabe);
+        zahlungseingangTypField.setVisible(!istAusgabe);
+    }
+
 
     private Div createBookingTypeCard(
             String title,
@@ -301,7 +309,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
         HorizontalLayout row2 = new HorizontalLayout();
         row2.setWidthFull();
         row2.addClassName("form-row");
-        row2.add(kategorieField, faelligkeitsdatumField);
+        row2.add(kategorieField,zahlungseingangTypField , faelligkeitsdatumField);
 
         card.add(row1, row2, beschreibungField);
 
@@ -381,12 +389,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
                 if ("Ausgabe".equals(buchungstypGroup.getValue())) {
                     Ausgabe ausgabe = new Ausgabe();
 
-                    Enum<?> ausgewaehlteKategorie = kategorieField.getValue();
-                    if (!(ausgewaehlteKategorie instanceof Ausgabenkategorie ausgabenkategorie)) {
-                        throw new IllegalArgumentException("Bitte eine gültige Ausgabenkategorie auswählen.");
-                    }
-                    ausgabe.setKategorie(ausgabenkategorie);
-                    ausgabe.setKategorie(ausgabenkategorie);
+                    ausgabe.setKategorie(kategorieField.getValue());
                     ausgabe.setBetrag(betragField.getValue());
                     ausgabe.setDatum(buchungsdatumField.getValue());
                     ausgabe.setFaelligkeitsdatum(faelligkeitsdatumField.getValue());
@@ -401,11 +404,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
                 } else if ("Einnahme".equals(buchungstypGroup.getValue())) {
                     Zahlungseingang zahlungseingang = new Zahlungseingang();
 
-                    Enum<?> ausgewaehlteKategorie = kategorieField.getValue();
-                    if (!(ausgewaehlteKategorie instanceof Zahlungseingangtyp zahlungseingangtyp)) {
-                        throw new IllegalArgumentException("Bitte eine gültige Einnahmenkategorie auswählen.");
-                    }
-                    zahlungseingang.setTyp(zahlungseingangtyp);
+                    zahlungseingang.setTyp(zahlungseingangTypField.getValue());
                     zahlungseingang.setBetrag(betragField.getValue());
                     zahlungseingang.setZahlungsdatum(buchungsdatumField.getValue());
                     zahlungseingang.setLeistungsmonat(faelligkeitsdatumField.getValue());
@@ -449,21 +448,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
 
         return card;
     }
-    private String formatiereAusgabenkategorie(Ausgabenkategorie kategorie) {
-        if (kategorie == null) {
-            return "";
-        }
 
-        return switch (kategorie) {
-            case INSTANDHALTUNG -> "Instandhaltung";
-            case VERWALTUNG -> "Verwaltungskosten";
-            case REPARATUR -> "Reparatur / Handwerker";
-            case VERSICHERUNG -> "Versicherung";
-            case SONSTIGES -> "Sonstiges";
-            default -> kategorie.name();
-            //default just to make it flexible if it changes
-        };
-    }
     // Formatiert einen Mietvertrag für die Anzeige in der ComboBox.
 // Ohne diese Methode würde Vaadin nur die technische Objektadresse anzeigen.
 // Beispiel: "Max Mustermann - Wohnung 1A"
