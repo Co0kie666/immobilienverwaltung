@@ -7,13 +7,13 @@ public enum Ausgabenkategorie {
     INTERNET("Internet"),
 
     VERSICHERUNG("Versicherung"),
-    REPARATUR("Reparatur"),
+    REPARATUR("Reparatur / Handwerker"),
     INSTANDHALTUNG("Instandhaltung"),
     RENOVIERUNG("Renovierung"),
     REINIGUNG("Reinigung"),
-    GRUNDSTEUER ("Grundsteuer"),
+    GRUNDSTEUER("Grundsteuer"),
     MUELLABFUHR("Müllabfuhr"),
-    VERWALTUNG("Verwaltung"),
+    VERWALTUNG("Verwaltungskosten"),
     SONSTIGES("Sonstiges");
 
     private final String label;
@@ -26,4 +26,3 @@ public enum Ausgabenkategorie {
         return label;
     }
 }
-
