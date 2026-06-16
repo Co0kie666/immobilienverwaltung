@@ -15,6 +15,7 @@ import de.hsbi.immobilienverwaltung.domain.Zahlungseingang;
 import de.hsbi.immobilienverwaltung.service.interfaces.AusgabeService;
 import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
 import de.hsbi.immobilienverwaltung.ui.components.ConfirmDeleteDialog;
+import de.hsbi.immobilienverwaltung.ui.immobilien.ImmobilienListView;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import com.vaadin.flow.component.html.Span;
@@ -68,6 +69,18 @@ public class BuchungListView extends Div implements HasPageHeader {
     private Div createActionBar() {
         Div actionBar = new Div();
         actionBar.addClassName("immobilien-action-bar");
+        actionBar.getStyle()
+                .set("display", "flex")
+                .set("gap", "16px")
+                .set("align-items", "center")
+                .set("margin-bottom", "20px")
+                .set("padding", "8px 0");
+
+        Button zurueckButton = new Button("Zurück", VaadinIcon.ARROW_LEFT.create());
+        zurueckButton.addClassName("secondary-button");
+        zurueckButton.addClickListener(event ->
+                getUI().ifPresent(ui -> ui.navigate(FinanzDashboardView.class))
+        );
 
         Button newButton = new Button("Neue Buchung", VaadinIcon.PLUS.create());
         newButton.addClassName("primary-button");
@@ -76,7 +89,7 @@ public class BuchungListView extends Div implements HasPageHeader {
                 getUI().ifPresent(ui -> ui.navigate(BuchungFormView.class))
         );
 
-        actionBar.add(newButton);
+        actionBar.add(zurueckButton, newButton);
 
         return actionBar;
     }
