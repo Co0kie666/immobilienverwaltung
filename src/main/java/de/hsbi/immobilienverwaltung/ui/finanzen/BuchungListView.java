@@ -206,7 +206,7 @@ public class BuchungListView extends Div implements HasPageHeader {
                     ausgabe.getId(),
                     ausgabe.getDatum() != null ? ausgabe.getDatum().toString() : "-",
                     "Ausgabe",
-                    ausgabe.getKategorie() != null ? ausgabe.getKategorie().name() : "-",
+                    ausgabe.getKategorie() != null ? ausgabe.getKategorie().getLabel() : "-",
                     ausgabe.getBeschreibung() != null ? ausgabe.getBeschreibung() : "-",
                     formatiereBetrag(ausgabe.getBetrag()),
                     ausgabe.getStatus() != null ? ausgabe.getStatus() : "-"
@@ -218,7 +218,7 @@ public class BuchungListView extends Div implements HasPageHeader {
                     zahlungseingang.getId(),
                     zahlungseingang.getZahlungsdatum() != null ? zahlungseingang.getZahlungsdatum().toString() : "-",
                     "Einnahme",
-                    zahlungseingang.getTyp() != null ? zahlungseingang.getTyp().name() : "-",
+                    zahlungseingang.getTyp() != null ? zahlungseingang.getTyp().getLabel() : "-",
                     zahlungseingang.getBeschreibung() != null ? zahlungseingang.getBeschreibung() : "-",
                     formatiereBetrag(zahlungseingang.getBetrag()),
                     zahlungseingang.getStatus() != null ? zahlungseingang.getStatus() : "-"
