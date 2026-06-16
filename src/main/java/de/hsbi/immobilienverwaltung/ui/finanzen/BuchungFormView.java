@@ -513,17 +513,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
                         .toList());
     }
 
-    //Gibt Kategorien anhand von ausgewaehlte Buchungstyp
-    private void aktualisiereKategorieField() {
-        kategorieField.clear();
-        if ("Ausgabe".equals(buchungstypGroup.getValue())) {
-            kategorieField.setItems(Ausgabenkategorie.values());
-            kategorieField.setValue(Ausgabenkategorie.SONSTIGES);
-        } else {
-            kategorieField.setItems(Zahlungseingangtyp.values());
-            kategorieField.setValue(Zahlungseingangtyp.SONSTIGES);
-        }
-    }
+
 
     @Override
     public String getPageTitle() {
