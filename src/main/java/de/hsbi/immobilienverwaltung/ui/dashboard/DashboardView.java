@@ -52,6 +52,7 @@ public class DashboardView extends Div implements HasPageHeader {
             ZahlungsEingangService zahlungsEingangService,
             AusgabeService ausgabeService
     ) {
+        // Lädt die wichtigsten Kennzahlen direkt beim Erstellen der View aus dem Backend.
         this.gesamtMieteinheiten =
                 gesamtAuswertungService.berechneAnzahlMieteinheiten();
 
@@ -76,9 +77,11 @@ public class DashboardView extends Div implements HasPageHeader {
         this.anzahlOffeneAusgaben =
                 ausgabeService.zaehleOffeneAusgaben();
 
+        // Wird für die Card "Offene Posten" verwendet.
         this.offeneZahlungseingaenge =
                 zahlungsEingangService.findeOffeneZahlungseingaenge();
 
+        // Bereitet die Monatswerte für das Einnahmen-/Ausgaben-Diagramm vor.
         this.chartEinnahmen =
                 berechneEinnahmenChartDaten(zahlungsEingangService);
 
@@ -103,6 +106,8 @@ public class DashboardView extends Div implements HasPageHeader {
     private void addJavaScriptIfUiAvailable(String url) {
         UI ui = UI.getCurrent();
 
+        // In Unit-Tests gibt es oft keine vollständig initialisierte Vaadin-Session.
+        // Deshalb wird JavaScript nur geladen, wenn eine UI mit Session vorhanden ist.
         if (ui == null || ui.getSession() == null) {
             return;
         }
@@ -113,6 +118,7 @@ public class DashboardView extends Div implements HasPageHeader {
     private void executeJsIfUiAvailable(String script, Object... arguments) {
         UI ui = UI.getCurrent();
 
+        // Verhindert NullPointerExceptions in Tests ohne echte Browser-Session.
         if (ui == null || ui.getSession() == null) {
             return;
         }
@@ -255,7 +261,11 @@ public class DashboardView extends Div implements HasPageHeader {
 
         offeneZahlungseingaenge.stream()
                 .filter(zahlung -> zahlung.getZahlungsdatum() != null)
+
+                // Älteste offene Zahlungen stehen oben, weil sie am dringendsten sind.
                 .sorted((z1, z2) -> z1.getZahlungsdatum().compareTo(z2.getZahlungsdatum()))
+
+                // Das Dashboard zeigt nur eine kompakte Vorschau der wichtigsten offenen Posten.
                 .limit(5)
                 .forEach(zahlung -> card.add(openItem(
                         ermittleMieterName(zahlung),
@@ -424,6 +434,8 @@ public class DashboardView extends Div implements HasPageHeader {
 
         wrapper.getElement().appendChild(canvas);
 
+        // Chart.js rendert das Balkendiagramm im Browser.
+        // Die Java-Daten werden als Parameter in das JavaScript übergeben.
         executeJsIfUiAvailable("""
             setTimeout(() => {
                 const ctx = document.getElementById('incomeExpenseChart');
@@ -481,6 +493,7 @@ public class DashboardView extends Div implements HasPageHeader {
 
         wrapper.getElement().appendChild(canvas);
 
+        // Das Diagramm zeigt das Verhältnis von vermieteten und leerstehenden Mieteinheiten.
         executeJsIfUiAvailable("""
             setTimeout(() => {
                 const ctx = document.getElementById('vacancyPieChart');
@@ -636,6 +649,7 @@ public class DashboardView extends Div implements HasPageHeader {
 
         YearMonth aktuellerMonat = YearMonth.now();
 
+        // Erstellt die Einnahmenwerte für die letzten sechs Monate.
         for (int i = 0; i < 6; i++) {
             YearMonth monat = aktuellerMonat.minusMonths(5 - i);
 
@@ -665,6 +679,7 @@ public class DashboardView extends Div implements HasPageHeader {
 
         YearMonth aktuellerMonat = YearMonth.now();
 
+        // Erstellt die Ausgabenwerte für die letzten sechs Monate.
         for (int i = 0; i < 6; i++) {
             YearMonth monat = aktuellerMonat.minusMonths(5 - i);
 
@@ -695,6 +710,7 @@ public class DashboardView extends Div implements HasPageHeader {
                         Locale.GERMANY
                 );
 
+        // Erstellt die Monatsbeschriftungen passend zu den Chart-Daten.
         for (int i = 0; i < 6; i++) {
             YearMonth monat = aktuellerMonat.minusMonths(5 - i);
             monate[i] = monat.format(formatter);

@@ -128,13 +128,18 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         addClassName("finance-page");
 
+        // Lädt initial die Finanzdaten ohne gesetzte Objekt-, Einheiten- oder Mieterfilter.
         ladeFinanzdaten(null, null, null);
+
+        // Baut die View mit Filterleiste, KPIs, Diagrammen und Tabellen auf.
         baueSeiteNeu();
     }
 
     private void addJavaScriptIfUiAvailable(String url) {
         UI ui = UI.getCurrent();
 
+        // In Unit-Tests gibt es oft keine vollständig initialisierte Vaadin-Session.
+        // Deshalb wird JavaScript nur geladen, wenn eine UI mit Session vorhanden ist.
         if (ui == null || ui.getSession() == null) {
             return;
         }
@@ -145,6 +150,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
     private void executeJsIfUiAvailable(String script, Object... arguments) {
         UI ui = UI.getCurrent();
 
+        // Verhindert NullPointerExceptions in Tests ohne echte Browser-Session.
         if (ui == null || ui.getSession() == null) {
             return;
         }
@@ -155,6 +161,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
     private void baueSeiteNeu() {
         removeAll();
 
+        // Bei jeder Filteränderung werden die Finanzdaten neu aus dem Backend geladen.
         ladeFinanzdaten(
                 ausgewaehlteImmobilieId,
                 ausgewaehlteMieteinheitId,
@@ -175,6 +182,8 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         LocalDate startDatum = ermittleStartDatum();
         LocalDate endDatum = LocalDate.now();
 
+        // Einnahmen, Ausgaben und Rückstände werden passend zum Zeitraum
+        // und zu den aktuell gesetzten Filtern berechnet.
         this.summeEinnahmen =
                 zahlungsEingangService.berechneBezahlteZahlungseingaengeImZeitraum(
                         startDatum,
@@ -203,6 +212,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         this.cashflow =
                 this.summeEinnahmen.subtract(this.summeAusgaben);
 
+        // Die Diagrammdaten verwenden denselben Zeitraum und dieselben Filter wie die KPIs.
         this.chartEinnahmen =
                 berechneEinnahmenChartDaten(
                         startDatum,
@@ -222,6 +232,8 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         this.chartMonate =
                 berechneChartMonate(startDatum, endDatum);
 
+        // Die Tabellenzeilen enthalten zusätzlich ID und Buchungstyp,
+        // damit ein Klick direkt zur richtigen Detailansicht navigieren kann.
         this.letzteEinnahmenRows =
                 berechneLetzteEinnahmenTabellenZeilen(
                         startDatum,
@@ -265,7 +277,11 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         return zahlungseingaenge.stream()
                 .filter(z -> z.getZahlungsdatum() != null)
+
+                // Neueste Einnahmen werden zuerst angezeigt.
                 .sorted((z1, z2) -> z2.getZahlungsdatum().compareTo(z1.getZahlungsdatum()))
+
+                // Das Dashboard zeigt nur eine kompakte Vorschau.
                 .limit(5)
                 .map(zahlung -> new BuchungTabellenZeile(
                         zahlung.getId(),
@@ -321,7 +337,11 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         return ausgaben.stream()
                 .filter(a -> a.getDatum() != null)
+
+                // Neueste Ausgaben werden zuerst angezeigt.
                 .sorted((a1, a2) -> a2.getDatum().compareTo(a1.getDatum()))
+
+                // Das Dashboard zeigt nur eine kompakte Vorschau.
                 .limit(5)
                 .map(ausgabe -> new BuchungTabellenZeile(
                         ausgabe.getId(),
@@ -364,6 +384,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
     private LocalDate ermittleStartDatum() {
         LocalDate heute = LocalDate.now();
 
+        // Der aktive Zeitraum bestimmt, ab welchem Datum die Finanzdaten geladen werden.
         return switch (aktuellerFilter) {
             case EIN_MONAT -> heute.withDayOfMonth(1);
             case DREI_MONATE -> heute.minusMonths(2).withDayOfMonth(1);
@@ -377,6 +398,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         BigDecimal offen = rueckstaende == null ? BigDecimal.ZERO : rueckstaende;
         BigDecimal gesamt = bezahlt.add(offen);
 
+        // Wenn keine Zahlungen vorhanden sind, wird ein leerer Zahlungsstatus angezeigt.
         if (gesamt.compareTo(BigDecimal.ZERO) == 0) {
             this.zahlungsstatusBezahlt = 0;
             this.zahlungsstatusOffen = 0;
@@ -406,6 +428,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                         immobilieId
                 );
 
+        // Chart.js erwartet Labels und Werte getrennt voneinander.
         this.kostenverteilungLabels =
                 kostenverteilung.keySet().toArray(new String[0]);
 
@@ -484,6 +507,8 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         mieteinheitService.findeAlleMieteinheiten()
                 .stream()
+
+                // Wenn eine Immobilie gewählt wurde, werden nur ihre Mieteinheiten angezeigt.
                 .filter(mieteinheit ->
                         ausgewaehlteImmobilieId == null
                                 || (
@@ -516,12 +541,14 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 .filter(mietvertrag -> {
                     Mieteinheit mieteinheit = mietvertrag.getMieteinheit();
 
+                    // Wenn eine Mieteinheit gewählt wurde, werden nur Mieter dieser Einheit angezeigt.
                     if (ausgewaehlteMieteinheitId != null) {
                         return ausgewaehlteMieteinheitId.equals(
                                 mieteinheit.getId()
                         );
                     }
 
+                    // Wenn nur eine Immobilie gewählt wurde, werden alle Mieter dieser Immobilie angezeigt.
                     if (ausgewaehlteImmobilieId != null) {
                         return mieteinheit.getImmobilie() != null
                                 && ausgewaehlteImmobilieId.equals(
@@ -587,6 +614,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                             ? null
                             : option.id();
 
+            // Bei Immobilienwechsel werden abhängige Filter zurückgesetzt.
             ausgewaehlteMieteinheitId = null;
             ausgewaehlterMieterId = null;
 
@@ -604,6 +632,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
                 ausgewaehlteMieteinheitId = mieteinheit.getId();
 
+                // Wird eine Einheit gewählt, wird die zugehörige Immobilie automatisch mitgesetzt.
                 if (mieteinheit.getImmobilie() != null) {
                     ausgewaehlteImmobilieId =
                             mieteinheit.getImmobilie().getId();
@@ -817,6 +846,8 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         wrapper.getElement().appendChild(canvas);
 
+        // Chart.js rendert das Liniendiagramm im Browser.
+        // Die Java-Daten werden als Parameter an das JavaScript übergeben.
         executeJsIfUiAvailable("""
             setTimeout(() => {
                 const ctx = document.getElementById('financeLineChart');
@@ -885,6 +916,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         chartWrapper.getElement().appendChild(canvas);
 
+        // Zeigt das Verhältnis zwischen bezahlten und offenen Zahlungseingängen.
         executeJsIfUiAvailable("""
             setTimeout(() => {
                 const ctx = document.getElementById('paymentStatusChart');
@@ -928,6 +960,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
     }
 
     private Component createCostDistributionCard() {
+        // Ohne Daten wird die Kostenverteilung nicht angezeigt.
         if (!hatKostenverteilungDaten()) {
             return null;
         }
@@ -948,6 +981,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         wrapper.getElement().appendChild(canvas);
 
+        // Zeigt die Ausgaben gruppiert nach Kategorie.
         executeJsIfUiAvailable("""
             setTimeout(() => {
                 const ctx = document.getElementById('costDistributionChart');
@@ -1104,6 +1138,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 new Span(data.betrag())
         );
 
+        // Leitet zur vorhandenen Detailansicht der jeweiligen Buchung weiter.
         row.addClickListener(event ->
                 getUI().ifPresent(ui ->
                         ui.navigate(
@@ -1128,6 +1163,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         List<YearMonth> monate = ermittleMonateImZeitraum(startDatum, endDatum);
         double[] daten = new double[monate.size()];
 
+        // Berechnet pro Monat die bezahlten Einnahmen für den aktiven Filter.
         for (int i = 0; i < monate.size(); i++) {
             YearMonth monat = monate.get(i);
 
@@ -1154,6 +1190,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         List<YearMonth> monate = ermittleMonateImZeitraum(startDatum, endDatum);
         double[] daten = new double[monate.size()];
 
+        // Berechnet pro Monat die bezahlten Ausgaben für den aktiven Immobilienfilter.
         for (int i = 0; i < monate.size(); i++) {
             YearMonth monat = monate.get(i);
 
@@ -1199,6 +1236,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         YearMonth aktuell = start;
 
+        // Ermittelt alle Monate zwischen Start- und Enddatum inklusive.
         while (!aktuell.isAfter(ende)) {
             monate.add(aktuell);
             aktuell = aktuell.plusMonths(1);

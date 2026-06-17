@@ -7,7 +7,6 @@ import de.hsbi.immobilienverwaltung.repository.MietvertragRepository;
 import de.hsbi.immobilienverwaltung.service.interfaces.GesamtAuswertungService;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -28,6 +27,7 @@ public class GesamtAuswertungServiceImpl implements GesamtAuswertungService {
     public double berechneLeerstandsquote() {
         long gesamt = mieteinheitRepository.count();
 
+        // Verhindert eine Division durch 0, wenn noch keine Mieteinheiten vorhanden sind.
         if (gesamt == 0) {
             return 0.0;
         }
@@ -39,6 +39,7 @@ public class GesamtAuswertungServiceImpl implements GesamtAuswertungService {
 
     @Override
     public long berechneAnzahlLeerstehendeMieteinheiten() {
+        // Als Leerstand zählen freie Einheiten und Einheiten, die aktuell renoviert werden.
         return mieteinheitRepository.countByStatusIn(
                 List.of(
                         Mieteinheitstatus.FREI,
@@ -56,5 +57,4 @@ public class GesamtAuswertungServiceImpl implements GesamtAuswertungService {
     public long berechneAnzahlAktiveVertraege() {
         return mietvertragRepository.countByStatus(Vertragsstatus.AKTIV);
     }
-
 }
