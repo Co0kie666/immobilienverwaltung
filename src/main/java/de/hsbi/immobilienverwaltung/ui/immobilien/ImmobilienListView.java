@@ -1,9 +1,14 @@
 package de.hsbi.immobilienverwaltung.ui.immobilien;
 
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
@@ -14,10 +19,9 @@ import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
 import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
 import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
 import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
+import de.hsbi.immobilienverwaltung.ui.components.StatusBadge;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
-import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import jakarta.annotation.security.PermitAll;
 
 import java.math.BigDecimal;
@@ -26,13 +30,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-// Die View zeigt Immobilien nicht direkt aus dem Repository an,
-// sondern nutzt den Service, damit Filter- und Berechnungslogik zentral bleibt.
 @Route(value = "immobilien", layout = MainLayout.class)
 @PermitAll
 public class ImmobilienListView extends Div implements HasPageHeader {
 
-    private final Grid<Immobilie> grid = new Grid<>(Immobilie.class, false);
     private final ImmobilieService immobilieService;
     private final MieteinheitService mieteinheitService;
     private final ZahlungsEingangService zahlungsEingangService;
@@ -42,57 +43,78 @@ public class ImmobilienListView extends Div implements HasPageHeader {
     private final Select<String> vacancySelect = new Select<>();
     private final TextField locationField = new TextField();
 
-    // Pagination Attribute
     private static final int IMMOBILIEN_PRO_SEITE = 12;
     private int aktuelleSeite = 0;
     private List<Immobilie> gefilterteImmobilien = new ArrayList<>();
+
+    private final Div cardGrid = new Div();
+    private final Div emptyState = new Div();
     private final Button vorherigeSeiteButton = new Button("Zurück", VaadinIcon.ARROW_LEFT.create());
     private final Button naechsteSeiteButton = new Button("Weiter", VaadinIcon.ARROW_RIGHT.create());
     private final Span seitenInfo = new Span();
 
-    public ImmobilienListView(ImmobilieService immobilieService, MieteinheitService mieteinheitenService, ZahlungsEingangService zahlungsEingangService) {
+    public ImmobilienListView(
+            ImmobilieService immobilieService,
+            MieteinheitService mieteinheitenService,
+            ZahlungsEingangService zahlungsEingangService
+    ) {
         this.immobilieService = immobilieService;
         this.mieteinheitService = mieteinheitenService;
         this.zahlungsEingangService = zahlungsEingangService;
+
         addClassName("immobilien-list-view");
         addClassName("page-content");
 
         add(
-                immobilieAnlegen(),
+                erstelleHeroBereich(),
                 erstelleFilterKarten(),
-                erstelleTabellenKarten()
+                erstelleImmobilienKartenBereich()
         );
 
         wendeFilterAn();
     }
 
-    private Div immobilieAnlegen() {
-        Div createButton = new Div();
-        createButton.addClassName("immobilien-action-bar");
+    private Component erstelleHeroBereich() {
+        Div hero = new Div();
+        hero.addClassName("property-list-hero");
 
-        Button newButton = new Button("Neu anlegen", VaadinIcon.PLUS.create());
+        Div content = new Div();
+        content.addClassName("property-list-hero-content");
+
+        Span eyebrow = new Span("Immobilienportfolio");
+        eyebrow.addClassName("hero-eyebrow");
+
+        H3 title = new H3("Alle Objekte im Überblick");
+        title.addClassName("property-list-hero-title");
+
+        Paragraph subtitle = new Paragraph("Filtern, prüfen und direkt in die Detailansicht springen – mit kompakten Kennzahlen pro Immobilie.");
+        subtitle.addClassName("property-list-hero-subtitle");
+
+        Button newButton = new Button("Neue Immobilie", VaadinIcon.PLUS.create());
         newButton.addClassName("primary-button");
-
         newButton.addClickListener(event ->
                 getUI().ifPresent(ui -> ui.navigate(ImmobilieFormView.class))
         );
 
-        createButton.add(newButton);
+        content.add(eyebrow, title, subtitle, newButton);
 
-        return createButton;
+        Div visual = new Div();
+        visual.addClassName("property-list-hero-visual");
+        visual.add(new Icon(VaadinIcon.BUILDING), new Span("ImmoPro"));
+
+        hero.add(content, visual);
+        return hero;
     }
 
-    // Filter für Ort, Status, Einheiten und Leerstand
     private Div erstelleFilterKarten() {
         Div filterCard = new Div();
         filterCard.addClassName("filter-card");
+        filterCard.addClassName("filter-card-modern");
 
         locationField.setLabel("Ort / PLZ");
-        locationField.setPlaceholder("Alle Orte");
+        locationField.setPlaceholder("z. B. Bielefeld");
         locationField.setPrefixComponent(VaadinIcon.MAP_MARKER.create());
         locationField.setClearButtonVisible(true);
-        // Filter wird erst nach einer kurzen Eingabepause angewendet,
-        // damit nicht bei jedem einzelnen Tastendruck sofort neu gefiltert wird.
         locationField.setValueChangeMode(ValueChangeMode.LAZY);
 
         typSelect.setLabel("Immobilientyp");
@@ -119,8 +141,6 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         return filterCard;
     }
 
-    // Die eigentliche Filterlogik liegt im Service.
-    // Nach jeder Filteränderung wird wieder auf die erste Seite gewechselt.
     private void wendeFilterAn() {
         gefilterteImmobilien = immobilieService.findeGefilterteImmobilien(
                 locationField.getValue(),
@@ -130,23 +150,43 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         );
 
         aktuelleSeite = 0;
-        aktualisiereTabellenSeite();
+        aktualisiereKartenSeite();
     }
 
-    private Div erstelleTabellenKarten() {
-        Div tableCard = new Div();
-        tableCard.addClassName("table-card");
+    private Div erstelleImmobilienKartenBereich() {
+        Div panel = new Div();
+        panel.addClassName("property-results-panel");
 
-        konfiguriereImmobilienTabelle();
+        cardGrid.addClassName("property-card-grid");
+        konfiguriereEmptyState();
 
-        tableCard.add(grid, erstelleSeitennavigation());
+        panel.add(cardGrid, emptyState, erstelleSeitennavigation());
+        return panel;
+    }
 
-        return tableCard;
+    private void konfiguriereEmptyState() {
+        emptyState.addClassName("property-empty-state");
+        emptyState.setVisible(false);
+
+        Div iconBox = new Div(VaadinIcon.SEARCH.create());
+        iconBox.addClassName("property-empty-icon");
+
+        H3 title = new H3("Keine Immobilien gefunden");
+        Paragraph text = new Paragraph("Passe die Filter an oder lege eine neue Immobilie an, um dein Portfolio zu erweitern.");
+
+        Button createButton = new Button("Immobilie anlegen", VaadinIcon.PLUS.create());
+        createButton.addClassName("primary-button");
+        createButton.addClickListener(event ->
+                getUI().ifPresent(ui -> ui.navigate(ImmobilieFormView.class))
+        );
+
+        emptyState.add(iconBox, title, text, createButton);
     }
 
     private HorizontalLayout erstelleSeitennavigation() {
         HorizontalLayout paginationBar = new HorizontalLayout();
         paginationBar.addClassName("pagination-bar");
+        paginationBar.addClassName("pagination-bar-modern");
 
         vorherigeSeiteButton.addClassName("secondary-button");
         naechsteSeiteButton.addClassName("secondary-button");
@@ -156,106 +196,155 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         vorherigeSeiteButton.addClickListener(event -> {
             if (aktuelleSeite > 0) {
                 aktuelleSeite--;
-                aktualisiereTabellenSeite();
+                aktualisiereKartenSeite();
             }
         });
 
         naechsteSeiteButton.addClickListener(event -> {
             if (aktuelleSeite < berechneGesamtSeiten() - 1) {
                 aktuelleSeite++;
-                aktualisiereTabellenSeite();
+                aktualisiereKartenSeite();
             }
         });
 
         paginationBar.add(vorherigeSeiteButton, seitenInfo, naechsteSeiteButton);
-
         return paginationBar;
     }
 
-    // Schneidet aus der gefilterten Gesamtliste nur die Einträge heraus,
-    // die auf der aktuellen Seite angezeigt werden sollen
-    private void aktualisiereTabellenSeite() {
-        // wenn die Filter keine Ergebnisse liefern
+    private void aktualisiereKartenSeite() {
+        cardGrid.removeAll();
+
         if (gefilterteImmobilien.isEmpty()) {
-            // Tabelle leeren
-            grid.setItems(new ArrayList<>());
+            emptyState.setVisible(true);
             seitenInfo.setText("Keine Immobilien gefunden");
             vorherigeSeiteButton.setEnabled(false);
             naechsteSeiteButton.setEnabled(false);
             return;
         }
 
+        emptyState.setVisible(false);
+
         int gesamtSeiten = berechneGesamtSeiten();
 
-        // Falls sich die Anzahl der Seiten durch Filtern oder Löschen verkleinert,
-        // wird die aktuelle Seite auf die letzte noch vorhandene Seite korrigiert
         if (aktuelleSeite >= gesamtSeiten) {
             aktuelleSeite = gesamtSeiten - 1;
         }
 
         int start = aktuelleSeite * IMMOBILIEN_PRO_SEITE;
-        // Math.min(...) verhindert, dass das Ende größer als die Liste wird -> wichtig für letzte Seite
         int ende = Math.min(start + IMMOBILIEN_PRO_SEITE, gefilterteImmobilien.size());
 
-        // subList(start, ende) schneidet aus der ganzen Liste nur den Teil heraus, der auf der aktuellen Seite angezeigt werden soll
-        List<Immobilie> immobilienAufAktuellerSeite = gefilterteImmobilien.subList(start, ende);
+        gefilterteImmobilien.subList(start, ende).forEach(immobilie ->
+                cardGrid.add(erstelleImmobilienCard(immobilie))
+        );
 
-        grid.setItems(immobilienAufAktuellerSeite);
-
-        seitenInfo.setText("Seite " + (aktuelleSeite + 1) + " von " + gesamtSeiten);
+        seitenInfo.setText("Seite " + (aktuelleSeite + 1) + " von " + gesamtSeiten
+                + " · " + gefilterteImmobilien.size() + " Objekt(e)");
 
         vorherigeSeiteButton.setEnabled(aktuelleSeite > 0);
         naechsteSeiteButton.setEnabled(aktuelleSeite < gesamtSeiten - 1);
     }
 
-    // Aufrunden ist notwendig, damit auch eine nicht vollständig gefüllte letzte Seite angezeigt wird.
     private int berechneGesamtSeiten() {
         return (int) Math.ceil((double) gefilterteImmobilien.size() / IMMOBILIEN_PRO_SEITE);
     }
 
-    private void konfiguriereImmobilienTabelle() {
-        grid.addClassName("immobilien-grid");
-        grid.setAllRowsVisible(true);
-
-        grid.addColumn(Immobilie::getBezeichnung)
-            .setHeader("Immobilie")
-            .setAutoWidth(true)
-            .setFlexGrow(2);
-
-        grid.addColumn(immobilie -> immobilie.getTyp() == null ? "-" : immobilie.getTyp().getLabel())
-            .setHeader("Typ")
-            .setAutoWidth(true);
-
-        grid.addColumn(this::formatAdresse)
-            .setHeader("Adresse")
-            .setAutoWidth(true)
-            .setFlexGrow(2);
-
-        grid.addColumn(immobilie -> mieteinheitService.zaehleMieteinheiten(immobilie.getId()))
-            .setHeader("Einheiten")
-            .setAutoWidth(true);
-
-        grid.addColumn(immobilie -> {
-            long frei = mieteinheitService.zaehleFreieMieteinheiten(immobilie.getId());
-            long inRenovierung = mieteinheitService.zaehleMieteinheitenInRenovierung(immobilie.getId());
-            long leerstand = frei + inRenovierung;
-            double leerstandsquote = mieteinheitService.berechneLeerstandsquote(immobilie.getId());
-
-            return leerstand + " (" + String.format("%.1f%%", leerstandsquote) + ")";
-        })
-            .setHeader("Leerstand")
-            .setAutoWidth(true);
-
-        grid.addColumn(immobilie -> formatiereBetrag(zahlungsEingangService.
-                        berechneOffeneZahlungenFuerImmobilie(immobilie.getId())))
-            .setHeader("Offene Posten")
-            .setAutoWidth(true);
-
-        // Beim Klick auf eine Tabellenzeile wird die ID der gewählten Immobilie
-        // in die URL geschrieben. Die DetailView liest diese ID später als Route-Parameter aus.
-        grid.addItemClickListener(event ->
-            getUI().ifPresent(ui -> ui.navigate("immobilien/" + event.getItem().getId()))
+    private Component erstelleImmobilienCard(Immobilie immobilie) {
+        Div card = new Div();
+        card.addClassName("property-card");
+        card.addClickListener(event ->
+                getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilie.getId()))
         );
+
+        Div visual = new Div();
+        visual.addClassNames("property-card-visual", ermittleTypCssKlasse(immobilie));
+
+        Icon buildingIcon = VaadinIcon.BUILDING.create();
+        buildingIcon.addClassName("property-card-visual-icon");
+
+        Span typeChip = new Span(formatiereImmobilientyp(immobilie.getTyp()));
+        typeChip.addClassName("property-type-chip");
+
+        visual.add(buildingIcon, typeChip);
+
+        Div content = new Div();
+        content.addClassName("property-card-content");
+
+        Div titleRow = new Div();
+        titleRow.addClassName("property-card-title-row");
+
+        H3 title = new H3(wertOderStrich(immobilie.getBezeichnung()));
+        title.addClassName("property-card-title");
+
+        titleRow.add(title, erstelleBelegungsBadge(immobilie));
+
+        Paragraph address = new Paragraph(formatAdresse(immobilie));
+        address.addClassName("property-card-address");
+
+        Div stats = new Div();
+        stats.addClassName("property-stat-grid");
+        stats.add(
+                erstelleStatistikKachel("Einheiten", String.valueOf(mieteinheitService.zaehleMieteinheiten(immobilie.getId()))),
+                erstelleStatistikKachel("Leerstand", ermittleLeerstandText(immobilie)),
+                erstelleStatistikKachel("Offen", formatiereBetragKurz(
+                        zahlungsEingangService.berechneOffeneZahlungenFuerImmobilie(immobilie.getId())
+                ))
+        );
+
+        Button detailsButton = new Button("Details ansehen", VaadinIcon.ARROW_RIGHT.create());
+        detailsButton.addClassName("property-card-action");
+        detailsButton.setIconAfterText(true);
+        detailsButton.addClickListener(event ->
+                getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilie.getId()))
+        );
+
+        content.add(titleRow, address, stats, detailsButton);
+        card.add(visual, content);
+
+        return card;
+    }
+
+    private Component erstelleBelegungsBadge(Immobilie immobilie) {
+        long gesamt = mieteinheitService.zaehleMieteinheiten(immobilie.getId());
+        long frei = mieteinheitService.zaehleFreieMieteinheiten(immobilie.getId());
+        long inRenovierung = mieteinheitService.zaehleMieteinheitenInRenovierung(immobilie.getId());
+        long leerstand = frei + inRenovierung;
+
+        if (gesamt == 0) {
+            return StatusBadge.neutral("Keine Einheiten");
+        }
+
+        if (leerstand == 0) {
+            return StatusBadge.success("Voll vermietet");
+        }
+
+        if (leerstand == gesamt) {
+            return StatusBadge.warning("Leerstand");
+        }
+
+        return StatusBadge.warning(leerstand + " frei");
+    }
+
+    private Component erstelleStatistikKachel(String label, String value) {
+        Div tile = new Div();
+        tile.addClassName("property-stat-tile");
+
+        Span labelSpan = new Span(label);
+        labelSpan.addClassName("property-stat-label");
+
+        Span valueSpan = new Span(value);
+        valueSpan.addClassName("property-stat-value");
+
+        tile.add(labelSpan, valueSpan);
+        return tile;
+    }
+
+    private String ermittleLeerstandText(Immobilie immobilie) {
+        long frei = mieteinheitService.zaehleFreieMieteinheiten(immobilie.getId());
+        long inRenovierung = mieteinheitService.zaehleMieteinheitenInRenovierung(immobilie.getId());
+        long leerstand = frei + inRenovierung;
+        double leerstandsquote = mieteinheitService.berechneLeerstandsquote(immobilie.getId());
+
+        return leerstand + " · " + String.format(Locale.GERMANY, "%.1f %%", leerstandsquote);
     }
 
     private String formatiereBetrag(BigDecimal betrag) {
@@ -267,17 +356,75 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         return formatter.format(betrag);
     }
 
+    private String formatiereBetragKurz(BigDecimal betrag) {
+        if (betrag == null || betrag.compareTo(BigDecimal.ZERO) == 0) {
+            return "0 €";
+        }
+
+        return formatiereBetrag(betrag);
+    }
+
     private String formatAdresse(Immobilie immobilie) {
         Adresse adresse = immobilie.getAdresse();
 
         if (adresse == null) {
+            return "Adresse nicht hinterlegt";
+        }
+
+        String strasseUndHausnummer = (
+                wertOderLeer(adresse.getStrasse()) + " " + wertOderLeer(adresse.getHausnummer())
+        ).trim();
+
+        String plzUndStadt = (
+                wertOderLeer(adresse.getPlz()) + " " + wertOderLeer(adresse.getStadt())
+        ).trim();
+
+        if (strasseUndHausnummer.isBlank() && plzUndStadt.isBlank()) {
+            return "Adresse nicht hinterlegt";
+        }
+
+        if (strasseUndHausnummer.isBlank()) {
+            return plzUndStadt;
+        }
+
+        if (plzUndStadt.isBlank()) {
+            return strasseUndHausnummer;
+        }
+
+        return strasseUndHausnummer + ", " + plzUndStadt;
+    }
+
+    private String formatiereImmobilientyp(Immobilientyp typ) {
+        return typ == null ? "Immobilie" : typ.getLabel();
+    }
+
+    private String ermittleTypCssKlasse(Immobilie immobilie) {
+        if (immobilie.getTyp() == null) {
+            return "typ-default";
+        }
+
+        String typName = immobilie.getTyp()
+                .name()
+                .toLowerCase(Locale.ROOT)
+                .replace('_', '-');
+
+        return "typ-" + typName;
+    }
+
+    private String wertOderStrich(Object wert) {
+        if (wert == null) {
             return "-";
         }
 
-        return adresse.getStrasse() + " "
-                + adresse.getHausnummer() + ", "
-                + adresse.getPlz() + " "
-                + adresse.getStadt();
+        if (wert instanceof String text && text.isBlank()) {
+            return "-";
+        }
+
+        return wert.toString();
+    }
+
+    private String wertOderLeer(String wert) {
+        return wert == null ? "" : wert;
     }
 
     @Override
@@ -287,6 +434,6 @@ public class ImmobilienListView extends Div implements HasPageHeader {
 
     @Override
     public String getPageSubtitle() {
-        return "Hier werden alle Immobilien angezeigt";
+        return "Modernes Portfolio mit Kennzahlen, Leerstand und offenen Posten";
     }
 }
