@@ -10,6 +10,7 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.router.Route;
+import de.hsbi.immobilienverwaltung.domain.Zahlungseingang;
 import de.hsbi.immobilienverwaltung.service.interfaces.AusgabeService;
 import de.hsbi.immobilienverwaltung.service.interfaces.GesamtAuswertungService;
 import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
@@ -19,8 +20,11 @@ import jakarta.annotation.security.PermitAll;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Locale;
 
 @Route(value = "dashboard", layout = MainLayout.class)
@@ -40,6 +44,8 @@ public class DashboardView extends Div implements HasPageHeader {
     private final double[] chartEinnahmen;
     private final double[] chartAusgaben;
     private final String[] chartMonate;
+
+    private final List<Zahlungseingang> offeneZahlungseingaenge;
 
     public DashboardView(
             GesamtAuswertungService gesamtAuswertungService,
@@ -69,6 +75,9 @@ public class DashboardView extends Div implements HasPageHeader {
 
         this.anzahlOffeneAusgaben =
                 ausgabeService.zaehleOffeneAusgaben();
+
+        this.offeneZahlungseingaenge =
+                zahlungsEingangService.findeOffeneZahlungseingaenge();
 
         this.chartEinnahmen =
                 berechneEinnahmenChartDaten(zahlungsEingangService);
@@ -236,21 +245,102 @@ public class DashboardView extends Div implements HasPageHeader {
 
         card.add(title);
 
-        card.add(openItem(
-                "Max Mustermann",
-                "Miete Mai 2024",
-                "850,00 €",
-                "5 Tage überfällig"
-        ));
+        if (offeneZahlungseingaenge == null || offeneZahlungseingaenge.isEmpty()) {
+            Paragraph emptyText = new Paragraph("Keine offenen Posten vorhanden.");
+            emptyText.addClassName("card-subtitle");
+            card.add(emptyText);
 
-        card.add(openItem(
-                "Julia Schmidt",
-                "Nebenkosten 2023",
-                "120,50 €",
-                "12 Tage überfällig"
-        ));
+            return card;
+        }
+
+        offeneZahlungseingaenge.stream()
+                .filter(zahlung -> zahlung.getZahlungsdatum() != null)
+                .sorted((z1, z2) -> z1.getZahlungsdatum().compareTo(z2.getZahlungsdatum()))
+                .limit(5)
+                .forEach(zahlung -> card.add(openItem(
+                        ermittleMieterName(zahlung),
+                        ermittleBeschreibung(zahlung),
+                        formatEuro(zahlung.getBetrag()),
+                        ermittleUeberfaelligkeit(zahlung)
+                )));
 
         return card;
+    }
+
+    private String ermittleMieterName(Zahlungseingang zahlung) {
+        if (zahlung.getMietvertrag() == null ||
+                zahlung.getMietvertrag().getMieter() == null) {
+            return "-";
+        }
+
+        String vorname = zahlung.getMietvertrag()
+                .getMieter()
+                .getVorname();
+
+        String nachname = zahlung.getMietvertrag()
+                .getMieter()
+                .getNachname();
+
+        if (vorname == null) {
+            vorname = "";
+        }
+
+        if (nachname == null) {
+            nachname = "";
+        }
+
+        String name = (vorname + " " + nachname).trim();
+
+        return name.isBlank() ? "-" : name;
+    }
+
+    private String ermittleBeschreibung(Zahlungseingang zahlung) {
+        if (zahlung.getBeschreibung() != null &&
+                !zahlung.getBeschreibung().isBlank()) {
+            return zahlung.getBeschreibung();
+        }
+
+        if (zahlung.getTyp() != null) {
+            return formatiereZahlungseingangTyp(
+                    zahlung.getTyp().toString()
+            );
+        }
+
+        return "Offene Zahlung";
+    }
+
+    private String ermittleUeberfaelligkeit(Zahlungseingang zahlung) {
+        if (zahlung.getZahlungsdatum() == null) {
+            return "-";
+        }
+
+        long tage = ChronoUnit.DAYS.between(
+                zahlung.getZahlungsdatum(),
+                LocalDate.now()
+        );
+
+        if (tage < 0) {
+            return "Fällig in " + Math.abs(tage) + " Tagen";
+        }
+
+        if (tage == 0) {
+            return "Heute fällig";
+        }
+
+        if (tage == 1) {
+            return "1 Tag überfällig";
+        }
+
+        return tage + " Tage überfällig";
+    }
+
+    private String formatiereZahlungseingangTyp(String typ) {
+        return switch (typ) {
+            case "KALTMIETE" -> "Kaltmiete";
+            case "NEBENKOSTEN" -> "Nebenkosten";
+            case "KAUTION" -> "Kaution";
+            default -> typ;
+        };
     }
 
     private Div kpiCard(
@@ -473,9 +563,12 @@ public class DashboardView extends Div implements HasPageHeader {
 
         Div left = new Div();
 
+        Span nameText = new Span(name);
+        Div descriptionText = new Div(description);
+
         left.add(
-                new Span(name),
-                new Div(description)
+                nameText,
+                descriptionText
         );
 
         left.getElement()
@@ -484,9 +577,12 @@ public class DashboardView extends Div implements HasPageHeader {
 
         Div right = new Div();
 
+        Span amountText = new Span(amount);
+        Div overdueText = new Div(overdue);
+
         right.add(
-                new Span(amount),
-                new Div(overdue)
+                amountText,
+                overdueText
         );
 
         right.getStyle().set("text-align", "right");
