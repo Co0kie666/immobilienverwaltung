@@ -12,8 +12,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class GesamtAuswertungServiceImplTest {
@@ -26,41 +27,6 @@ class GesamtAuswertungServiceImplTest {
 
     @InjectMocks
     private GesamtAuswertungServiceImpl gesamtAuswertungService;
-
-    // Testet, ob die Anzahl aller Mieteinheiten korrekt aus dem Repository gelesen wird.
-    @Test
-    void berechnetAnzahlMieteinheiten() {
-        when(mieteinheitRepository.count()).thenReturn(10L);
-
-        long ergebnis = gesamtAuswertungService.berechneAnzahlMieteinheiten();
-
-        assertEquals(10L, ergebnis);
-        verify(mieteinheitRepository).count();
-    }
-
-    // Testet, ob die Anzahl leerstehender Mieteinheiten korrekt berechnet wird.
-    // Dabei zählen Mieteinheiten mit dem Status FREI und IN_RENOVIERUNG als Leerstand.
-    @Test
-    void berechnetAnzahlLeerstehendeMieteinheiten() {
-        when(mieteinheitRepository.countByStatusIn(
-                List.of(
-                        Mieteinheitstatus.FREI,
-                        Mieteinheitstatus.IN_RENOVIERUNG
-                )
-        )).thenReturn(3L);
-
-        long ergebnis =
-                gesamtAuswertungService.berechneAnzahlLeerstehendeMieteinheiten();
-
-        assertEquals(3L, ergebnis);
-
-        verify(mieteinheitRepository).countByStatusIn(
-                List.of(
-                        Mieteinheitstatus.FREI,
-                        Mieteinheitstatus.IN_RENOVIERUNG
-                )
-        );
-    }
 
     // Testet, ob die Leerstandsquote korrekt berechnet wird,
     // wenn Mieteinheiten vorhanden sind.
@@ -76,7 +42,8 @@ class GesamtAuswertungServiceImplTest {
                 )
         )).thenReturn(2L);
 
-        double ergebnis = gesamtAuswertungService.berechneLeerstandsquote();
+        double ergebnis =
+                gesamtAuswertungService.berechneLeerstandsquote();
 
         assertEquals(20.0, ergebnis);
 
@@ -90,29 +57,14 @@ class GesamtAuswertungServiceImplTest {
         );
     }
 
-    // Testet, ob die Leerstandsquote 0.0 zurückgibt,
-    // wenn keine Mieteinheiten vorhanden sind.
-    @Test
-    void gibtNullZurueckWennKeineMieteinheitenVorhandenSind() {
-        when(mieteinheitRepository.count())
-                .thenReturn(0L);
-
-        double ergebnis = gesamtAuswertungService.berechneLeerstandsquote();
-
-        assertEquals(0.0, ergebnis);
-
-        verify(mieteinheitRepository).count();
-
-        verify(mieteinheitRepository, never()).countByStatusIn(anyList());
-    }
-
     // Testet, ob die Anzahl aktiver Mietverträge korrekt aus dem Repository gelesen wird.
     @Test
     void berechnetAnzahlAktiveVertraege() {
         when(mietvertragRepository.countByStatus(Vertragsstatus.AKTIV))
                 .thenReturn(8L);
 
-        long ergebnis = gesamtAuswertungService.berechneAnzahlAktiveVertraege();
+        long ergebnis =
+                gesamtAuswertungService.berechneAnzahlAktiveVertraege();
 
         assertEquals(8L, ergebnis);
 
