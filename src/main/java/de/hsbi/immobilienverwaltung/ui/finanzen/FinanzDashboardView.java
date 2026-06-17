@@ -35,6 +35,21 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         YTD
     }
 
+    private enum BuchungTyp {
+        EINNAHME("einnahme"),
+        AUSGABE("ausgabe");
+
+        private final String routeValue;
+
+        BuchungTyp(String routeValue) {
+            this.routeValue = routeValue;
+        }
+
+        public String getRouteValue() {
+            return routeValue;
+        }
+    }
+
     private record FilterOption<T>(
             Long id,
             String label,
@@ -43,6 +58,17 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         boolean isAll() {
             return id == null;
         }
+    }
+
+    private record BuchungTabellenZeile(
+            Long id,
+            BuchungTyp typ,
+            String datum,
+            String objekt,
+            String kategorie,
+            String status,
+            String betrag
+    ) {
     }
 
     private final ZahlungsEingangService zahlungsEingangService;
@@ -65,8 +91,8 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
     private double zahlungsstatusBezahlt;
     private double zahlungsstatusOffen;
 
-    private String[][] letzteEinnahmenRows;
-    private String[][] letzteAusgabenRows;
+    private List<BuchungTabellenZeile> letzteEinnahmenRows;
+    private List<BuchungTabellenZeile> letzteAusgabenRows;
 
     private final ImmobilieService immobilieService;
     private final MieteinheitService mieteinheitService;
@@ -221,7 +247,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         berechneZahlungsstatus();
     }
 
-    private String[][] berechneLetzteEinnahmenTabellenZeilen(
+    private List<BuchungTabellenZeile> berechneLetzteEinnahmenTabellenZeilen(
             LocalDate startDatum,
             LocalDate endDatum,
             Long immobilieId,
@@ -241,27 +267,20 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 .filter(z -> z.getZahlungsdatum() != null)
                 .sorted((z1, z2) -> z2.getZahlungsdatum().compareTo(z1.getZahlungsdatum()))
                 .limit(5)
-                .map(zahlung -> new String[]{
+                .map(zahlung -> new BuchungTabellenZeile(
+                        zahlung.getId(),
+                        BuchungTyp.EINNAHME,
                         formatiereDatum(zahlung.getZahlungsdatum()),
                         ermittleZahlungObjektText(zahlung),
                         zahlung.getTyp() == null
                                 ? "Einnahme"
-                                : formatiereZahlungseingangTyp(zahlung.getTyp().toString()),
+                                : zahlung.getTyp().getLabel(),
                         zahlung.getStatus() == null
                                 ? "-"
                                 : zahlung.getStatus(),
                         formatEuro(zahlung.getBetrag())
-                })
-                .toArray(String[][]::new);
-    }
-
-    private String formatiereZahlungseingangTyp(String typ) {
-        return switch (typ) {
-            case "KALTMIETE" -> "Kaltmiete";
-            case "NEBENKOSTEN" -> "Nebenkosten";
-            case "KAUTION" -> "Kaution";
-            default -> typ;
-        };
+                ))
+                .toList();
     }
 
     private String ermittleZahlungObjektText(Zahlungseingang zahlung) {
@@ -288,7 +307,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         return "-";
     }
 
-    private String[][] berechneLetzteAusgabenTabellenZeilen(
+    private List<BuchungTabellenZeile> berechneLetzteAusgabenTabellenZeilen(
             LocalDate startDatum,
             LocalDate endDatum,
             Long immobilieId
@@ -304,37 +323,20 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 .filter(a -> a.getDatum() != null)
                 .sorted((a1, a2) -> a2.getDatum().compareTo(a1.getDatum()))
                 .limit(5)
-                .map(ausgabe -> new String[]{
+                .map(ausgabe -> new BuchungTabellenZeile(
+                        ausgabe.getId(),
+                        BuchungTyp.AUSGABE,
                         formatiereDatum(ausgabe.getDatum()),
                         ermittleAusgabeObjektText(ausgabe),
                         ausgabe.getKategorie() == null
                                 ? "-"
-                                : formatiereAusgabeKategorie(ausgabe.getKategorie().toString()),
+                                : ausgabe.getKategorie().getLabel(),
                         ausgabe.getStatus() == null
                                 ? "-"
                                 : ausgabe.getStatus(),
                         "- " + formatEuro(ausgabe.getBetrag())
-                })
-                .toArray(String[][]::new);
-    }
-
-    private String formatiereAusgabeKategorie(String kategorie) {
-        return switch (kategorie) {
-            case "STROM" -> "Strom";
-            case "WASSER" -> "Wasser";
-            case "HEIZUNG" -> "Heizung";
-            case "INTERNET" -> "Internet";
-            case "VERSICHERUNG" -> "Versicherung";
-            case "REPARATUR" -> "Reparatur";
-            case "INSTANDHALTUNG" -> "Instandhaltung";
-            case "RENOVIERUNG" -> "Renovierung";
-            case "REINIGUNG" -> "Reinigung";
-            case "GRUNDSTEUER" -> "Grundsteuer";
-            case "MUELLABFUHR" -> "Müllabfuhr";
-            case "VERWALTUNGSKOSTEN" -> "Verwaltungskosten";
-            case "SONSTIGES" -> "Sonstiges";
-            default -> kategorie;
-        };
+                ))
+                .toList();
     }
 
     private String ermittleAusgabeObjektText(Ausgabe ausgabe) {
@@ -1014,7 +1016,11 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         return grid;
     }
 
-    private Component transactionTable(String title, String subtitle, String[][] rows) {
+    private Component transactionTable(
+            String title,
+            String subtitle,
+            List<BuchungTabellenZeile> rows
+    ) {
         Div card = new Div();
         card.addClassName("table-card");
 
@@ -1033,16 +1039,10 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         table.add(tableHeader());
 
-        if (rows == null || rows.length == 0) {
-            table.add(tableRow(new String[]{
-                    getZeitraumText(),
-                    "-",
-                    "Keine Daten",
-                    "-",
-                    formatEuro(BigDecimal.ZERO)
-            }));
+        if (rows == null || rows.isEmpty()) {
+            table.add(emptyTableRow());
         } else {
-            for (String[] row : rows) {
+            for (BuchungTabellenZeile row : rows) {
                 table.add(tableRow(row));
             }
         }
@@ -1066,24 +1066,53 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         return row;
     }
 
-    private Component tableRow(String[] data) {
+    private Component emptyTableRow() {
         Div row = new Div();
         row.addClassName("finance-table-row");
 
-        Span status = new Span(data[3]);
+        Span status = new Span("-");
+        status.addClassNames("status-badge", "warning");
+
+        row.add(
+                new Span(getZeitraumText()),
+                new Span("-"),
+                new Span("Keine Daten"),
+                status,
+                new Span(formatEuro(BigDecimal.ZERO))
+        );
+
+        return row;
+    }
+
+    private Component tableRow(BuchungTabellenZeile data) {
+        Div row = new Div();
+        row.addClassNames("finance-table-row", "clickable-table-row");
+
+        Span status = new Span(data.status());
         status.addClassNames(
                 "status-badge",
-                data[3].equals("Bezahlt / Erledigt")
+                data.status().equals("Bezahlt / Erledigt")
                         ? "success"
                         : "warning"
         );
 
         row.add(
-                new Span(data[0]),
-                new Span(data[1]),
-                new Span(data[2]),
+                new Span(data.datum()),
+                new Span(data.objekt()),
+                new Span(data.kategorie()),
                 status,
-                new Span(data[4])
+                new Span(data.betrag())
+        );
+
+        row.addClickListener(event ->
+                getUI().ifPresent(ui ->
+                        ui.navigate(
+                                "finanzen/buchungen/"
+                                        + data.typ().getRouteValue()
+                                        + "/"
+                                        + data.id()
+                        )
+                )
         );
 
         return row;
