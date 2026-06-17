@@ -431,21 +431,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
                 UI.getCurrent().navigate(FinanzDashboardView.class)
         );
 
-        Div divider = new Div();
-        divider.addClassName("action-divider");
-
-        Button deleteButton = new Button("Buchung löschen", VaadinIcon.TRASH.create());
-        deleteButton.addClassName("delete-booking-button");
-        deleteButton.setWidthFull();
-
-        deleteButton.addClickListener(event ->
-                Notification.show("Löschen ist im Frontend-Prototyp noch nicht verbunden")
-        );
-
-        Span warning = new Span("Diese Aktion kann nicht rückgängig gemacht werden.");
-        warning.addClassName("delete-warning");
-
-        card.add(saveButton, cancelButton, divider, deleteButton, warning);
+        card.add(saveButton, cancelButton);
 
         return card;
     }
