@@ -10,6 +10,11 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.domain.Ausgabe;
 import de.hsbi.immobilienverwaltung.domain.Zahlungseingang;
+import de.hsbi.immobilienverwaltung.domain.Immobilie;
+import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
+import de.hsbi.immobilienverwaltung.domain.Mietvertrag;
+import de.hsbi.immobilienverwaltung.domain.enums.Ausgabenkategorie;
+import de.hsbi.immobilienverwaltung.domain.enums.Zahlungseingangtyp;
 import de.hsbi.immobilienverwaltung.service.interfaces.AusgabeService;
 import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
@@ -36,6 +41,7 @@ public class BuchungListView extends Div implements HasPageHeader {
     private final Select<String> kategorieSelect = new Select<>();
     private final AusgabeService ausgabeService;
     private final ZahlungsEingangService zahlungsEingangService;
+    private static final String ALLE_KATEGORIEN = "Alle Kategorien";
 
     public BuchungListView(AusgabeService ausgabeService,
                            ZahlungsEingangService zahlungsEingangService) {
@@ -103,7 +109,10 @@ public class BuchungListView extends Div implements HasPageHeader {
         typSelect.setLabel("Typ");
         typSelect.setItems("Alle", "Einnahme", "Ausgabe");
         typSelect.setValue("Alle");
-        typSelect.addValueChangeListener(event -> filtereBuchungen());
+        typSelect.addValueChangeListener(event -> {
+            aktualisiereKategorieFilter();
+            filtereBuchungen();
+        });
 
         statusSelect.setLabel("Status");
         statusSelect.setItems("Alle", "Bezahlt", "Offen");
@@ -111,18 +120,7 @@ public class BuchungListView extends Div implements HasPageHeader {
         statusSelect.addValueChangeListener(event -> filtereBuchungen());
 
         kategorieSelect.setLabel("Kategorie");
-        kategorieSelect.setItems(
-                "Alle Kategorien",
-                "KALTMIETE",
-                "NEBENKOSTEN",
-                "KAUTION",
-                "INSTANDHALTUNG",
-                "REPARATUR",
-                "VERSICHERUNG",
-                "VERWALTUNG",
-                "SONSTIGES"
-        );
-        kategorieSelect.setValue("Alle Kategorien");
+        aktualisiereKategorieFilter();
         kategorieSelect.addValueChangeListener(event -> filtereBuchungen());
 
         filterCard.add(searchField, typSelect, statusSelect, kategorieSelect);
@@ -156,6 +154,11 @@ public class BuchungListView extends Div implements HasPageHeader {
 
         grid.addColumn(BuchungRow::kategorie)
                 .setHeader("Kategorie")
+                .setAutoWidth(true)
+                .setFlexGrow(1);
+
+        grid.addColumn(BuchungRow::immobilie)
+                .setHeader("Immobilie")
                 .setAutoWidth(true)
                 .setFlexGrow(1);
 
@@ -214,6 +217,7 @@ public class BuchungListView extends Div implements HasPageHeader {
                     ausgabe.getDatum() != null ? ausgabe.getDatum().toString() : "-",
                     "Ausgabe",
                     ausgabe.getKategorie() != null ? ausgabe.getKategorie().getLabel() : "-",
+                    formatiereImmobilie(ausgabe),
                     ausgabe.getBeschreibung() != null ? ausgabe.getBeschreibung() : "-",
                     formatiereBetrag(ausgabe.getBetrag()),
                     ausgabe.getStatus() != null ? ausgabe.getStatus() : "-"
@@ -226,6 +230,7 @@ public class BuchungListView extends Div implements HasPageHeader {
                     zahlungseingang.getZahlungsdatum() != null ? zahlungseingang.getZahlungsdatum().toString() : "-",
                     "Einnahme",
                     zahlungseingang.getTyp() != null ? zahlungseingang.getTyp().getLabel() : "-",
+                    formatiereImmobilie(zahlungseingang),
                     zahlungseingang.getBeschreibung() != null ? zahlungseingang.getBeschreibung() : "-",
                     formatiereBetrag(zahlungseingang.getBetrag()),
                     zahlungseingang.getStatus() != null ? zahlungseingang.getStatus() : "-"
@@ -233,6 +238,46 @@ public class BuchungListView extends Div implements HasPageHeader {
         }
 
         filtereBuchungen();
+    }
+    private void aktualisiereKategorieFilter() {
+        String bisherigeKategorie = kategorieSelect.getValue();
+        List<String> kategorien = new ArrayList<>();
+        kategorien.add(ALLE_KATEGORIEN);
+
+        if ("Einnahme".equals(typSelect.getValue())) {
+            fuegeZahlungseingangtypenHinzu(kategorien);
+        } else if ("Ausgabe".equals(typSelect.getValue())) {
+            fuegeAusgabenkategorienHinzu(kategorien);
+        } else {
+            fuegeZahlungseingangtypenHinzu(kategorien);
+            fuegeAusgabenkategorienHinzu(kategorien);
+        }
+
+        kategorieSelect.setItems(kategorien);
+
+        if (bisherigeKategorie != null && kategorien.contains(bisherigeKategorie)) {
+            kategorieSelect.setValue(bisherigeKategorie);
+        } else {
+            kategorieSelect.setValue(ALLE_KATEGORIEN);
+        }
+    }
+
+    private void fuegeZahlungseingangtypenHinzu(List<String> kategorien) {
+        for (Zahlungseingangtyp typ : Zahlungseingangtyp.values()) {
+            fuegeKategorieHinzu(kategorien, typ.getLabel());
+        }
+    }
+
+    private void fuegeAusgabenkategorienHinzu(List<String> kategorien) {
+        for (Ausgabenkategorie kategorie : Ausgabenkategorie.values()) {
+            fuegeKategorieHinzu(kategorien, kategorie.getLabel());
+        }
+    }
+
+    private void fuegeKategorieHinzu(List<String> kategorien, String label) {
+        if (label != null && !label.isBlank() && !kategorien.contains(label)) {
+            kategorien.add(label);
+        }
     }
     private void filtereBuchungen() {
         String suchtext = searchField.getValue() != null
@@ -248,6 +293,7 @@ public class BuchungListView extends Div implements HasPageHeader {
                     boolean passtZumSuchtext = suchtext.isEmpty()
                             || buchung.typ().toLowerCase().contains(suchtext)
                             || buchung.kategorie().toLowerCase().contains(suchtext)
+                            || buchung.immobilie().toLowerCase().contains(suchtext)
                             || buchung.beschreibung().toLowerCase().contains(suchtext)
                             || buchung.betrag().toLowerCase().contains(suchtext)
                             || buchung.datum().toLowerCase().contains(suchtext)
@@ -284,12 +330,54 @@ public class BuchungListView extends Div implements HasPageHeader {
         NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.GERMANY);
         return formatter.format(betrag);
     }
+    private String formatiereImmobilie(Ausgabe ausgabe) {
+        if (ausgabe == null) {
+            return "-";
+        }
+
+        Immobilie immobilie = ausgabe.getImmobilie();
+
+        if (immobilie == null && ausgabe.getMieteinheit() != null) {
+            immobilie = ausgabe.getMieteinheit().getImmobilie();
+        }
+
+        return formatiereImmobilie(immobilie);
+    }
+
+    private String formatiereImmobilie(Zahlungseingang zahlungseingang) {
+        if (zahlungseingang == null) {
+            return "-";
+        }
+
+        Mietvertrag mietvertrag = zahlungseingang.getMietvertrag();
+
+        if (mietvertrag == null) {
+            return "-";
+        }
+
+        Mieteinheit mieteinheit = mietvertrag.getMieteinheit();
+
+        if (mieteinheit == null) {
+            return "-";
+        }
+
+        return formatiereImmobilie(mieteinheit.getImmobilie());
+    }
+
+    private String formatiereImmobilie(Immobilie immobilie) {
+        if (immobilie == null || immobilie.getBezeichnung() == null || immobilie.getBezeichnung().isBlank()) {
+            return "-";
+        }
+
+        return immobilie.getBezeichnung();
+    }
 
     private record BuchungRow(
             Long id,
             String datum,
             String typ,
             String kategorie,
+            String immobilie,
             String beschreibung,
             String betrag,
             String status
