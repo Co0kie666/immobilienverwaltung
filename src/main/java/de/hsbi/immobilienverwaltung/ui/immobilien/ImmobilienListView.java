@@ -13,14 +13,18 @@ import de.hsbi.immobilienverwaltung.domain.Immobilie;
 import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
 import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
 import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
+import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import jakarta.annotation.security.PermitAll;
 
+import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 // Die View zeigt Immobilien nicht direkt aus dem Repository an,
 // sondern nutzt den Service, damit Filter- und Berechnungslogik zentral bleibt.
@@ -31,6 +35,7 @@ public class ImmobilienListView extends Div implements HasPageHeader {
     private final Grid<Immobilie> grid = new Grid<>(Immobilie.class, false);
     private final ImmobilieService immobilieService;
     private final MieteinheitService mieteinheitService;
+    private final ZahlungsEingangService zahlungsEingangService;
 
     private final Select<Immobilientyp> typSelect = new Select<>();
     private final Select<String> unitsSelect = new Select<>();
@@ -45,9 +50,10 @@ public class ImmobilienListView extends Div implements HasPageHeader {
     private final Button naechsteSeiteButton = new Button("Weiter", VaadinIcon.ARROW_RIGHT.create());
     private final Span seitenInfo = new Span();
 
-    public ImmobilienListView(ImmobilieService immobilieService, MieteinheitService mieteinheitenService) {
+    public ImmobilienListView(ImmobilieService immobilieService, MieteinheitService mieteinheitenService, ZahlungsEingangService zahlungsEingangService) {
         this.immobilieService = immobilieService;
         this.mieteinheitService = mieteinheitenService;
+        this.zahlungsEingangService = zahlungsEingangService;
         addClassName("immobilien-list-view");
         addClassName("page-content");
 
@@ -169,7 +175,9 @@ public class ImmobilienListView extends Div implements HasPageHeader {
     // Schneidet aus der gefilterten Gesamtliste nur die Einträge heraus,
     // die auf der aktuellen Seite angezeigt werden sollen
     private void aktualisiereTabellenSeite() {
+        // wenn die Filter keine Ergebnisse liefern
         if (gefilterteImmobilien.isEmpty()) {
+            // Tabelle leeren
             grid.setItems(new ArrayList<>());
             seitenInfo.setText("Keine Immobilien gefunden");
             vorherigeSeiteButton.setEnabled(false);
@@ -180,14 +188,16 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         int gesamtSeiten = berechneGesamtSeiten();
 
         // Falls sich die Anzahl der Seiten durch Filtern oder Löschen verkleinert,
-        // wird die aktuelle Seite auf die letzte noch vorhandene Seite korrigiert.
+        // wird die aktuelle Seite auf die letzte noch vorhandene Seite korrigiert
         if (aktuelleSeite >= gesamtSeiten) {
             aktuelleSeite = gesamtSeiten - 1;
         }
 
         int start = aktuelleSeite * IMMOBILIEN_PRO_SEITE;
+        // Math.min(...) verhindert, dass das Ende größer als die Liste wird -> wichtig für letzte Seite
         int ende = Math.min(start + IMMOBILIEN_PRO_SEITE, gefilterteImmobilien.size());
 
+        // subList(start, ende) schneidet aus der ganzen Liste nur den Teil heraus, der auf der aktuellen Seite angezeigt werden soll
         List<Immobilie> immobilienAufAktuellerSeite = gefilterteImmobilien.subList(start, ende);
 
         grid.setItems(immobilienAufAktuellerSeite);
@@ -236,7 +246,8 @@ public class ImmobilienListView extends Div implements HasPageHeader {
             .setHeader("Leerstand")
             .setAutoWidth(true);
 
-        grid.addColumn(immobilie -> "-")
+        grid.addColumn(immobilie -> formatiereBetrag(zahlungsEingangService.
+                        berechneOffeneZahlungenFuerImmobilie(immobilie.getId())))
             .setHeader("Offene Posten")
             .setAutoWidth(true);
 
@@ -245,6 +256,15 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         grid.addItemClickListener(event ->
             getUI().ifPresent(ui -> ui.navigate("immobilien/" + event.getItem().getId()))
         );
+    }
+
+    private String formatiereBetrag(BigDecimal betrag) {
+        if (betrag == null) {
+            return "0,00 €";
+        }
+
+        NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.GERMANY);
+        return formatter.format(betrag);
     }
 
     private String formatAdresse(Immobilie immobilie) {
