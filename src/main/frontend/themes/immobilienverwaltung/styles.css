@@ -9,6 +9,12 @@
 @import url('mieter-detail.css');
 @import url('mietvertrag-form.css');
 @import url('mietvertrag-detail.css');
+@import url('immobilie-form.css');
+@import url('immobilie-edit.css');
+@import url('mieteinheit-form.css');
+@import url('mieteinheit-detail.css');
+@import url('mieteinheit-edit.css');
+
 
 /* =========================================================
    Global Component Styles
