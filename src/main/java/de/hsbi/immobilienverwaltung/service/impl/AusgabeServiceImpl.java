@@ -10,7 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,6 +30,8 @@ public class AusgabeServiceImpl implements AusgabeService {
     @Transactional
     public Ausgabe speichereAusgabe(Ausgabe ausgabe) {
 
+        // Eine Ausgabe benötigt alle fachlich notwendigen Pflichtfelder,
+        // bevor sie gespeichert werden darf.
         if (ausgabe == null) {
             throw new IllegalArgumentException("Ausgabe darf nicht leer sein.");
         }
@@ -34,7 +40,8 @@ public class AusgabeServiceImpl implements AusgabeService {
             throw new IllegalArgumentException("Kategorie muss ausgewählt werden.");
         }
 
-        if (ausgabe.getBetrag() == null || ausgabe.getBetrag().compareTo(BigDecimal.ZERO) <= 0) {
+        if (ausgabe.getBetrag() == null ||
+                ausgabe.getBetrag().compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Betrag muss größer als 0 sein.");
         }
 
@@ -94,15 +101,10 @@ public class AusgabeServiceImpl implements AusgabeService {
                 endDatum
         );
 
-        BigDecimal summe = BigDecimal.ZERO;
-
-        for (Ausgabe ausgabe : ausgaben) {
-            if (ausgabe.getBetrag() != null) {
-                summe = summe.add(ausgabe.getBetrag());
-            }
-        }
-
-        return summe;
+        return ausgaben.stream()
+                .map(Ausgabe::getBetrag)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     @Override
@@ -158,9 +160,14 @@ public class AusgabeServiceImpl implements AusgabeService {
     ) {
         return ausgabeRepository.findAll()
                 .stream()
+                // Das Dashboard betrachtet nur Ausgaben im gewählten Zeitraum.
                 .filter(a -> !a.getDatum().isBefore(startDatum))
                 .filter(a -> !a.getDatum().isAfter(endDatum))
+
+                // Für Einnahmen-/Ausgaben-KPIs zählen nur erledigte Ausgaben.
                 .filter(a -> a.getStatus().equals("Bezahlt / Erledigt"))
+
+                // null bedeutet: Es wurde kein Immobilienfilter gesetzt.
                 .filter(a -> immobilieId == null ||
                         a.getImmobilie()
                                 .getId()
@@ -180,6 +187,8 @@ public class AusgabeServiceImpl implements AusgabeService {
                 .filter(a -> a.getDatum() != null)
                 .filter(a -> !a.getDatum().isBefore(startDatum))
                 .filter(a -> !a.getDatum().isAfter(endDatum))
+
+                // null bedeutet: Es wurde kein Immobilienfilter gesetzt.
                 .filter(a -> immobilieId == null ||
                         (
                                 a.getImmobilie() != null &&
@@ -188,6 +197,8 @@ public class AusgabeServiceImpl implements AusgabeService {
                                                 .equals(immobilieId)
                         ))
                 .filter(a -> a.getBetrag() != null)
+
+                // LinkedHashMap behält die Reihenfolge der ermittelten Kategorien bei.
                 .collect(Collectors.groupingBy(
                         this::ermittleKategorieName,
                         LinkedHashMap::new,
@@ -204,26 +215,7 @@ public class AusgabeServiceImpl implements AusgabeService {
             return "Ohne Kategorie";
         }
 
-        return formatiereKategorieName(ausgabe.getKategorie().toString());
-    }
-
-    private String formatiereKategorieName(String kategorie) {
-        return switch (kategorie) {
-            case "STROM" -> "Strom";
-            case "WASSER" -> "Wasser";
-            case "HEIZUNG" -> "Heizung";
-            case "INTERNET" -> "Internet";
-            case "VERSICHERUNG" -> "Versicherung";
-            case "REPARATUR" -> "Reparatur";
-            case "INSTANDHALTUNG" -> "Instandhaltung";
-            case "RENOVIERUNG" -> "Renovierung";
-            case "REINIGUNG" -> "Reinigung";
-            case "GRUNDSTEUER" -> "Grundsteuer";
-            case "MUELLABFUHR" -> "Müllabfuhr";
-            case "VERWALTUNGSKOSTEN" -> "Verwaltungskosten";
-            case "SONSTIGES" -> "Sonstiges";
-            default -> kategorie;
-        };
+        return ausgabe.getKategorie().getLabel();
     }
 
     @Override
@@ -237,6 +229,8 @@ public class AusgabeServiceImpl implements AusgabeService {
                 .filter(a -> a.getDatum() != null)
                 .filter(a -> !a.getDatum().isBefore(startDatum))
                 .filter(a -> !a.getDatum().isAfter(endDatum))
+
+                // null bedeutet: Es wurde kein Immobilienfilter gesetzt.
                 .filter(a -> immobilieId == null ||
                         (
                                 a.getImmobilie() != null &&

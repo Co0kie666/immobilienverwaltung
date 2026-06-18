@@ -313,3 +313,11 @@
         grid-template-columns: 1fr;
     }
 }
+
+.clickable-table-row {
+    cursor: pointer;
+}
+
+.clickable-table-row:hover {
+    background-color: #f3f6fb;
+}
