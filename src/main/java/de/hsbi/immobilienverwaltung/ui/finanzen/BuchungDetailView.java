@@ -10,8 +10,6 @@ import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.BigDecimalField;
 import com.vaadin.flow.component.textfield.TextArea;
@@ -74,12 +72,11 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         this.zahlungsEingangService = zahlungsEingangService;
         this.mietvertragService = mietvertragService;
 
-        addClassName("page-content");
-        addClassName("buchung-form-view");
+        addClassNames("page-content", "buchung-detail-page");
         setWidthFull();
         setMinHeight("100%");
         setPadding(false);
-        setSpacing(true);
+        setSpacing(false);
 
         createFields();
     }
@@ -145,7 +142,8 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         removeAll();
 
         add(
-                createHeaderCard(),
+                createHero(),
+                createStatsGrid(),
                 createContentLayout()
         );
     }
@@ -177,54 +175,51 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
 
         beschreibungField = new TextArea("Beschreibung / Notiz");
         beschreibungField.setWidthFull();
-        beschreibungField.setHeight("140px");
+        beschreibungField.setHeight("150px");
     }
 
-    private Component createHeaderCard() {
-        Div headerCard = new Div();
-        headerCard.addClassName("card");
-        headerCard.addClassName("page-section");
+    private Component createHero() {
+        Div hero = new Div();
+        hero.addClassNames("buchung-detail-hero", istAusgabe() ? "expense" : "income");
 
-        HorizontalLayout header = new HorizontalLayout();
-        header.setWidthFull();
-        header.setAlignItems(FlexComponent.Alignment.CENTER);
-        header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+        Div left = new Div();
+        left.addClassName("buchung-detail-hero-left");
 
         Button backButton = new Button(VaadinIcon.ARROW_LEFT.create());
-        backButton.addClassName("icon-button");
+        backButton.addClassName("buchung-detail-back-button");
         backButton.addClickListener(event ->
                 getUI().ifPresent(ui -> ui.navigate(BuchungListView.class))
         );
 
-        VerticalLayout titleArea = new VerticalLayout();
-        titleArea.setPadding(false);
-        titleArea.setSpacing(false);
+        Div avatar = new Div(istAusgabe() ? VaadinIcon.ARROW_UP.create() : VaadinIcon.ARROW_DOWN.create());
+        avatar.addClassNames("buchung-detail-avatar", istAusgabe() ? "expense" : "income");
 
-        HorizontalLayout titleRow = new HorizontalLayout();
-        titleRow.setAlignItems(FlexComponent.Alignment.CENTER);
-        titleRow.setSpacing(true);
+        Div titleBox = new Div();
+        titleBox.addClassName("buchung-detail-title-box");
 
-        Span title = new Span(getBuchungTypLabel() + " " + getBuchungNummer());
-        title.addClassName("card-title");
+        Span eyebrow = new Span(bearbeitenAktiv ? "Bearbeitungsmodus" : "Buchungsdetail");
+        eyebrow.addClassName("buchung-detail-eyebrow");
+
+        H3 title = new H3(getBuchungTypLabel() + " " + getBuchungNummer());
+        title.addClassName("buchung-detail-title");
+
+        Div meta = new Div();
+        meta.addClassName("buchung-detail-meta");
+        meta.add(
+                createMetaPill(VaadinIcon.FILE_TEXT, formatKategorie()),
+                createMetaPill(VaadinIcon.CALENDAR, formatDatum(getDatum())),
+                createMetaPill(VaadinIcon.BUILDING, formatiereImmobilie(ermittleImmobilie()))
+        );
+
+        titleBox.add(eyebrow, title, meta);
+        left.add(backButton, avatar, titleBox);
+
+        Div actions = new Div();
+        actions.addClassName("buchung-detail-hero-actions");
 
         Span statusBadge = new Span(formatStatusKurz());
-        statusBadge.addClassNames("status-badge", getStatusStyle());
-
-        titleRow.add(title, statusBadge);
-
-        Span subtitle = new Span(formatKategorie() + " • " + formatiereBetrag(getBetrag()));
-        subtitle.addClassName("card-subtitle");
-
-        titleArea.add(titleRow, subtitle);
-
-        HorizontalLayout leftArea = new HorizontalLayout();
-        leftArea.setAlignItems(FlexComponent.Alignment.CENTER);
-        leftArea.setSpacing(true);
-        leftArea.add(backButton, titleArea);
-
-        HorizontalLayout rightArea = new HorizontalLayout();
-        rightArea.setAlignItems(FlexComponent.Alignment.CENTER);
-        rightArea.setSpacing(true);
+        statusBadge.addClassNames("status-badge", getStatusStyle(), "buchung-detail-status");
+        actions.add(statusBadge);
 
         if (bearbeitenAktiv) {
             Button ansichtButton = new Button("Ansicht");
@@ -238,9 +233,7 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
             speichernButton.addClassName("primary-button");
             speichernButton.addClickListener(event -> speichereBuchung());
 
-            Button loeschenButton = createLoeschenButton();
-
-            rightArea.add(ansichtButton, speichernButton, loeschenButton);
+            actions.add(ansichtButton, speichernButton, createLoeschenButton());
         } else {
             Button bearbeitenButton = new Button("Bearbeiten", VaadinIcon.EDIT.create());
             bearbeitenButton.addClassName("secondary-button");
@@ -249,13 +242,18 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
                 renderView();
             });
 
-            rightArea.add(bearbeitenButton, createLoeschenButton());
+            actions.add(bearbeitenButton, createLoeschenButton());
         }
 
-        header.add(leftArea, rightArea);
-        headerCard.add(header);
+        hero.add(left, actions);
+        return hero;
+    }
 
-        return headerCard;
+    private Component createMetaPill(VaadinIcon icon, String value) {
+        Div pill = new Div();
+        pill.addClassName("buchung-detail-meta-pill");
+        pill.add(icon.create(), new Span(textOderStrich(value)));
+        return pill;
     }
 
     private Button createLoeschenButton() {
@@ -265,61 +263,122 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         return loeschenButton;
     }
 
-    private Component createContentLayout() {
-        HorizontalLayout contentLayout = new HorizontalLayout();
-        contentLayout.setWidthFull();
-        contentLayout.setSpacing(true);
-        contentLayout.setAlignItems(FlexComponent.Alignment.START);
+    private Component createStatsGrid() {
+        Div grid = new Div();
+        grid.addClassName("buchung-detail-stats-grid");
 
-        VerticalLayout leftColumn = new VerticalLayout();
-        leftColumn.setPadding(false);
-        leftColumn.setSpacing(true);
-        leftColumn.setWidth("0");
-        leftColumn.getStyle().set("min-width", "0");
+        grid.add(
+                createStatCard(
+                        "Betrag",
+                        formatiereBetrag(getBetrag()),
+                        istAusgabe() ? "Zahlungsausgang" : "Zahlungseingang",
+                        istAusgabe() ? VaadinIcon.ARROW_UP : VaadinIcon.ARROW_DOWN,
+                        istAusgabe() ? "danger" : "success"
+                ),
+                createStatCard(
+                        "Status",
+                        formatStatusKurz(),
+                        textOderStrich(getStatus()),
+                        VaadinIcon.CHECK,
+                        getStatusStyle()
+                ),
+                createStatCard(
+                        getDatumLabel(),
+                        formatDatum(getDatum()),
+                        getZweitesDatumLabel() + ": " + formatDatum(getZweitesDatum()),
+                        VaadinIcon.CALENDAR,
+                        "primary"
+                ),
+                createStatCard(
+                        "Zuordnung",
+                        formatiereImmobilie(ermittleImmobilie()),
+                        formatiereMieteinheit(ermittleMieteinheit()),
+                        VaadinIcon.BUILDING,
+                        "primary"
+                )
+        );
+
+        return grid;
+    }
+
+    private Component createStatCard(
+            String label,
+            String value,
+            String subtitle,
+            VaadinIcon icon,
+            String color
+    ) {
+        Div card = new Div();
+        card.addClassNames("buchung-detail-stat-card", color);
+
+        Div text = new Div();
+        text.addClassName("buchung-detail-stat-text");
+
+        Span labelSpan = new Span(label);
+        labelSpan.addClassName("buchung-detail-stat-label");
+
+        Span valueSpan = new Span(textOderStrich(value));
+        valueSpan.addClassName("buchung-detail-stat-value");
+
+        Span subtitleSpan = new Span(textOderStrich(subtitle));
+        subtitleSpan.addClassName("buchung-detail-stat-subtitle");
+
+        text.add(labelSpan, valueSpan, subtitleSpan);
+
+        Div iconBox = new Div(icon.create());
+        iconBox.addClassNames("buchung-detail-stat-icon", color);
+
+        card.add(text, iconBox);
+        return card;
+    }
+
+    private Component createContentLayout() {
+        Div contentGrid = new Div();
+        contentGrid.addClassName("buchung-detail-content-grid");
+
+        Div mainColumn = new Div();
+        mainColumn.addClassName("buchung-detail-main-column");
 
         if (bearbeitenAktiv) {
-            leftColumn.add(createEditCard());
+            mainColumn.add(createEditCard());
         } else {
-            leftColumn.add(
+            mainColumn.add(
                     createKerndatenCard(),
                     createBeschreibungCard()
             );
         }
 
-        VerticalLayout rightColumn = new VerticalLayout();
-        rightColumn.setPadding(false);
-        rightColumn.setSpacing(true);
-        rightColumn.setWidth("380px");
-        rightColumn.getStyle().set("min-width", "360px");
-
-        rightColumn.add(
+        Div sideColumn = new Div();
+        sideColumn.addClassName("buchung-detail-side-column");
+        sideColumn.add(
                 createZuordnungCard(),
                 createNavigationCard()
         );
 
-        contentLayout.add(leftColumn, rightColumn);
-        contentLayout.setFlexGrow(1, leftColumn);
-        contentLayout.setFlexGrow(0, rightColumn);
-
-        return contentLayout;
+        contentGrid.add(mainColumn, sideColumn);
+        return contentGrid;
     }
 
     private Component createKerndatenCard() {
-        Div card = createCard("Buchungsdaten");
+        Div card = createCard(
+                "Buchungsdaten",
+                "Kerninformationen dieser Buchung",
+                VaadinIcon.FILE_TEXT
+        );
 
         card.add(
-                createReadonlyInfoBlock("Typ", getBuchungTypLabel()),
-                createReadonlyInfoBlock(getKategorieLabel(), formatKategorie()),
-                createReadonlyInfoBlock("Betrag", formatiereBetrag(getBetrag())),
-                createReadonlyInfoBlock(getDatumLabel(), formatDatum(getDatum())),
-                createReadonlyInfoBlock(getZweitesDatumLabel(), formatDatum(getZweitesDatum())),
-                createReadonlyInfoBlock("Status", textOderStrich(getStatus()))
+                createReadonlyInfoBlock("Typ", getBuchungTypLabel(), VaadinIcon.FILE_TEXT),
+                createReadonlyInfoBlock(getKategorieLabel(), formatKategorie(), VaadinIcon.TAG),
+                createReadonlyInfoBlock("Betrag", formatiereBetrag(getBetrag()), istAusgabe() ? VaadinIcon.ARROW_UP : VaadinIcon.ARROW_DOWN),
+                createReadonlyInfoBlock(getDatumLabel(), formatDatum(getDatum()), VaadinIcon.CALENDAR),
+                createReadonlyInfoBlock(getZweitesDatumLabel(), formatDatum(getZweitesDatum()), VaadinIcon.CALENDAR),
+                createStatusInfoBlock()
         );
 
         if (istAusgabe()) {
             card.add(
-                    createReadonlyInfoBlock("Titel", textOderStrich(aktuelleAusgabe.getTitel())),
-                    createReadonlyInfoBlock("Empfänger", textOderStrich(aktuelleAusgabe.getEmpfaenger()))
+                    createReadonlyInfoBlock("Titel", textOderStrich(aktuelleAusgabe.getTitel()), VaadinIcon.FILE_TEXT),
+                    createReadonlyInfoBlock("Empfänger", textOderStrich(aktuelleAusgabe.getEmpfaenger()), VaadinIcon.USER)
             );
         }
 
@@ -327,29 +386,40 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
     }
 
     private Component createBeschreibungCard() {
-        Div card = createCard("Beschreibung");
-        card.add(createReadonlyInfoBlock("Notiz", textOderStrich(getBeschreibung())));
+        Div card = createCard(
+                "Beschreibung",
+                "Notiz und Zusatzinformationen",
+                VaadinIcon.FILE_TEXT
+        );
+
+        Div note = new Div();
+        note.addClassName("buchung-detail-note-box");
+        note.add(new Span(textOderStrich(getBeschreibung())));
+
+        card.add(note);
         return card;
     }
 
     private Component createEditCard() {
         befuelleFelder();
 
-        Div card = createCard("Buchungsdaten bearbeiten");
+        Div card = createCard(
+                "Buchungsdaten bearbeiten",
+                "Änderungen werden erst nach dem Speichern übernommen",
+                VaadinIcon.EDIT
+        );
+        card.addClassName("buchung-detail-edit-card");
 
-        HorizontalLayout row1 = new HorizontalLayout();
-        row1.setWidthFull();
-        row1.addClassName("form-row");
+        Div row1 = new Div();
+        row1.addClassName("buchung-detail-form-row");
         row1.add(betragField, datumField);
 
-        HorizontalLayout row2 = new HorizontalLayout();
-        row2.setWidthFull();
-        row2.addClassName("form-row");
+        Div row2 = new Div();
+        row2.addClassName("buchung-detail-form-row");
         row2.add(ausgabeKategorieField, zahlungseingangTypField, statusField);
 
-        HorizontalLayout row3 = new HorizontalLayout();
-        row3.setWidthFull();
-        row3.addClassName("form-row");
+        Div row3 = new Div();
+        row3.addClassName("buchung-detail-form-row");
         row3.add(zweitesDatumField);
 
         card.add(row1, row2, row3, beschreibungField);
@@ -358,25 +428,31 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
     }
 
     private Component createZuordnungCard() {
-        Div card = createCard("Zuordnung");
+        Div card = createCard(
+                "Zuordnung",
+                "Verknüpfte Immobilie, Einheit und Person",
+                VaadinIcon.BUILDING
+        );
 
         card.add(
-                createReadonlyInfoBlock("Immobilie", formatiereImmobilie(ermittleImmobilie())),
-                createReadonlyInfoBlock("Mieteinheit", formatiereMieteinheit(ermittleMieteinheit())),
-                createReadonlyInfoBlock("Mietvertrag", formatiereMietvertrag(ermittleMietvertrag())),
-                createReadonlyInfoBlock("Mieter", formatiereMieter(ermittleMieter()))
+                createReadonlyInfoBlock("Immobilie", formatiereImmobilie(ermittleImmobilie()), VaadinIcon.BUILDING),
+                createReadonlyInfoBlock("Mieteinheit", formatiereMieteinheit(ermittleMieteinheit()), VaadinIcon.FILE_TEXT),
+                createReadonlyInfoBlock("Mietvertrag", formatiereMietvertrag(ermittleMietvertrag()), VaadinIcon.FILE_TEXT),
+                createReadonlyInfoBlock("Mieter", formatiereMieter(ermittleMieter()), VaadinIcon.USER)
         );
 
         return card;
     }
 
     private Component createNavigationCard() {
-        Div card = createCard("Schnellzugriff");
+        Div card = createCard(
+                "Schnellzugriff",
+                "Direkt zu verbundenen Datensätzen springen",
+                VaadinIcon.ARROW_RIGHT
+        );
+
         Div buttonRow = new Div();
-        buttonRow.setWidthFull();
-        buttonRow.getStyle().set("display", "grid");
-        buttonRow.getStyle().set("grid-template-columns", "repeat(2, minmax(0, 1fr))");
-        buttonRow.getStyle().set("gap", "12px");
+        buttonRow.addClassName("buchung-detail-quick-actions");
 
         Button immobilieButton = new Button("Immobilie", VaadinIcon.BUILDING.create());
         immobilieButton.addClassName("secondary-button");
@@ -517,32 +593,77 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         ));
     }
 
-    private Div createCard(String title) {
+    private Div createCard(String title, String subtitle, VaadinIcon icon) {
         Div card = new Div();
-        card.addClassName("card");
-        card.setWidthFull();
+        card.addClassName("buchung-detail-card");
 
-        H3 heading = new H3(title);
-        heading.addClassName("card-title");
+        Div header = new Div();
+        header.addClassName("buchung-detail-card-header");
 
-        card.add(heading);
+        Div titleBox = new Div();
+        titleBox.addClassName("buchung-detail-card-title-box");
+
+        Div iconBox = new Div(icon.create());
+        iconBox.addClassName("buchung-detail-card-icon");
+
+        Div textBox = new Div();
+
+        Span titleText = new Span(title);
+        titleText.addClassName("buchung-detail-card-title");
+
+        Span subtitleText = new Span(subtitle);
+        subtitleText.addClassName("buchung-detail-card-subtitle");
+
+        textBox.add(titleText, subtitleText);
+        titleBox.add(iconBox, textBox);
+        header.add(titleBox);
+        card.add(header);
 
         return card;
     }
 
-    private Component createReadonlyInfoBlock(String labelText, String valueText) {
-        VerticalLayout block = new VerticalLayout();
-        block.setPadding(false);
-        block.setSpacing(false);
+    private Component createReadonlyInfoBlock(String labelText, String valueText, VaadinIcon icon) {
+        Div row = new Div();
+        row.addClassName("buchung-detail-info-row");
+
+        Div iconBox = new Div(icon.create());
+        iconBox.addClassName("buchung-detail-info-icon");
+
+        Div text = new Div();
+        text.addClassName("buchung-detail-info-text");
 
         Span label = new Span(labelText);
-        label.addClassName("card-subtitle");
+        label.addClassName("buchung-detail-info-label");
 
-        Span value = new Span(valueText);
+        Span value = new Span(textOderStrich(valueText));
+        value.addClassName("buchung-detail-info-value");
 
-        block.add(label, value);
+        text.add(label, value);
+        row.add(iconBox, text);
 
-        return block;
+        return row;
+    }
+
+    private Component createStatusInfoBlock() {
+        Div row = new Div();
+        row.addClassName("buchung-detail-info-row");
+
+        Div iconBox = new Div(VaadinIcon.CHECK.create());
+        iconBox.addClassName("buchung-detail-info-icon");
+
+        Div text = new Div();
+        text.addClassName("buchung-detail-info-text");
+
+        Span label = new Span("Status");
+        label.addClassName("buchung-detail-info-label");
+
+        Span statusBadge = new Span(formatStatusKurz());
+        statusBadge.addClassNames("status-badge", getStatusStyle());
+
+        text.add(label, statusBadge);
+        row.add(iconBox, text);
+
+        return row;
     }
 
     private boolean istAusgabe() {

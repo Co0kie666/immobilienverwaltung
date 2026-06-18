@@ -1,8 +1,9 @@
 package de.hsbi.immobilienverwaltung.ui.finanzen;
+
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
@@ -21,11 +22,12 @@ import de.hsbi.immobilienverwaltung.service.interfaces.MietvertragService;
 import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
-import java.time.LocalDate;
-import java.util.Comparator;
 import jakarta.annotation.security.PermitAll;
 
+import java.math.BigDecimal;
 import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -52,25 +54,28 @@ public class BuchungListView extends Div implements HasPageHeader {
     private List<BuchungRow> gefilterteBuchungen = new ArrayList<>();
     private int aktuelleSeite = 0;
 
-
     private final AusgabeService ausgabeService;
     private final ZahlungsEingangService zahlungsEingangService;
     private final MietvertragService mietvertragService;
 
     private List<BuchungRow> alleBuchungen = new ArrayList<>();
 
-    public BuchungListView(AusgabeService ausgabeService,
-                           ZahlungsEingangService zahlungsEingangService,
-                           MietvertragService mietvertragService) {
+    public BuchungListView(
+            AusgabeService ausgabeService,
+            ZahlungsEingangService zahlungsEingangService,
+            MietvertragService mietvertragService
+    ) {
         this.ausgabeService = ausgabeService;
         this.zahlungsEingangService = zahlungsEingangService;
         this.mietvertragService = mietvertragService;
 
-        addClassName("buchung-list-view");
-        addClassName("page-content");
+        addClassNames("buchung-list-view", "buchung-list-modern", "page-content");
+
+        ladeBuchungen();
 
         add(
-                createActionBar(),
+                createHeroSection(),
+                createKpiGrid(),
                 createFilterCard(),
                 createTableCard()
         );
@@ -86,71 +91,216 @@ public class BuchungListView extends Div implements HasPageHeader {
         return "Finanzen › Alle Buchungen";
     }
 
-    private Div createActionBar() {
-        Div actionBar = new Div();
-        actionBar.addClassName("immobilien-action-bar");
-        actionBar.getStyle()
-                .set("display", "flex")
-                .set("gap", "16px")
-                .set("align-items", "center")
-                .set("margin-bottom", "20px")
-                .set("padding", "8px 0");
+    private Component createHeroSection() {
+        Div hero = new Div();
+        hero.addClassName("booking-list-hero");
 
-        Button zurueckButton = new Button("Zurück", VaadinIcon.ARROW_LEFT.create());
-        zurueckButton.addClassName("secondary-button");
-        zurueckButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate(FinanzDashboardView.class))
+        Div content = new Div();
+        content.addClassName("booking-list-hero-content");
+
+        Span eyebrow = new Span("Buchungsübersicht");
+        eyebrow.addClassName("booking-list-eyebrow");
+
+        H2 title = new H2("Finanzbuchungen im Griff");
+        title.addClassName("booking-list-hero-title");
+
+        Paragraph subtitle = new Paragraph(
+                "Durchsuche Einnahmen und Ausgaben, filtere nach Immobilie, Vertrag, Kategorie oder Status und springe direkt in die Buchungsdetails."
         );
+        subtitle.addClassName("booking-list-hero-subtitle");
 
-        Button newButton = new Button("Neue Buchung", VaadinIcon.PLUS.create());
-        newButton.addClassName("primary-button");
-        newButton.addClickListener(event ->
+        Div actions = new Div();
+        actions.addClassName("booking-list-hero-actions");
+
+        Button neueBuchungButton = new Button("Neue Buchung", VaadinIcon.PLUS.create());
+        neueBuchungButton.addClassName("primary-button");
+        neueBuchungButton.addClickListener(event ->
                 getUI().ifPresent(ui -> ui.navigate(BuchungFormView.class))
         );
 
-        actionBar.add(zurueckButton, newButton);
+        Button dashboardButton = new Button("Zurück zum Dashboard", VaadinIcon.ARROW_LEFT.create());
+        dashboardButton.addClassName("secondary-button");
+        dashboardButton.addClickListener(event ->
+                getUI().ifPresent(ui -> ui.navigate(FinanzDashboardView.class))
+        );
 
-        return actionBar;
+        actions.add(neueBuchungButton, dashboardButton);
+        content.add(eyebrow, title, subtitle, actions);
+
+        Div visual = new Div();
+        visual.addClassName("booking-list-hero-visual");
+
+        Div panel = new Div();
+        panel.addClassName("booking-list-hero-panel");
+
+        Span panelLabel = new Span("Aktueller Bestand");
+        panelLabel.addClassName("booking-list-panel-label");
+
+        H2 total = new H2(String.valueOf(alleBuchungen.size()));
+        total.addClassName("booking-list-panel-value");
+
+        Span panelMeta = new Span("Buchungen im System");
+        panelMeta.addClassName("booking-list-panel-meta");
+
+        Div miniStats = new Div();
+        miniStats.addClassName("booking-list-mini-stats");
+        miniStats.add(
+                createMiniStat("Einnahmen", zaehleTyp("Einnahme"), "income"),
+                createMiniStat("Ausgaben", zaehleTyp("Ausgabe"), "expense"),
+                createMiniStat("Offen", zaehleOffeneBuchungen(), "open")
+        );
+
+        panel.add(panelLabel, total, panelMeta, miniStats);
+        visual.add(panel);
+
+        hero.add(content, visual);
+        return hero;
+    }
+
+    private Component createMiniStat(String label, int value, String style) {
+        Div stat = new Div();
+        stat.addClassNames("booking-list-mini-stat", style);
+
+        Span valueText = new Span(String.valueOf(value));
+        valueText.addClassName("booking-list-mini-value");
+
+        Span labelText = new Span(label);
+        labelText.addClassName("booking-list-mini-label");
+
+        stat.add(valueText, labelText);
+        return stat;
+    }
+
+    private Component createKpiGrid() {
+        Div grid = new Div();
+        grid.addClassName("booking-list-kpi-grid");
+
+        grid.add(
+                createKpiCard(
+                        "Alle Buchungen",
+                        String.valueOf(alleBuchungen.size()),
+                        "Einnahmen und Ausgaben",
+                        VaadinIcon.ARCHIVE,
+                        "primary"
+                ),
+                createKpiCard(
+                        "Einnahmen",
+                        String.valueOf(zaehleTyp("Einnahme")),
+                        "Zahlungseingänge",
+                        VaadinIcon.ARROW_DOWN,
+                        "success"
+                ),
+                createKpiCard(
+                        "Ausgaben",
+                        String.valueOf(zaehleTyp("Ausgabe")),
+                        "Zahlungsausgänge",
+                        VaadinIcon.ARROW_UP,
+                        "danger"
+                ),
+                createKpiCard(
+                        "Offene Buchungen",
+                        String.valueOf(zaehleOffeneBuchungen()),
+                        "Noch ausstehend",
+                        VaadinIcon.CLOCK,
+                        "warning"
+                )
+        );
+
+        return grid;
+    }
+
+    private Component createKpiCard(
+            String label,
+            String value,
+            String subtitle,
+            VaadinIcon icon,
+            String style
+    ) {
+        Div card = new Div();
+        card.addClassNames("booking-list-kpi-card", style);
+
+        Div text = new Div();
+        text.addClassName("booking-list-kpi-text");
+
+        Span labelText = new Span(label);
+        labelText.addClassName("booking-list-kpi-label");
+
+        H3 valueText = new H3(value);
+        valueText.addClassName("booking-list-kpi-value");
+
+        Span subtitleText = new Span(subtitle);
+        subtitleText.addClassName("booking-list-kpi-subtitle");
+
+        text.add(labelText, valueText, subtitleText);
+
+        Div iconBox = new Div(icon.create());
+        iconBox.addClassNames("booking-list-kpi-icon", style);
+
+        card.add(text, iconBox);
+        return card;
     }
 
     private Div createFilterCard() {
         Div filterCard = new Div();
         filterCard.addClassName("filter-card");
 
+        Div header = new Div();
+        header.addClassName("booking-list-filter-header");
+
+        Div titleBox = new Div();
+
+        H3 title = new H3("Buchungen filtern");
+        title.addClassName("card-title");
+
+        Paragraph subtitle = new Paragraph("Suche gezielt nach Beschreibung, Mietvertrag, Status, Kategorie oder Immobilie.");
+        subtitle.addClassName("card-subtitle");
+
+        titleBox.add(title, subtitle);
+
+        Span filterBadge = new Span("20 pro Seite");
+        filterBadge.addClassNames("status-badge", "primary");
+
+        header.add(titleBox, filterBadge);
+
+        Div fields = new Div();
+        fields.addClassName("booking-list-filter-fields");
+
         searchField.setPlaceholder("Beschreibung, Kategorie, Mietvertrag...");
         searchField.setPrefixComponent(VaadinIcon.SEARCH.create());
         searchField.setClearButtonVisible(true);
-        searchField.addValueChangeListener(event -> filtereBuchungen());
 
         buchungTypSelect.setLabel("Typ");
         buchungTypSelect.setItems("Alle", "Einnahme", "Ausgabe");
         buchungTypSelect.setValue("Alle");
-        buchungTypSelect.addValueChangeListener(event -> {
-            aktualisiereKategorieFilter();
-            filtereBuchungen();
-        });
 
         statusSelect.setLabel("Status");
         statusSelect.setItems("Alle", "Bezahlt", "Offen");
         statusSelect.setValue("Alle");
-        statusSelect.addValueChangeListener(event -> filtereBuchungen());
 
         kategorieSelect.setLabel("Kategorie");
         aktualisiereKategorieFilter();
-        kategorieSelect.addValueChangeListener(event -> filtereBuchungen());
 
         immobilieSelect.setLabel("Immobilie");
-        immobilieSelect.setItems(ALLE_IMMOBILIEN);
-        immobilieSelect.setValue(ALLE_IMMOBILIEN);
+        aktualisiereImmobilienFilter();
+
+        searchField.addValueChangeListener(event -> filtereBuchungen());
+        buchungTypSelect.addValueChangeListener(event -> {
+            aktualisiereKategorieFilter();
+            filtereBuchungen();
+        });
+        statusSelect.addValueChangeListener(event -> filtereBuchungen());
+        kategorieSelect.addValueChangeListener(event -> filtereBuchungen());
         immobilieSelect.addValueChangeListener(event -> filtereBuchungen());
 
-        filterCard.add(
+        fields.add(
                 searchField,
                 buchungTypSelect,
                 statusSelect,
                 kategorieSelect,
                 immobilieSelect
         );
+
+        filterCard.add(header, fields);
 
         return filterCard;
     }
@@ -159,21 +309,37 @@ public class BuchungListView extends Div implements HasPageHeader {
         Div tableCard = new Div();
         tableCard.addClassName("table-card");
 
+        Div header = new Div();
+        header.addClassName("booking-list-table-header");
+
+        Div titleBox = new Div();
+
+        H3 title = new H3("Buchungsliste");
+        title.addClassName("card-title");
+
+        Paragraph subtitle = new Paragraph("Gefilterte Übersicht mit Immobilie, Mietvertrag, Status und Betrag.");
+        subtitle.addClassName("card-subtitle");
+
+        titleBox.add(title, subtitle);
+
+        Span badge = new Span(alleBuchungen.size() + " Buchungen");
+        badge.addClassNames("status-badge", "neutral");
+
+        header.add(titleBox, badge);
+
         configureGrid();
 
-        tableCard.add(grid, createPaginationBar());
+        tableCard.add(header, grid, createPaginationBar());
 
         return tableCard;
     }
+
     private Div createPaginationBar() {
         Div paginationBar = new Div();
         paginationBar.addClassName("pagination-bar");
 
-        paginationBar.getStyle()
-                .set("display", "flex")
-                .set("justify-content", "space-between")
-                .set("align-items", "center")
-                .set("margin-top", "16px");
+        vorherigeSeiteButton.addClassName("secondary-button");
+        naechsteSeiteButton.addClassName("secondary-button");
 
         vorherigeSeiteButton.addClickListener(event -> {
             if (aktuelleSeite > 0) {
@@ -190,16 +356,14 @@ public class BuchungListView extends Div implements HasPageHeader {
         });
 
         Div buttons = new Div();
-        buttons.getStyle()
-                .set("display", "flex")
-                .set("gap", "8px");
-
+        buttons.addClassName("pagination-buttons");
         buttons.add(vorherigeSeiteButton, naechsteSeiteButton);
 
         paginationBar.add(seitenInfo, buttons);
 
         return paginationBar;
     }
+
     private void aktualisiereAngezeigteSeite() {
         int start = aktuelleSeite * BUCHUNGEN_PRO_SEITE;
         int ende = Math.min(start + BUCHUNGEN_PRO_SEITE, gefilterteBuchungen.size());
@@ -221,6 +385,7 @@ public class BuchungListView extends Div implements HasPageHeader {
         grid.setItems(buchungenDerSeite);
         aktualisierePaginationAnzeige();
     }
+
     private void aktualisierePaginationAnzeige() {
         int gesamt = gefilterteBuchungen.size();
 
@@ -241,6 +406,7 @@ public class BuchungListView extends Div implements HasPageHeader {
         vorherigeSeiteButton.setEnabled(aktuelleSeite > 0);
         naechsteSeiteButton.setEnabled(aktuelleSeite < ermittleLetzteSeite());
     }
+
     private int ermittleLetzteSeite() {
         if (gefilterteBuchungen.isEmpty()) {
             return 0;
@@ -248,6 +414,7 @@ public class BuchungListView extends Div implements HasPageHeader {
 
         return (gefilterteBuchungen.size() - 1) / BUCHUNGEN_PRO_SEITE;
     }
+
     private void configureGrid() {
         grid.addClassName("buchung-grid");
         grid.addClassName("clickable-booking-grid");
@@ -258,7 +425,7 @@ public class BuchungListView extends Div implements HasPageHeader {
                 .setHeader("Datum")
                 .setAutoWidth(true);
 
-        grid.addColumn(BuchungRow::typ)
+        grid.addComponentColumn(buchung -> createTypBadge(buchung.typ()))
                 .setHeader("Typ")
                 .setAutoWidth(true);
 
@@ -282,7 +449,7 @@ public class BuchungListView extends Div implements HasPageHeader {
                 .setAutoWidth(true)
                 .setFlexGrow(2);
 
-        grid.addColumn(BuchungRow::betrag)
+        grid.addComponentColumn(buchung -> createAmountText(buchung))
                 .setHeader("Betrag")
                 .setAutoWidth(true);
 
@@ -304,7 +471,35 @@ public class BuchungListView extends Div implements HasPageHeader {
             }
         });
 
-        aktualisiereGrid();
+        filtereBuchungen();
+    }
+
+    private Span createTypBadge(String typ) {
+        Span badge = new Span(typ == null ? "-" : typ);
+        badge.addClassName("booking-type-badge");
+
+        if ("Einnahme".equals(typ)) {
+            badge.addClassName("income");
+        } else if ("Ausgabe".equals(typ)) {
+            badge.addClassName("expense");
+        } else {
+            badge.addClassName("neutral");
+        }
+
+        return badge;
+    }
+
+    private Span createAmountText(BuchungRow buchung) {
+        Span amount = new Span(buchung.betrag());
+        amount.addClassName("booking-amount");
+
+        if ("Einnahme".equals(buchung.typ())) {
+            amount.addClassName("income");
+        } else if ("Ausgabe".equals(buchung.typ())) {
+            amount.addClassName("expense");
+        }
+
+        return amount;
     }
 
     private Span createStatusBadge(String status) {
@@ -324,8 +519,7 @@ public class BuchungListView extends Div implements HasPageHeader {
         return badge;
     }
 
-
-    private void aktualisiereGrid() {
+    private void ladeBuchungen() {
         alleBuchungen = new ArrayList<>();
 
         for (Ausgabe ausgabe : ausgabeService.findeAlleAusgaben()) {
@@ -361,14 +555,22 @@ public class BuchungListView extends Div implements HasPageHeader {
                     zahlungseingang.getStatus() != null ? zahlungseingang.getStatus() : "-"
             ));
         }
-        alleBuchungen.sort(
-                Comparator.comparing(
-                        buchung -> LocalDate.parse(buchung.datum()),
-                        Comparator.reverseOrder()
-                )
+
+        alleBuchungen.sort((erste, zweite) ->
+                ermittleSortDatum(zweite).compareTo(ermittleSortDatum(erste))
         );
-        filtereBuchungen();
-        aktualisiereImmobilienFilter();
+    }
+
+    private LocalDate ermittleSortDatum(BuchungRow buchung) {
+        if (buchung == null || buchung.datum() == null || "-".equals(buchung.datum())) {
+            return LocalDate.MIN;
+        }
+
+        try {
+            return LocalDate.parse(buchung.datum());
+        } catch (DateTimeParseException ex) {
+            return LocalDate.MIN;
+        }
     }
 
     private void aktualisiereKategorieFilter() {
@@ -462,6 +664,7 @@ public class BuchungListView extends Div implements HasPageHeader {
         aktuelleSeite = 0;
         aktualisiereAngezeigteSeite();
     }
+
     private void aktualisiereImmobilienFilter() {
         String bisherigeImmobilie = immobilieSelect.getValue();
 
@@ -486,7 +689,19 @@ public class BuchungListView extends Div implements HasPageHeader {
         }
     }
 
-    private String formatiereBetrag(java.math.BigDecimal betrag) {
+    private int zaehleTyp(String typ) {
+        return (int) alleBuchungen.stream()
+                .filter(buchung -> typ.equals(buchung.typ()))
+                .count();
+    }
+
+    private int zaehleOffeneBuchungen() {
+        return (int) alleBuchungen.stream()
+                .filter(buchung -> "Offen / Ausstehend".equals(buchung.status()))
+                .count();
+    }
+
+    private String formatiereBetrag(BigDecimal betrag) {
         if (betrag == null) {
             return "-";
         }
@@ -544,7 +759,7 @@ public class BuchungListView extends Div implements HasPageHeader {
             }
         }
 
-        return vertraege.getFirst();
+        return vertraege.get(0);
     }
 
     private String formatiereImmobilie(Immobilie immobilie) {
