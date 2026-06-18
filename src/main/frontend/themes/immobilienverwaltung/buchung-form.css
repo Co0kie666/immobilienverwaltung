@@ -1,0 +1,424 @@
+/* =========================================================
+   Buchungen: Formular / Neue Buchung
+   Datei: buchung-form.css
+   ========================================================= */
+
+.buchung-form-view {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.buchung-form-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+    max-width: 1480px;
+    margin: 0 auto;
+}
+
+/* ---------- Hero ---------- */
+
+.buchung-form-hero {
+    position: relative;
+    overflow: hidden;
+
+    border: 1px solid rgba(37, 99, 235, 0.14);
+    border-radius: 30px;
+    padding: 30px;
+
+    background:
+            radial-gradient(circle at top right, rgba(59, 130, 246, 0.24), transparent 34%),
+            linear-gradient(135deg, #ffffff 0%, #eef6ff 50%, #f8fafc 100%);
+
+    box-shadow: 0 24px 65px -38px rgba(15, 23, 42, 0.55);
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 28px;
+}
+
+.buchungen-eyebrow {
+    display: inline-flex;
+    width: fit-content;
+    margin-bottom: 12px;
+    padding: 7px 12px;
+
+    border-radius: 999px;
+    background: rgba(37, 99, 235, 0.10);
+    color: var(--color-primary);
+
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.buchungen-hero-title {
+    margin: 0;
+    max-width: 720px;
+
+    color: var(--color-text-dark);
+    font-size: clamp(30px, 4vw, 46px);
+    font-weight: 850;
+    letter-spacing: -0.05em;
+    line-height: 1.02;
+}
+
+.buchungen-hero-subtitle {
+    max-width: 660px;
+    margin: 14px 0 0 0;
+
+    color: var(--color-text-muted);
+    font-size: 15px;
+    line-height: 1.65;
+}
+
+.buchung-form-illustration {
+    width: 132px;
+    height: 132px;
+    min-width: 132px;
+
+    border-radius: 34px;
+    background:
+            radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.86), transparent 32%),
+            linear-gradient(135deg, var(--color-primary), #60a5fa);
+
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    box-shadow: 0 24px 55px -34px rgba(37, 99, 235, 0.8);
+}
+
+.buchung-form-illustration vaadin-icon {
+    width: 58px;
+    height: 58px;
+}
+
+/* ---------- Layout ---------- */
+
+.buchung-form-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 390px;
+    gap: 24px;
+    align-items: start;
+}
+
+.buchung-form-left,
+.buchung-form-right {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
+}
+
+.buchung-form-right {
+    position: sticky;
+    top: 24px;
+}
+
+.form-card-subtitle {
+    margin: -6px 0 20px 0;
+    color: var(--color-text-muted);
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+.buchung-form-grid {
+    width: 100%;
+    margin-bottom: 18px;
+}
+
+.buchung-form-grid vaadin-text-field,
+.buchung-form-grid vaadin-big-decimal-field,
+.buchung-form-grid vaadin-date-picker,
+.buchung-form-grid vaadin-combo-box,
+.buchung-form-grid vaadin-text-area {
+    width: 100%;
+}
+
+/* ---------- Buchungstyp ---------- */
+
+.booking-type-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.booking-type-card {
+    min-height: 116px;
+    padding: 18px;
+
+    border: 1px solid var(--color-border);
+    border-radius: 22px;
+    background: #ffffff;
+
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: start;
+
+    transition:
+            border-color 180ms ease,
+            box-shadow 180ms ease,
+            transform 180ms ease,
+            background 180ms ease;
+}
+
+.booking-type-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 45px -36px rgba(15, 23, 42, 0.60);
+}
+
+.booking-type-card.selected.income {
+    border-color: rgba(16, 185, 129, 0.45);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), white 62%);
+}
+
+.booking-type-card.selected.expense {
+    border-color: rgba(239, 68, 68, 0.42);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), white 62%);
+}
+
+.fake-radio {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--color-border-hover);
+    border-radius: 50%;
+    margin-top: 2px;
+    box-sizing: border-box;
+}
+
+.booking-type-card.selected .fake-radio,
+.status-option.selected .fake-radio {
+    border: 5px solid var(--color-primary);
+}
+
+.booking-type-title {
+    display: block;
+    color: var(--color-text);
+    font-size: 15px;
+    font-weight: 850;
+    line-height: 1.3;
+}
+
+.booking-type-subtitle {
+    display: block;
+    margin-top: 6px;
+    color: var(--color-text-muted);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.booking-type-icon {
+    width: 32px;
+    height: 32px;
+    padding: 9px;
+    border-radius: 16px;
+}
+
+.booking-type-icon.income {
+    background: var(--color-success-light);
+    color: var(--color-success);
+}
+
+.booking-type-icon.expense {
+    background: var(--color-danger-light);
+    color: var(--color-danger);
+}
+
+/* ---------- Status ---------- */
+
+.status-option {
+    padding: 14px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    background: #fff;
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    transition: background 160ms ease, border-color 160ms ease;
+}
+
+.status-option + .status-option {
+    margin-top: 12px;
+}
+
+.status-option.selected {
+    border-color: rgba(37, 99, 235, 0.38);
+    background: var(--color-primary-light);
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.status-dot.green {
+    background: var(--color-success);
+}
+
+.status-dot.orange {
+    background: var(--color-warning);
+}
+
+.status-label {
+    color: var(--color-text);
+    font-size: 14px;
+    font-weight: 800;
+}
+
+/* ---------- Live-Vorschau ---------- */
+
+.buchung-preview-card {
+    background:
+            linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+    color: white;
+    border: none;
+}
+
+.buchung-preview-label {
+    display: inline-flex;
+    width: fit-content;
+    padding: 6px 10px;
+    border-radius: 999px;
+
+    background: rgba(255, 255, 255, 0.14);
+    color: rgba(255, 255, 255, 0.82);
+
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.buchung-preview-type {
+    display: block;
+    margin-top: 18px;
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.buchung-preview-type.income {
+    color: #86efac;
+}
+
+.buchung-preview-type.expense {
+    color: #fca5a5;
+}
+
+.buchung-preview-amount {
+    display: block;
+    margin-top: 8px;
+
+    font-size: 34px;
+    font-weight: 900;
+    letter-spacing: -0.05em;
+}
+
+.buchung-preview-amount.income {
+    color: #bbf7d0;
+}
+
+.buchung-preview-amount.expense {
+    color: #fecaca;
+}
+
+.buchung-preview-details {
+    margin-top: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.buchung-preview-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.buchung-preview-row-label {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 13px;
+}
+
+.buchung-preview-row-value {
+    max-width: 190px;
+    color: white;
+    font-size: 13px;
+    font-weight: 800;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.buchung-action-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ---------- Vaadin Input Feinschliff ---------- */
+
+.buchung-form-view vaadin-text-field::part(input-field),
+.buchung-form-view vaadin-big-decimal-field::part(input-field),
+.buchung-form-view vaadin-date-picker::part(input-field),
+.buchung-form-view vaadin-combo-box::part(input-field),
+.buchung-form-view vaadin-text-area::part(input-field) {
+    border-radius: 16px;
+    background: #f8fafc;
+    border: 1px solid transparent;
+    box-shadow: none;
+}
+
+.buchung-form-view vaadin-text-field:focus-within::part(input-field),
+.buchung-form-view vaadin-big-decimal-field:focus-within::part(input-field),
+.buchung-form-view vaadin-date-picker:focus-within::part(input-field),
+.buchung-form-view vaadin-combo-box:focus-within::part(input-field),
+.buchung-form-view vaadin-text-area:focus-within::part(input-field) {
+    background: #fff;
+    border-color: rgba(37, 99, 235, 0.35);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 1200px) {
+    .buchung-form-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .buchung-form-right {
+        position: static;
+    }
+}
+
+@media (max-width: 900px) {
+    .buchung-form-hero {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .booking-type-options {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .buchung-form-hero {
+        padding: 22px;
+        border-radius: 24px;
+    }
+}

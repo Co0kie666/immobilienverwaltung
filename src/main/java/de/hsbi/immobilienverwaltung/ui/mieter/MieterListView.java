@@ -2,15 +2,16 @@ package de.hsbi.immobilienverwaltung.ui.mieter;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.Route;
@@ -52,7 +53,8 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         this.mieterService = mieterService;
         this.mietvertragService = mietvertragService;
 
-        addClassName("page-content");
+        addClassNames("page-content", "mieter-detail-page");
+        konfiguriereEingabefelder();
     }
 
     @Override
@@ -82,46 +84,77 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         removeAll();
 
         add(
-                createMieterHeader(),
+                createHeroSection(),
+                createQuickStats(),
                 createContentLayout()
         );
     }
 
-    private Component createMieterHeader() {
-        Div headerCard = new Div();
-        headerCard.addClassName("card");
-        headerCard.addClassName("page-section");
+    private void konfiguriereEingabefelder() {
+        List<TextField> felder = List.of(
+                vornameField,
+                nachnameField,
+                emailField,
+                telefonField,
+                berufField,
+                strasseField,
+                plzField,
+                ortField
+        );
 
-        HorizontalLayout header = new HorizontalLayout();
-        header.setWidthFull();
-        header.setAlignItems(FlexComponent.Alignment.CENTER);
-        header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+        felder.forEach(field -> {
+            field.setWidthFull();
+            field.addClassName("mieter-detail-field");
+        });
+
+        vornameField.setRequiredIndicatorVisible(true);
+        nachnameField.setRequiredIndicatorVisible(true);
+        emailField.setPrefixComponent(VaadinIcon.ENVELOPE.create());
+        telefonField.setPrefixComponent(VaadinIcon.PHONE.create());
+        telefonField.setAllowedCharPattern("[0-9+ ]");
+        plzField.setAllowedCharPattern("[0-9]");
+    }
+
+    private Component createHeroSection() {
+        Div hero = new Div();
+        hero.addClassName("mieter-detail-hero");
+
+        Div left = new Div();
+        left.addClassName("mieter-detail-hero-left");
 
         Button backButton = new Button(VaadinIcon.ARROW_LEFT.create());
-        backButton.addClassName("icon-button");
+        backButton.addClassName("mieter-detail-back-button");
         backButton.addClickListener(event ->
                 getUI().ifPresent(ui -> ui.navigate("mieter-vertraege?tab=mieter"))
         );
 
-        VerticalLayout textArea = new VerticalLayout();
-        textArea.setPadding(false);
-        textArea.setSpacing(false);
+        Div avatar = new Div();
+        avatar.addClassName("mieter-detail-avatar");
+        avatar.setText(erstelleInitialen(aktuellerMieter));
 
-        Span name = new Span(formatMieterName(aktuellerMieter));
-        name.addClassName("card-title");
+        Div titleBox = new Div();
+        titleBox.addClassName("mieter-detail-title-box");
 
-        Span mieterInfo = new Span("Mieter-ID: " + aktuellerMieter.getId());
-        mieterInfo.addClassName("card-subtitle");
+        Span eyebrow = new Span("Mieterprofil · ID " + aktuellerMieter.getId());
+        eyebrow.addClassName("mieter-detail-eyebrow");
 
-        textArea.add(name, mieterInfo);
+        H2 name = new H2(formatMieterName(aktuellerMieter));
+        name.addClassName("mieter-detail-name");
+
+        Div meta = new Div();
+        meta.addClassName("mieter-detail-meta");
+        meta.add(createMetaPill(VaadinIcon.ENVELOPE, textOderStrich(aktuellerMieter.getEmail())));
+        meta.add(createMetaPill(VaadinIcon.PHONE, textOderStrich(aktuellerMieter.getTelefonnummer())));
+        meta.add(createMetaPill(VaadinIcon.MAP_MARKER, formatAdresseKurz(aktuellerMieter.getAdresse())));
+
+        titleBox.add(eyebrow, name, meta);
+        left.add(backButton, avatar, titleBox);
+
+        Div right = new Div();
+        right.addClassName("mieter-detail-hero-actions");
 
         Span statusBadge = new Span(ermittleMieterStatus());
-        statusBadge.addClassNames("status-badge", getStatusStyle(ermittleMieterStatus()));
-
-        HorizontalLayout leftArea = new HorizontalLayout();
-        leftArea.setAlignItems(FlexComponent.Alignment.CENTER);
-        leftArea.setSpacing(true);
-        leftArea.add(backButton, textArea, statusBadge);
+        statusBadge.addClassNames("status-badge", getStatusStyle(ermittleMieterStatus()), "mieter-detail-status");
 
         Button editButton;
 
@@ -129,6 +162,19 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
             editButton = new Button("Speichern", VaadinIcon.CHECK.create());
             editButton.addClassName("primary-button");
             editButton.addClickListener(event -> speichereAenderungen());
+
+            Button cancelButton = new Button("Abbrechen", VaadinIcon.CLOSE.create());
+            cancelButton.addClassName("secondary-button");
+            cancelButton.addClickListener(event -> {
+                bearbeitenAktiv = false;
+                renderView();
+            });
+
+            Button archiveButton = new Button("Archivieren", VaadinIcon.TRASH.create());
+            archiveButton.addClassName("danger-button");
+            archiveButton.addClickListener(event -> archiviereMieter());
+
+            right.add(statusBadge, cancelButton, archiveButton, editButton);
         } else {
             editButton = new Button("Mieter bearbeiten", VaadinIcon.EDIT.create());
             editButton.addClassName("secondary-button");
@@ -136,121 +182,133 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
                 bearbeitenAktiv = true;
                 renderView();
             });
+
+            Button newContractButton = new Button("Neuer Mietvertrag", VaadinIcon.PLUS.create());
+            newContractButton.addClassName("primary-button");
+            newContractButton.addClickListener(event ->
+                    getUI().ifPresent(ui -> ui.navigate(MietvertragFormView.class))
+            );
+
+            right.add(statusBadge, editButton, newContractButton);
         }
 
-        Button newContractButton = new Button("Neuer Mietvertrag", VaadinIcon.PLUS.create());
-        newContractButton.addClassName("primary-button");
-        newContractButton.setEnabled(!bearbeitenAktiv);
-        newContractButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate(MietvertragFormView.class))
+        hero.add(left, right);
+        return hero;
+    }
+
+    private Component createMetaPill(VaadinIcon icon, String text) {
+        Div pill = new Div();
+        pill.addClassName("mieter-detail-meta-pill");
+
+        Icon pillIcon = icon.create();
+        Span label = new Span(text);
+
+        pill.add(pillIcon, label);
+        return pill;
+    }
+
+    private Component createQuickStats() {
+        List<Mietvertrag> vertraege = ladeVertraege();
+
+        long aktiveVertraege = vertraege.stream()
+                .filter(vertrag -> vertrag.getStatus() == Vertragsstatus.AKTIV)
+                .count();
+
+        long auslaufendeVertraege = vertraege.stream()
+                .filter(vertrag -> vertrag.getStatus() == Vertragsstatus.GEKUENDIGT)
+                .count();
+
+        double warmmiete = vertraege.stream()
+                .filter(vertrag -> vertrag.getStatus() == Vertragsstatus.AKTIV)
+                .mapToDouble(this::berechneWarmmiete)
+                .sum();
+
+        Div stats = new Div();
+        stats.addClassName("mieter-detail-stats-grid");
+
+        stats.add(
+                createStatCard("Mietverträge", String.valueOf(vertraege.size()), "Gesamte Historie", VaadinIcon.FILE_TEXT, "primary"),
+                createStatCard("Aktiv", String.valueOf(aktiveVertraege), "Laufende Verträge", VaadinIcon.CHECK_CIRCLE, "success"),
+                createStatCard("Läuft aus", String.valueOf(auslaufendeVertraege), "Gekündigte Verträge", VaadinIcon.CLOCK, "warning"),
+                createStatCard("Warmmiete", formatiereBetrag(warmmiete), "Aktive Verträge mtl.", VaadinIcon.EURO, "danger")
         );
 
-        Button archiveButton = new Button("Mieter archivieren", VaadinIcon.TRASH.create());
-        archiveButton.addClassName("danger-button");
-        archiveButton.setVisible(bearbeitenAktiv);
-        archiveButton.addClickListener(event -> archiviereMieter());
+        return stats;
+    }
 
-        HorizontalLayout rightArea = new HorizontalLayout();
-        rightArea.setAlignItems(FlexComponent.Alignment.CENTER);
-        rightArea.setSpacing(true);
-        rightArea.add(editButton);
+    private Component createStatCard(String label, String value, String subtitle, VaadinIcon icon, String type) {
+        Div card = new Div();
+        card.addClassNames("mieter-detail-stat-card", type);
 
-        if (bearbeitenAktiv) {
-            rightArea.add(archiveButton);
-        }
+        Div iconBox = new Div(icon.create());
+        iconBox.addClassNames("mieter-detail-stat-icon", type);
 
-        rightArea.add(newContractButton);
+        Div text = new Div();
+        text.addClassName("mieter-detail-stat-text");
 
-        header.add(leftArea, rightArea);
-        headerCard.add(header);
+        Span labelText = new Span(label);
+        labelText.addClassName("mieter-detail-stat-label");
 
-        return headerCard;
+        Span valueText = new Span(value);
+        valueText.addClassName("mieter-detail-stat-value");
+
+        Span subtitleText = new Span(subtitle);
+        subtitleText.addClassName("mieter-detail-stat-subtitle");
+
+        text.add(labelText, valueText, subtitleText);
+        card.add(text, iconBox);
+
+        return card;
     }
 
     private Component createContentLayout() {
-        HorizontalLayout contentLayout = new HorizontalLayout();
-        contentLayout.setWidthFull();
-        contentLayout.setSpacing(true);
-        contentLayout.setAlignItems(FlexComponent.Alignment.START);
+        Div contentLayout = new Div();
+        contentLayout.addClassName("mieter-detail-content-grid");
 
-        VerticalLayout leftColumn = new VerticalLayout();
-        leftColumn.setPadding(false);
-        leftColumn.setSpacing(true);
-        leftColumn.setWidth("430px");
-
+        Div leftColumn = new Div();
+        leftColumn.addClassName("mieter-detail-side-column");
         leftColumn.add(
-                createStammdatenCard(),
-                createKontaktCard()
-        );
-
-        VerticalLayout rightColumn = new VerticalLayout();
-        rightColumn.setPadding(false);
-        rightColumn.setSpacing(true);
-        rightColumn.setWidthFull();
-
-        rightColumn.add(
-                createVertraegeCard(),
+                createProfileCard(),
+                createKontaktCard(),
                 createBankdatenCard()
         );
 
-        contentLayout.add(leftColumn, rightColumn);
-        contentLayout.setFlexGrow(0, leftColumn);
-        contentLayout.setFlexGrow(1, rightColumn);
+        Div rightColumn = new Div();
+        rightColumn.addClassName("mieter-detail-main-column");
+        rightColumn.add(
+                createVertraegeCard()
+        );
 
+        contentLayout.add(leftColumn, rightColumn);
         return contentLayout;
     }
 
-    private Component createStammdatenCard() {
-        Div card = new Div();
-        card.addClassName("card");
-        card.setWidthFull();
-
-        VerticalLayout content = new VerticalLayout();
-        content.setPadding(false);
-        content.setSpacing(true);
-
-        Span title = new Span("Stammdaten");
-        title.addClassName("card-title");
-
-        content.add(title);
+    private Component createProfileCard() {
+        Div card = createDetailCard("Stammdaten", "Personenbezogene Angaben und beruflicher Kontext", VaadinIcon.USER);
 
         if (bearbeitenAktiv) {
             vornameField.setValue(textOderLeer(aktuellerMieter.getVorname()));
             nachnameField.setValue(textOderLeer(aktuellerMieter.getNachname()));
             berufField.setValue(textOderLeer(aktuellerMieter.getBeruf()));
 
-            content.add(
-                    vornameField,
-                    nachnameField,
-                    berufField,
-                    createInfoBlock("Geburtsdatum", formatDatum(aktuellerMieter))
-            );
+            FormLayout form = createFormLayout();
+            form.add(vornameField, nachnameField, berufField);
+            form.setColspan(berufField, 2);
+
+            card.add(form);
         } else {
-            content.add(
-                    createInfoBlock("Vollständiger Name", formatMieterName(aktuellerMieter)),
-                    createInfoBlock("Geburtsdatum", formatDatum(aktuellerMieter)),
-                    createInfoBlock("Beruf / Tätigkeit", textOderStrich(aktuellerMieter.getBeruf()))
+            card.add(
+                    createInfoRow(VaadinIcon.USER, "Vollständiger Name", formatMieterName(aktuellerMieter)),
+                    createInfoRow(VaadinIcon.CALENDAR, "Geburtsdatum", formatDatum(aktuellerMieter)),
+                    createInfoRow(VaadinIcon.BRIEFCASE, "Beruf / Tätigkeit", textOderStrich(aktuellerMieter.getBeruf()))
             );
         }
 
-        card.add(content);
         return card;
     }
 
     private Component createKontaktCard() {
-        Div card = new Div();
-        card.addClassName("card");
-        card.setWidthFull();
-
-        VerticalLayout content = new VerticalLayout();
-        content.setPadding(false);
-        content.setSpacing(true);
-
-        Span title = new Span("Kontaktinformationen");
-        title.addClassName("card-title");
-
-        content.add(title);
-
+        Div card = createDetailCard("Kontakt & Adresse", "Erreichbarkeit und postalische Daten", VaadinIcon.MAP_MARKER);
         Adresse adresse = aktuellerMieter.getAdresse();
 
         if (bearbeitenAktiv) {
@@ -260,42 +318,63 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
             plzField.setValue(adresse == null ? "" : textOderLeer(adresse.getPlz()));
             ortField.setValue(adresse == null ? "" : textOderLeer(adresse.getStadt()));
 
-            content.add(emailField, telefonField, strasseField, plzField, ortField);
+            FormLayout form = createFormLayout();
+            form.add(emailField, telefonField, strasseField, plzField, ortField);
+            form.setColspan(strasseField, 2);
+
+            card.add(form);
         } else {
-            content.add(
-                    createInfoBlock("E-Mail", textOderStrich(aktuellerMieter.getEmail())),
-                    createInfoBlock("Telefon", textOderStrich(aktuellerMieter.getTelefonnummer())),
-                    createInfoBlock("Adresse", formatAdresse(adresse))
+            card.add(
+                    createInfoRow(VaadinIcon.ENVELOPE, "E-Mail", textOderStrich(aktuellerMieter.getEmail())),
+                    createInfoRow(VaadinIcon.PHONE, "Telefon", textOderStrich(aktuellerMieter.getTelefonnummer())),
+                    createInfoRow(VaadinIcon.HOME, "Adresse", formatAdresse(adresse))
             );
         }
 
-        card.add(content);
         return card;
     }
 
     private Component createVertraegeCard() {
         Div tableCard = new Div();
-        tableCard.addClassName("table-card");
-        tableCard.setWidthFull();
+        tableCard.addClassName("mieter-detail-contract-card");
 
-        HorizontalLayout header = new HorizontalLayout();
-        header.addClassName("table-card-header");
-        header.setWidthFull();
-        header.setAlignItems(FlexComponent.Alignment.CENTER);
-        header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+        Div header = new Div();
+        header.addClassName("mieter-detail-card-header");
 
+        Div titleBox = new Div();
+        titleBox.addClassName("mieter-detail-card-title-box");
+
+        Span icon = new Span();
+        icon.add(VaadinIcon.FILE_TEXT.create());
+        icon.addClassName("mieter-detail-card-icon");
+
+        Div titleText = new Div();
         Span title = new Span("Mietverträge");
-        title.addClassName("card-title");
+        title.addClassName("mieter-detail-card-title");
+        Span subtitle = new Span("Laufende und vergangene Mietverhältnisse dieses Mieters");
+        subtitle.addClassName("mieter-detail-card-subtitle");
+        titleText.add(title, subtitle);
 
-        header.add(title);
+        titleBox.add(icon, titleText);
+
+        Button newContractButton = new Button("Vertrag anlegen", VaadinIcon.PLUS.create());
+        newContractButton.addClassName("primary-button");
+        newContractButton.setEnabled(!bearbeitenAktiv);
+        newContractButton.addClickListener(event ->
+                getUI().ifPresent(ui -> ui.navigate(MietvertragFormView.class))
+        );
+
+        header.add(titleBox, newContractButton);
 
         Grid<Mietvertrag> grid = new Grid<>(Mietvertrag.class, false);
         grid.setWidthFull();
         grid.setAllRowsVisible(true);
+        grid.addClassName("mieter-detail-contract-grid");
 
-        grid.addColumn(mietvertrag -> "MV-" + mietvertrag.getId())
+        grid.addColumn(new ComponentRenderer<>(this::createContractNumber))
                 .setHeader("Vertrag")
-                .setAutoWidth(true);
+                .setAutoWidth(true)
+                .setFlexGrow(1);
 
         grid.addColumn(this::formatMietobjekt)
                 .setHeader("Einheit")
@@ -304,60 +383,164 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
 
         grid.addColumn(this::formatLaufzeit)
                 .setHeader("Laufzeit")
-                .setAutoWidth(true);
+                .setAutoWidth(true)
+                .setFlexGrow(1);
 
-        grid.addColumn(this::formatWarmmiete)
+        grid.addColumn(new ComponentRenderer<>(this::createWarmmieteCell))
                 .setHeader("Warmmiete")
-                .setAutoWidth(true);
+                .setAutoWidth(true)
+                .setFlexGrow(1);
 
-        grid.addColumn(this::formatStatus)
+        grid.addColumn(new ComponentRenderer<>(this::createVertragsStatusBadge))
                 .setHeader("Status")
-                .setAutoWidth(true);
+                .setAutoWidth(true)
+                .setFlexGrow(1);
 
-        List<Mietvertrag> vertraege =
-                mietvertragService.findeMietvertraegeNachMieter(aktuellerMieter.getId());
-
+        List<Mietvertrag> vertraege = ladeVertraege();
         grid.setItems(vertraege);
 
-        grid.addItemDoubleClickListener(event ->
+        grid.addItemClickListener(event ->
                 getUI().ifPresent(ui -> ui.navigate(
                         MietvertragListView.class,
                         String.valueOf(event.getItem().getId())
                 ))
         );
 
-        tableCard.add(header, grid);
+        tableCard.add(header);
+
+        if (vertraege.isEmpty()) {
+            tableCard.add(createEmptyContractsState());
+        } else {
+            tableCard.add(grid);
+        }
+
         return tableCard;
     }
 
+    private Component createContractNumber(Mietvertrag mietvertrag) {
+        Div wrapper = new Div();
+        wrapper.addClassName("mieter-detail-contract-number");
+
+        Span number = new Span("MV-" + mietvertrag.getId());
+        number.addClassName("mieter-detail-contract-number-main");
+
+        Span hint = new Span("Details öffnen");
+        hint.addClassName("mieter-detail-contract-number-hint");
+
+        wrapper.add(number, hint);
+        return wrapper;
+    }
+
+    private Component createWarmmieteCell(Mietvertrag mietvertrag) {
+        Span value = new Span(formatWarmmiete(mietvertrag));
+        value.addClassName("mieter-detail-money");
+        return value;
+    }
+
+    private Component createVertragsStatusBadge(Mietvertrag mietvertrag) {
+        Span badge = new Span(formatStatus(mietvertrag));
+        badge.addClassNames("status-badge", getVertragsStatusStyle(mietvertrag));
+        return badge;
+    }
+
+    private Component createEmptyContractsState() {
+        Div empty = new Div();
+        empty.addClassName("mieter-detail-empty-contracts");
+
+        Div icon = new Div(VaadinIcon.FILE_TEXT.create());
+        icon.addClassName("mieter-detail-empty-icon");
+
+        Span title = new Span("Noch kein Mietvertrag vorhanden");
+        title.addClassName("empty-state-title");
+
+        Span text = new Span("Lege einen neuen Mietvertrag an, sobald dieser Mieter einer Einheit zugeordnet wird.");
+        text.addClassName("empty-state-text");
+
+        empty.add(icon, title, text);
+        return empty;
+    }
+
     private Component createBankdatenCard() {
-        Div card = new Div();
-        card.addClassName("card");
-        card.setWidthFull();
-
-        VerticalLayout content = new VerticalLayout();
-        content.setPadding(false);
-        content.setSpacing(true);
-
-        Span title = new Span("Bankdaten");
-        title.addClassName("card-title");
-
-        content.add(title);
+        Div card = createDetailCard("Bankdaten", "Hinterlegte Zahlungsinformationen", VaadinIcon.CREDIT_CARD);
 
         if (!aktuellerMieter.isBankdatenAktiv()) {
-            Span empty = new Span("Keine Bankdaten hinterlegt.");
-            empty.addClassName("card-subtitle");
-            content.add(empty);
+            Div empty = new Div();
+            empty.addClassName("mieter-detail-muted-box");
+            empty.add(VaadinIcon.LOCK.create(), new Span("Keine Bankdaten hinterlegt."));
+            card.add(empty);
         } else {
-            content.add(
-                    createInfoBlock("Kontoinhaber", textOderStrich(aktuellerMieter.getKontoinhaber())),
-                    createInfoBlock("IBAN", textOderStrich(aktuellerMieter.getIban())),
-                    createInfoBlock("BIC / Bankname", textOderStrich(aktuellerMieter.getBic()))
+            card.add(
+                    createInfoRow(VaadinIcon.USER, "Kontoinhaber", textOderStrich(aktuellerMieter.getKontoinhaber())),
+                    createInfoRow(VaadinIcon.CREDIT_CARD, "IBAN", maskiereIban(aktuellerMieter.getIban())),
+                    createInfoRow(VaadinIcon.BUILDING, "BIC / Bankname", textOderStrich(aktuellerMieter.getBic()))
             );
         }
 
-        card.add(content);
         return card;
+    }
+
+    private Div createDetailCard(String titleText, String subtitleText, VaadinIcon iconType) {
+        Div card = new Div();
+        card.addClassName("mieter-detail-card");
+
+        Div header = new Div();
+        header.addClassName("mieter-detail-card-header");
+
+        Div titleBox = new Div();
+        titleBox.addClassName("mieter-detail-card-title-box");
+
+        Span icon = new Span();
+        icon.add(iconType.create());
+        icon.addClassName("mieter-detail-card-icon");
+
+        Div text = new Div();
+
+        Span title = new Span(titleText);
+        title.addClassName("mieter-detail-card-title");
+
+        Span subtitle = new Span(subtitleText);
+        subtitle.addClassName("mieter-detail-card-subtitle");
+
+        text.add(title, subtitle);
+        titleBox.add(icon, text);
+        header.add(titleBox);
+
+        card.add(header);
+        return card;
+    }
+
+    private Component createInfoRow(VaadinIcon iconType, String labelText, String valueText) {
+        Div row = new Div();
+        row.addClassName("mieter-detail-info-row");
+
+        Div icon = new Div(iconType.create());
+        icon.addClassName("mieter-detail-info-icon");
+
+        Div text = new Div();
+        text.addClassName("mieter-detail-info-text");
+
+        Span label = new Span(labelText);
+        label.addClassName("mieter-detail-info-label");
+
+        Span value = new Span(valueText);
+        value.addClassName("mieter-detail-info-value");
+
+        text.add(label, value);
+        row.add(icon, text);
+
+        return row;
+    }
+
+    private FormLayout createFormLayout() {
+        FormLayout form = new FormLayout();
+        form.addClassName("mieter-detail-edit-form");
+        form.setWidthFull();
+        form.setResponsiveSteps(
+                new FormLayout.ResponsiveStep("0", 1),
+                new FormLayout.ResponsiveStep("620px", 2)
+        );
+
+        return form;
     }
 
     private void speichereAenderungen() {
@@ -392,24 +575,15 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         }
     }
 
-    private Component createInfoBlock(String labelText, String valueText) {
-        VerticalLayout block = new VerticalLayout();
-        block.setPadding(false);
-        block.setSpacing(false);
-
-        Span label = new Span(labelText);
-        label.addClassName("card-subtitle");
-
-        Span value = new Span(valueText);
-
-        block.add(label, value);
-
-        return block;
-    }
-
     private Component createNotFoundCard() {
+        Div wrapper = new Div();
+        wrapper.addClassName("mieter-detail-not-found-wrapper");
+
         Div card = new Div();
         card.addClassName("empty-state");
+
+        Div icon = new Div(VaadinIcon.SEARCH.create());
+        icon.addClassName("mieter-detail-empty-icon");
 
         Span title = new Span("Mieter nicht gefunden");
         title.addClassName("empty-state-title");
@@ -417,9 +591,16 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         Span text = new Span("Für diese ID gibt es aktuell keine Daten.");
         text.addClassName("empty-state-text");
 
-        card.add(title, text);
+        Button backButton = new Button("Zurück zur Übersicht", VaadinIcon.ARROW_LEFT.create());
+        backButton.addClassName("primary-button");
+        backButton.addClickListener(event ->
+                getUI().ifPresent(ui -> ui.navigate("mieter-vertraege?tab=mieter"))
+        );
 
-        return card;
+        card.add(icon, title, text, backButton);
+        wrapper.add(card);
+
+        return wrapper;
     }
 
     private void archiviereMieter() {
@@ -435,8 +616,12 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         }
     }
 
+    private List<Mietvertrag> ladeVertraege() {
+        return mietvertragService.findeMietvertraegeNachMieter(aktuellerMieter.getId());
+    }
+
     private String ermittleMieterStatus() {
-        List<Mietvertrag> vertraege = mietvertragService.findeMietvertraegeNachMieter(aktuellerMieter.getId());
+        List<Mietvertrag> vertraege = ladeVertraege();
 
         boolean aktiv = vertraege.stream()
                 .anyMatch(vertrag -> vertrag.getStatus() == Vertragsstatus.AKTIV);
@@ -470,8 +655,37 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         };
     }
 
+    private String getVertragsStatusStyle(Mietvertrag mietvertrag) {
+        if (mietvertrag == null || mietvertrag.getStatus() == null) {
+            return "neutral";
+        }
+
+        return switch (mietvertrag.getStatus()) {
+            case AKTIV -> "success";
+            case GEKUENDIGT -> "warning";
+            case BEENDET -> "neutral";
+            default -> "neutral";
+        };
+    }
+
     private String formatMieterName(Mieter mieter) {
-        return textOderLeer(mieter.getVorname()) + " " + textOderLeer(mieter.getNachname());
+        if (mieter == null) {
+            return "-";
+        }
+
+        String name = (textOderLeer(mieter.getVorname()) + " " + textOderLeer(mieter.getNachname())).trim();
+        return name.isBlank() ? "Unbenannter Mieter" : name;
+    }
+
+    private String erstelleInitialen(Mieter mieter) {
+        String vorname = textOderLeer(mieter.getVorname()).trim();
+        String nachname = textOderLeer(mieter.getNachname()).trim();
+
+        String ersteInitiale = vorname.isBlank() ? "" : vorname.substring(0, 1).toUpperCase(Locale.GERMANY);
+        String zweiteInitiale = nachname.isBlank() ? "" : nachname.substring(0, 1).toUpperCase(Locale.GERMANY);
+        String initialen = ersteInitiale + zweiteInitiale;
+
+        return initialen.isBlank() ? "M" : initialen;
     }
 
     private String formatDatum(Mieter mieter) {
@@ -487,9 +701,39 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
             return "-";
         }
 
-        return textOderLeer(adresse.getStrasse()) + ", "
-                + textOderLeer(adresse.getPlz()) + " "
-                + textOderLeer(adresse.getStadt());
+        String strasse = textOderLeer(adresse.getStrasse()).trim();
+        String hausnummer = textOderLeer(adresse.getHausnummer()).trim();
+        String plz = textOderLeer(adresse.getPlz()).trim();
+        String stadt = textOderLeer(adresse.getStadt()).trim();
+
+        String zeile1 = (strasse + " " + hausnummer).trim();
+        String zeile2 = (plz + " " + stadt).trim();
+
+        if (zeile1.isBlank() && zeile2.isBlank()) {
+            return "-";
+        }
+
+        if (zeile1.isBlank()) {
+            return zeile2;
+        }
+
+        if (zeile2.isBlank()) {
+            return zeile1;
+        }
+
+        return zeile1 + ", " + zeile2;
+    }
+
+    private String formatAdresseKurz(Adresse adresse) {
+        if (adresse == null) {
+            return "Keine Adresse";
+        }
+
+        String stadt = textOderLeer(adresse.getStadt()).trim();
+        String plz = textOderLeer(adresse.getPlz()).trim();
+
+        String kurz = (plz + " " + stadt).trim();
+        return kurz.isBlank() ? "Keine Adresse" : kurz;
     }
 
     private String formatMietobjekt(Mietvertrag mietvertrag) {
@@ -519,11 +763,18 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
     }
 
     private String formatWarmmiete(Mietvertrag mietvertrag) {
+        return formatiereBetrag(berechneWarmmiete(mietvertrag));
+    }
+
+    private double berechneWarmmiete(Mietvertrag mietvertrag) {
         double kaltmiete = mietvertrag.getKaltmiete() == null ? 0 : mietvertrag.getKaltmiete();
         double nebenkosten = mietvertrag.getNebenkosten() == null ? 0 : mietvertrag.getNebenkosten();
+        return kaltmiete + nebenkosten;
+    }
 
+    private String formatiereBetrag(double betrag) {
         NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.GERMANY);
-        return formatter.format(kaltmiete + nebenkosten);
+        return formatter.format(betrag);
     }
 
     private String formatStatus(Mietvertrag mietvertrag) {
@@ -532,6 +783,20 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         }
 
         return mietvertrag.getStatus().getLabel();
+    }
+
+    private String maskiereIban(String iban) {
+        if (iban == null || iban.isBlank()) {
+            return "-";
+        }
+
+        String cleaned = iban.replace(" ", "");
+
+        if (cleaned.length() <= 8) {
+            return iban;
+        }
+
+        return cleaned.substring(0, 4) + " •••• •••• " + cleaned.substring(cleaned.length() - 4);
     }
 
     private String textOderLeer(String text) {
@@ -544,11 +809,13 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
 
     @Override
     public String getPageTitle() {
-        return "Mieter Details";
+        return bearbeitenAktiv ? "Mieter bearbeiten" : "Mieter Details";
     }
 
     @Override
     public String getPageSubtitle() {
-        return "Mieterdaten und Mietverträge anzeigen";
+        return bearbeitenAktiv
+                ? "Mieterdaten aktualisieren"
+                : "Mieterdaten und Mietverträge anzeigen";
     }
 }

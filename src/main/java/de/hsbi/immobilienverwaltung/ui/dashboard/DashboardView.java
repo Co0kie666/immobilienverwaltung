@@ -95,12 +95,11 @@ public class DashboardView extends Div implements HasPageHeader {
                 "https://cdn.jsdelivr.net/npm/chart.js"
         );
 
-        addClassName("page-content");
+        addClassNames("page-content", "dashboard-page");
 
-        add(createActionBar());
+        add(createHeroSection());
         add(createKpiSection());
-        add(createChartSection());
-        add(createOpenItemsCard());
+        add(createDashboardMainGrid());
     }
 
     private void addJavaScriptIfUiAvailable(String url) {
@@ -126,18 +125,26 @@ public class DashboardView extends Div implements HasPageHeader {
         ui.getPage().executeJs(script, arguments);
     }
 
-    private Component createActionBar() {
-        HorizontalLayout layout = new HorizontalLayout();
+    private Component createHeroSection() {
+        Div hero = new Div();
+        hero.addClassName("dashboard-hero");
 
-        layout.setWidthFull();
+        Div content = new Div();
+        content.addClassName("dashboard-hero-content");
 
-        layout.setJustifyContentMode(
-                FlexComponent.JustifyContentMode.BETWEEN
+        Span eyebrow = new Span("Portfolio Control Center");
+        eyebrow.addClassName("dashboard-eyebrow");
+
+        H2 title = new H2("Alles Wichtige auf einen Blick");
+        title.addClassName("dashboard-hero-title");
+
+        Paragraph subtitle = new Paragraph(
+                "Verfolge Einnahmen, Leerstand und offene Posten in einem modernen Überblick."
         );
+        subtitle.addClassName("dashboard-hero-subtitle");
 
-        layout.setAlignItems(FlexComponent.Alignment.CENTER);
-
-        layout.addClassName("page-section");
+        Div actions = new Div();
+        actions.addClassName("dashboard-hero-actions");
 
         Button neueImmobilie = primaryButton("Neue Immobilie", VaadinIcon.PLUS);
         neueImmobilie.addClickListener(e ->
@@ -154,28 +161,52 @@ public class DashboardView extends Div implements HasPageHeader {
                 getUI().ifPresent(ui -> ui.navigate("finanzen/buchung-neu"))
         );
 
-        HorizontalLayout actions = new HorizontalLayout(
-                neueImmobilie,
-                neuerMieter,
-                neueZahlung
+        actions.add(neueImmobilie, neuerMieter, neueZahlung);
+        content.add(eyebrow, title, subtitle, actions);
+
+        Div visual = new Div();
+        visual.addClassName("dashboard-hero-visual");
+
+        Div illustration = new Div();
+        illustration.addClassName("dashboard-building-illustration");
+
+        Div stats = new Div();
+        stats.addClassName("dashboard-hero-stats");
+        stats.add(
+                heroStat("Vermietet", String.valueOf(vermieteteMieteinheiten)),
+                heroStat("Leerstand", String.valueOf(leerstehendeMieteinheiten)),
+                heroStat("Verträge", String.valueOf(aktiveVertraege))
         );
 
-        layout.add(actions);
+        visual.add(illustration, stats);
+        hero.add(content, visual);
 
-        return layout;
+        return hero;
+    }
+
+    private Component heroStat(String label, String value) {
+        Div stat = new Div();
+        stat.addClassName("dashboard-hero-stat");
+
+        Span valueText = new Span(value);
+        valueText.addClassName("dashboard-hero-stat-value");
+
+        Span labelText = new Span(label);
+        labelText.addClassName("dashboard-hero-stat-label");
+
+        stat.add(valueText, labelText);
+        return stat;
     }
 
     private Component createKpiSection() {
-        HorizontalLayout layout = new HorizontalLayout();
+        Div grid = new Div();
+        grid.addClassName("dashboard-kpi-grid");
 
-        layout.setWidthFull();
-        layout.addClassName("page-section");
-
-        layout.add(
+        grid.add(
                 kpiCard(
                         "Gesamteinnahmen",
                         formatEuro(gesamteinnahmen),
-                        "",
+                        "Portfolio",
                         "Summe aller Zahlungseingänge",
                         VaadinIcon.LINE_CHART,
                         "primary"
@@ -183,7 +214,7 @@ public class DashboardView extends Div implements HasPageHeader {
                 kpiCard(
                         "Leerstandsquote",
                         String.format(Locale.GERMANY, "%.2f %%", leerstandsquote),
-                        "",
+                        leerstehendeMieteinheiten + " frei",
                         leerstehendeMieteinheiten
                                 + " von "
                                 + gesamtMieteinheiten
@@ -194,7 +225,7 @@ public class DashboardView extends Div implements HasPageHeader {
                 kpiCard(
                         "Offene Zahlungen",
                         formatEuro(offeneAusgaben),
-                        "",
+                        anzahlOffeneAusgaben + " offen",
                         formatAnzahlOffeneAusgaben(anzahlOffeneAusgaben),
                         VaadinIcon.WARNING,
                         "warning"
@@ -202,62 +233,84 @@ public class DashboardView extends Div implements HasPageHeader {
                 kpiCard(
                         "Aktive Verträge",
                         String.valueOf(aktiveVertraege),
-                        "",
+                        "laufend",
                         "Laufende Mietverträge",
                         VaadinIcon.USERS,
                         "success"
                 )
         );
 
-        layout.getChildren().forEach(component ->
-                component.getElement().getStyle().set("flex", "1")
-        );
-
-        return layout;
+        return grid;
     }
 
-    private Component createChartSection() {
-        HorizontalLayout layout = new HorizontalLayout();
+    private Component createDashboardMainGrid() {
+        Div grid = new Div();
+        grid.addClassName("dashboard-main-grid");
 
-        layout.setWidthFull();
-        layout.addClassName("page-section");
+        Div chartColumn = new Div();
+        chartColumn.addClassName("dashboard-chart-column");
 
-        Div barChart = chartCard(
-                "Einnahmen vs. Ausgaben",
-                createBarChart()
+        chartColumn.add(
+                chartCard(
+                        "Einnahmen vs. Ausgaben",
+                        "Entwicklung der letzten sechs Monate",
+                        createBarChart(),
+                        "wide"
+                ),
+                chartCard(
+                        "Vermietet vs. Leerstand",
+                        "Aktuelle Verteilung der Mieteinheiten",
+                        createPieChart(),
+                        "compact"
+                )
         );
 
-        Div pieChart = chartCard(
-                "Vermietet vs Leerstand",
-                createPieChart()
-        );
+        grid.add(chartColumn, createOpenItemsCard());
 
-        barChart.getStyle().set("flex", "1");
-        pieChart.getStyle().set("flex", "1");
-
-        layout.add(barChart, pieChart);
-
-        return layout;
+        return grid;
     }
 
     private Div createOpenItemsCard() {
         Div card = new Div();
+        card.addClassNames("card", "dashboard-open-card");
 
-        card.addClassName("card");
-        card.setWidth("420px");
+        Div header = new Div();
+        header.addClassName("dashboard-card-header");
+
+        Div titleBox = new Div();
 
         H3 title = new H3("Offene Posten");
         title.addClassName("card-title");
 
-        card.add(title);
+        Paragraph subtitle = new Paragraph("Priorisierte Zahlungen und Fälligkeiten");
+        subtitle.addClassName("card-subtitle");
+
+        titleBox.add(title, subtitle);
+
+        Span counter = new Span(String.valueOf(offeneZahlungseingaenge == null ? 0 : offeneZahlungseingaenge.size()));
+        counter.addClassNames("status-badge", anzahlOffeneAusgaben == 0 ? "success" : "warning");
+
+        header.add(titleBox, counter);
+        card.add(header);
 
         if (offeneZahlungseingaenge == null || offeneZahlungseingaenge.isEmpty()) {
-            Paragraph emptyText = new Paragraph("Keine offenen Posten vorhanden.");
-            emptyText.addClassName("card-subtitle");
-            card.add(emptyText);
+            Div empty = new Div();
+            empty.addClassName("dashboard-empty-state");
+
+            Div icon = new Div(new Icon(VaadinIcon.CHECK_CIRCLE));
+            icon.addClassName("dashboard-empty-icon");
+
+            H3 emptyTitle = new H3("Alles erledigt");
+            Paragraph emptyText = new Paragraph("Aktuell sind keine offenen Posten vorhanden.");
+
+            empty.add(icon, emptyTitle, emptyText);
+            card.add(empty);
 
             return card;
         }
+
+        Div list = new Div();
+        list.addClassName("dashboard-open-list");
 
         offeneZahlungseingaenge.stream()
                 .filter(zahlung -> zahlung.getZahlungsdatum() != null)
@@ -267,12 +320,14 @@ public class DashboardView extends Div implements HasPageHeader {
 
                 // Das Dashboard zeigt nur eine kompakte Vorschau der wichtigsten offenen Posten.
                 .limit(5)
-                .forEach(zahlung -> card.add(openItem(
+                .forEach(zahlung -> list.add(openItem(
                         ermittleMieterName(zahlung),
                         ermittleBeschreibung(zahlung),
                         formatEuro(zahlung.getBetrag()),
                         ermittleUeberfaelligkeit(zahlung)
                 )));
+
+        card.add(list);
 
         return card;
     }
@@ -362,7 +417,7 @@ public class DashboardView extends Div implements HasPageHeader {
             String color
     ) {
         Div card = new Div();
-        card.addClassName("kpi-card");
+        card.addClassNames("kpi-card", "dashboard-kpi-card", color);
 
         Div header = new Div();
         header.addClassName("kpi-card-header");
@@ -373,12 +428,7 @@ public class DashboardView extends Div implements HasPageHeader {
         Span badgeSpan = new Span(badge);
 
         if (!badge.isBlank()) {
-            badgeSpan.addClassNames(
-                    "status-badge",
-                    badge.startsWith("-")
-                            ? "danger"
-                            : "success"
-            );
+            badgeSpan.addClassNames("status-badge", color);
         }
 
         header.add(iconBox, badgeSpan);
@@ -403,18 +453,23 @@ public class DashboardView extends Div implements HasPageHeader {
         return card;
     }
 
-    private Div chartCard(String title, Component chart) {
+    private Div chartCard(String title, String subtitle, Component chart, String size) {
         Div card = new Div();
-
-        card.addClassName("card");
+        card.addClassNames("card", "dashboard-chart-card", size);
 
         Div header = new Div();
-        header.addClassName("card-header");
+        header.addClassName("dashboard-card-header");
+
+        Div titleBox = new Div();
 
         H3 titleText = new H3(title);
         titleText.addClassName("card-title");
 
-        header.add(titleText);
+        Paragraph subtitleText = new Paragraph(subtitle);
+        subtitleText.addClassName("card-subtitle");
+
+        titleBox.add(titleText, subtitleText);
+        header.add(titleBox);
 
         card.add(header, chart);
 
@@ -423,14 +478,10 @@ public class DashboardView extends Div implements HasPageHeader {
 
     private Component createBarChart() {
         Div wrapper = new Div();
-
-        wrapper.setWidthFull();
-        wrapper.getStyle().set("height", "300px");
+        wrapper.addClassName("dashboard-chart-wrapper");
 
         Element canvas = new Element("canvas");
         canvas.setAttribute("id", "incomeExpenseChart");
-        canvas.getStyle().set("width", "100%");
-        canvas.getStyle().set("height", "300px");
 
         wrapper.getElement().appendChild(canvas);
 
@@ -440,9 +491,18 @@ public class DashboardView extends Div implements HasPageHeader {
             setTimeout(() => {
                 const ctx = document.getElementById('incomeExpenseChart');
 
-                if (!ctx) return;
+                if (!ctx || !window.Chart) return;
 
-                new Chart(ctx, {
+                const styles = getComputedStyle(document.documentElement);
+                const primary = styles.getPropertyValue('--color-primary').trim() || '#2563eb';
+                const danger = styles.getPropertyValue('--color-danger').trim() || '#ef4444';
+                const grid = styles.getPropertyValue('--color-border').trim() || '#e5e7eb';
+
+                if (window.incomeExpenseChartInstance) {
+                    window.incomeExpenseChartInstance.destroy();
+                }
+
+                window.incomeExpenseChartInstance = new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: $0,
@@ -450,12 +510,16 @@ public class DashboardView extends Div implements HasPageHeader {
                             {
                                 label: 'Einnahmen',
                                 data: $1,
-                                borderRadius: 8
+                                backgroundColor: primary,
+                                borderRadius: 12,
+                                maxBarThickness: 34
                             },
                             {
                                 label: 'Ausgaben',
                                 data: $2,
-                                borderRadius: 8
+                                backgroundColor: danger,
+                                borderRadius: 12,
+                                maxBarThickness: 34
                             }
                         ]
                     },
@@ -464,12 +528,25 @@ public class DashboardView extends Div implements HasPageHeader {
                         maintainAspectRatio: false,
                         plugins: {
                             legend: {
-                                position: 'bottom'
+                                position: 'bottom',
+                                labels: {
+                                    usePointStyle: true,
+                                    boxWidth: 8,
+                                    boxHeight: 8
+                                }
                             }
                         },
                         scales: {
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            },
                             y: {
-                                beginAtZero: true
+                                beginAtZero: true,
+                                grid: {
+                                    color: grid
+                                }
                             }
                         }
                     }
@@ -482,14 +559,10 @@ public class DashboardView extends Div implements HasPageHeader {
 
     private Component createPieChart() {
         Div wrapper = new Div();
-
-        wrapper.setWidthFull();
-        wrapper.getStyle().set("height", "300px");
+        wrapper.addClassName("dashboard-chart-wrapper");
 
         Element canvas = new Element("canvas");
         canvas.setAttribute("id", "vacancyPieChart");
-        canvas.getStyle().set("width", "100%");
-        canvas.getStyle().set("height", "300px");
 
         wrapper.getElement().appendChild(canvas);
 
@@ -498,9 +571,17 @@ public class DashboardView extends Div implements HasPageHeader {
             setTimeout(() => {
                 const ctx = document.getElementById('vacancyPieChart');
 
-                if (!ctx) return;
+                if (!ctx || !window.Chart) return;
 
-                new Chart(ctx, {
+                const styles = getComputedStyle(document.documentElement);
+                const success = styles.getPropertyValue('--color-success').trim() || '#10b981';
+                const warning = styles.getPropertyValue('--color-warning').trim() || '#f59e0b';
+
+                if (window.vacancyPieChartInstance) {
+                    window.vacancyPieChartInstance.destroy();
+                }
+
+                window.vacancyPieChartInstance = new Chart(ctx, {
                     type: 'doughnut',
                     data: {
                         labels: [
@@ -509,7 +590,9 @@ public class DashboardView extends Div implements HasPageHeader {
                         ],
                         datasets: [{
                             data: [$0, $1],
-                            borderWidth: 0
+                            backgroundColor: [success, warning],
+                            borderWidth: 0,
+                            hoverOffset: 8
                         }]
                     },
                     options: {
@@ -517,7 +600,12 @@ public class DashboardView extends Div implements HasPageHeader {
                         maintainAspectRatio: false,
                         plugins: {
                             legend: {
-                                position: 'bottom'
+                                position: 'bottom',
+                                labels: {
+                                    usePointStyle: true,
+                                    boxWidth: 8,
+                                    boxHeight: 8
+                                }
                             },
                             tooltip: {
                                 callbacks: {
@@ -547,7 +635,7 @@ public class DashboardView extends Div implements HasPageHeader {
                                 }
                             }
                         },
-                        cutout: '70%'
+                        cutout: '72%'
                     }
                 });
             }, 300);
@@ -562,54 +650,35 @@ public class DashboardView extends Div implements HasPageHeader {
             String amount,
             String overdue
     ) {
-        HorizontalLayout row = new HorizontalLayout();
+        Div row = new Div();
+        row.addClassName("dashboard-open-item");
 
-        row.setWidthFull();
-
-        row.setJustifyContentMode(
-                FlexComponent.JustifyContentMode.BETWEEN
-        );
-
-        row.setAlignItems(FlexComponent.Alignment.CENTER);
-
-        row.getStyle().set("padding", "16px 0");
+        Div iconBox = new Div(new Icon(VaadinIcon.CLOCK));
+        iconBox.addClassName("dashboard-open-item-icon");
 
         Div left = new Div();
+        left.addClassName("dashboard-open-item-content");
 
         Span nameText = new Span(name);
-        Div descriptionText = new Div(description);
+        nameText.addClassName("dashboard-open-item-title");
 
-        left.add(
-                nameText,
-                descriptionText
-        );
+        Span descriptionText = new Span(description);
+        descriptionText.addClassName("dashboard-open-item-subtitle");
 
-        left.getElement()
-                .getStyle()
-                .set("font-size", "14px");
+        left.add(nameText, descriptionText);
 
         Div right = new Div();
+        right.addClassName("dashboard-open-item-amount");
 
         Span amountText = new Span(amount);
-        Div overdueText = new Div(overdue);
+        amountText.addClassName("dashboard-open-item-value");
 
-        right.add(
-                amountText,
-                overdueText
-        );
+        Span overdueText = new Span(overdue);
+        overdueText.addClassName("dashboard-open-item-meta");
 
-        right.getStyle().set("text-align", "right");
+        right.add(amountText, overdueText);
 
-        right.getStyle().set(
-                "color",
-                "var(--color-danger)"
-        );
-
-        right.getElement()
-                .getStyle()
-                .set("font-size", "14px");
-
-        row.add(left, right);
+        row.add(iconBox, left, right);
 
         return row;
     }

@@ -1,0 +1,65 @@
+/* =========================================================
+   Immobilie Bearbeiten
+   Ergänzt die allgemeinen Styles aus immobilie-form.css
+   ========================================================= */
+
+.property-edit-page {
+    min-height: 100%;
+}
+
+.property-edit-hero {
+    background:
+            radial-gradient(circle at 82% 14%, rgba(255, 255, 255, 0.46), transparent 24%),
+            linear-gradient(135deg, #111827 0%, #334155 44%, #2563eb 100%);
+}
+
+.property-edit-preview-badge {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 2;
+    padding: 7px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.26);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    backdrop-filter: blur(12px);
+    color: white;
+    font-size: 12px;
+    font-weight: 850;
+    letter-spacing: 0.02em;
+}
+
+.property-edit-info-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 18px;
+    padding: 24px;
+    background:
+            linear-gradient(135deg, rgba(37, 99, 235, 0.06), rgba(14, 165, 233, 0.05)),
+            rgba(255, 255, 255, 0.94);
+}
+
+.property-edit-info-text .property-form-card-subtitle {
+    max-width: 860px;
+}
+
+.property-edit-page .property-form-card {
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.property-edit-page .property-form-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(37, 99, 235, 0.22);
+    box-shadow: 0 24px 58px -34px rgba(15, 23, 42, 0.58);
+}
+
+.property-edit-page .property-form-actions {
+    border-color: rgba(37, 99, 235, 0.16);
+}
+
+@media (max-width: 760px) {
+    .property-edit-info-card {
+        grid-template-columns: 1fr;
+    }
+}

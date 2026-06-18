@@ -1,0 +1,459 @@
+/* =========================================================
+   Immobilie Formular
+   ========================================================= */
+
+.property-form-page {
+    min-height: 100%;
+}
+
+.property-form-wrapper {
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+}
+
+.property-form-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* ---------- Hero ---------- */
+
+.property-form-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-2xl, 28px);
+    padding: 32px;
+    box-sizing: border-box;
+
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.75fr);
+    gap: 28px;
+    align-items: stretch;
+
+    background:
+            radial-gradient(circle at 88% 12%, rgba(255, 255, 255, 0.48), transparent 24%),
+            linear-gradient(135deg, #0f172a 0%, #1d4ed8 48%, #38bdf8 100%);
+    color: white;
+    box-shadow: 0 30px 70px -42px rgba(15, 23, 42, 0.85);
+}
+
+.property-form-hero::before,
+.property-form-hero::after {
+    content: "";
+    position: absolute;
+    border-radius: 999px;
+    pointer-events: none;
+}
+
+.property-form-hero::before {
+    width: 260px;
+    height: 260px;
+    right: -96px;
+    bottom: -98px;
+    background: rgba(255, 255, 255, 0.16);
+}
+
+.property-form-hero::after {
+    width: 160px;
+    height: 160px;
+    top: -64px;
+    right: 33%;
+    background: rgba(255, 255, 255, 0.10);
+}
+
+.property-form-hero-content,
+.property-form-preview {
+    position: relative;
+    z-index: 1;
+}
+
+.property-form-hero-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.property-form-eyebrow {
+    width: fit-content;
+    padding: 7px 13px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(12px);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.property-form-hero-title {
+    margin: 18px 0 10px 0;
+    font-size: clamp(30px, 4vw, 46px);
+    line-height: 1.04;
+    font-weight: 850;
+    letter-spacing: -0.05em;
+    color: white;
+}
+
+.property-form-hero-subtitle {
+    max-width: 680px;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.80);
+    font-size: 16px;
+    line-height: 1.65;
+}
+
+.property-form-hero-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 28px;
+}
+
+.property-form-hero-stat {
+    min-width: 122px;
+    padding: 13px 15px;
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.10);
+    backdrop-filter: blur(14px);
+}
+
+.property-form-hero-stat-number {
+    display: block;
+    font-size: 18px;
+    font-weight: 850;
+}
+
+.property-form-hero-stat-label {
+    display: block;
+    margin-top: 2px;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* ---------- Preview ---------- */
+
+.property-form-preview {
+    min-height: 310px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 26px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(18px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.property-preview-visual {
+    height: 142px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+            linear-gradient(135deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.06)),
+            linear-gradient(135deg, rgba(14, 165, 233, 0.70), rgba(37, 99, 235, 0.92));
+}
+
+.property-preview-visual::before {
+    content: "";
+    position: absolute;
+    left: 26px;
+    right: 26px;
+    bottom: 0;
+    height: 58px;
+    border-radius: 18px 18px 0 0;
+    background: rgba(15, 23, 42, 0.36);
+}
+
+.property-preview-visual vaadin-icon {
+    position: relative;
+    z-index: 1;
+    width: 72px;
+    height: 72px;
+    color: white;
+    filter: drop-shadow(0 12px 24px rgba(15, 23, 42, 0.35));
+}
+
+.property-preview-text {
+    padding: 22px;
+    color: white;
+}
+
+.property-preview-title {
+    display: block;
+    font-size: 22px;
+    font-weight: 850;
+    letter-spacing: -0.03em;
+}
+
+.property-preview-type {
+    display: inline-flex;
+    width: fit-content;
+    margin-top: 10px;
+    padding: 6px 11px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.property-preview-address {
+    display: block;
+    margin-top: 14px;
+    color: rgba(255, 255, 255, 0.76);
+    line-height: 1.5;
+}
+
+.property-preview-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.property-preview-meta {
+    min-width: 0;
+    padding: 11px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.10);
+}
+
+.property-preview-meta-label {
+    display: block;
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.property-preview-meta-value {
+    display: block;
+    margin-top: 4px;
+    color: white;
+    font-size: 13px;
+    font-weight: 800;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ---------- Cards ---------- */
+
+.property-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.property-form-card {
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(226, 232, 240, 0.92);
+    border-radius: var(--radius-2xl, 28px);
+    box-shadow: var(--shadow-card, 0 18px 45px -28px rgba(15, 23, 42, 0.50));
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.property-form-card-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 24px 24px 0 24px;
+}
+
+.property-form-card-icon {
+    width: 46px;
+    height: 46px;
+    min-width: 46px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-primary);
+    background:
+            linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(14, 165, 233, 0.14));
+}
+
+.property-form-card-icon vaadin-icon {
+    width: 22px;
+    height: 22px;
+}
+
+.property-form-card-title-box {
+    min-width: 0;
+}
+
+.property-form-card-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 850;
+    letter-spacing: -0.02em;
+    color: var(--color-text);
+}
+
+.property-form-card-subtitle {
+    margin: 5px 0 0 0;
+    color: var(--color-text-muted);
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.property-form-card-content {
+    padding: 24px;
+}
+
+.property-form-layout {
+    width: 100%;
+}
+
+.property-form-layout {
+    --vaadin-form-layout-column-spacing: 22px;
+    --vaadin-form-layout-row-spacing: 18px;
+}
+
+.property-form-card vaadin-text-field::part(input-field),
+.property-form-card vaadin-integer-field::part(input-field),
+.property-form-card vaadin-select::part(input-field) {
+    border-radius: 15px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    box-shadow: none;
+}
+
+.property-form-card vaadin-text-field:hover::part(input-field),
+.property-form-card vaadin-integer-field:hover::part(input-field),
+.property-form-card vaadin-select:hover::part(input-field) {
+    background: white;
+    border-color: var(--color-border-hover);
+}
+
+.property-form-card vaadin-text-field:focus-within::part(input-field),
+.property-form-card vaadin-integer-field:focus-within::part(input-field),
+.property-form-card vaadin-select:focus-within::part(input-field) {
+    background: white;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+/* ---------- Gesamtobjekt ---------- */
+
+.property-form-full-card {
+    width: 100%;
+}
+
+.property-unit-option-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 18px;
+    padding: 24px;
+}
+
+.property-unit-option-text .property-form-card-subtitle {
+    max-width: 760px;
+}
+
+.property-unit-option-checkbox {
+    font-weight: 750;
+    color: var(--color-text);
+}
+
+.property-unit-option-checkbox::part(checkbox) {
+    border-radius: 8px;
+}
+
+/* ---------- Actions ---------- */
+
+.property-form-actions {
+    position: sticky;
+    bottom: 18px;
+    z-index: 4;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+
+    padding: 16px;
+    border: 1px solid rgba(226, 232, 240, 0.92);
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.90);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 20px 46px -32px rgba(15, 23, 42, 0.65);
+}
+
+.property-form-actions-helper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--color-text-muted);
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.property-form-actions-helper vaadin-icon {
+    width: 18px;
+    height: 18px;
+    color: var(--color-primary);
+}
+
+.property-form-action-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 1050px) {
+    .property-form-hero,
+    .property-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .property-form-preview {
+        min-height: auto;
+    }
+}
+
+@media (max-width: 760px) {
+    .property-form-hero {
+        padding: 24px;
+        border-radius: 24px;
+    }
+
+    .property-form-hero-stats,
+    .property-preview-meta-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .property-form-hero-stats {
+        display: grid;
+    }
+
+    .property-unit-option-card {
+        grid-template-columns: 1fr;
+    }
+
+    .property-form-actions {
+        position: static;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .property-form-action-buttons {
+        justify-content: stretch;
+    }
+
+    .property-form-action-buttons vaadin-button {
+        width: 100%;
+    }
+}

@@ -1,9 +1,12 @@
 package de.hsbi.immobilienverwaltung.ui.immobilien;
 
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.select.Select;
@@ -34,12 +37,19 @@ public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnt
 
     private final TextField einheitNummerFeld = new TextField("Einheit-Nr.");
     private final Select<MieteinheitTyp> mieteinheitTypAuswahl = new Select<>();
-    private final IntegerField groesseFeld = new IntegerField("Größe in m²");
+    private final IntegerField groesseFeld = new IntegerField("Größe");
     private final TextField stockwerkFeld = new TextField("Stockwerk");
     private final IntegerField zimmeranzahlFeld = new IntegerField("Zimmeranzahl");
     private final Select<Mieteinheitstatus> statusAuswahl = new Select<>();
 
     private final Binder<Mieteinheit> mieteinheitFormularBinder = new Binder<>(Mieteinheit.class);
+
+    private final Span previewBezeichnung = new Span("Mieteinheit");
+    private final Span previewTyp = new Span("Typ");
+    private final Span previewStatus = new Span("Status");
+    private final Span previewGroesse = new Span("– m²");
+    private final Span previewZimmer = new Span("– Zimmer");
+    private final Span previewStockwerk = new Span("Stockwerk –");
 
     public MieteinheitEditView(MieteinheitService mieteinheitService) {
         this.mieteinheitService = mieteinheitService;
@@ -48,8 +58,10 @@ public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnt
         addClassName("mieteinheit-edit-view");
 
         konfiguriereFormularBinder();
+        konfiguriereFormularFelder();
+        konfiguriereLiveVorschau();
 
-        add(erstelleFormularKarte());
+        add(erstelleSeitenInhalt());
     }
 
     @Override
@@ -68,8 +80,9 @@ public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnt
 
         ladeMieteinheit();
 
-        // Die vorhandenen Daten werden mit Vaadin Binder in die Formularfelder geladen
+        // Die vorhandenen Daten werden mit Vaadin Binder in die Formularfelder geladen.
         mieteinheitFormularBinder.readBean(mieteinheit);
+        aktualisiereVorschau();
     }
 
     private void ladeMieteinheit() {
@@ -77,7 +90,7 @@ public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnt
                 .orElseThrow(() -> new IllegalArgumentException("Mieteinheit wurde nicht gefunden."));
     }
 
-    // Vaadin Binder verbindet die Formularfelder mit den Getter- und Setter-Methoden der Entity
+    // Vaadin Binder verbindet die Formularfelder mit den Getter- und Setter-Methoden der Entity.
     private void konfiguriereFormularBinder() {
         mieteinheitFormularBinder.forField(einheitNummerFeld)
                 .asRequired("Bezeichnung darf nicht leer sein.")
@@ -109,72 +122,298 @@ public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnt
                 .bind(Mieteinheit::getStatus, Mieteinheit::setStatus);
     }
 
-    private Div erstelleFormularKarte() {
-        Div formularKarte = new Div();
-        formularKarte.addClassName("form-card");
+    private Component erstelleSeitenInhalt() {
+        Div wrapper = new Div();
+        wrapper.addClassName("mieteinheit-form-wrapper");
 
-        Div formularKopf = new Div();
-        formularKopf.addClassName("form-card-header");
-
-        H3 titel = new H3("Mieteinheit bearbeiten");
-        titel.addClassName("form-card-title");
-
-        formularKopf.add(titel);
-
-        FormLayout formular = new FormLayout();
-        formular.addClassName("form-card-content");
-
-        konfiguriereFormularFelder();
-
-        formular.add(
-                einheitNummerFeld,
-                mieteinheitTypAuswahl,
-                groesseFeld,
-                stockwerkFeld,
-                zimmeranzahlFeld,
-                statusAuswahl
-        );
-
-        formularKarte.add(
-                formularKopf,
-                formular,
+        wrapper.add(
+                erstelleHeroBereich(),
+                erstelleFormularLayout(),
                 erstelleFormularAktionen()
         );
 
-        return formularKarte;
+        return wrapper;
+    }
+
+    private Component erstelleHeroBereich() {
+        Div hero = new Div();
+        hero.addClassName("mieteinheit-form-hero");
+        hero.addClassName("mieteinheit-edit-hero");
+
+        Div textArea = new Div();
+        textArea.addClassName("mieteinheit-form-hero-text");
+
+        Span eyebrow = new Span("Bearbeitungsmodus");
+        eyebrow.addClassName("form-hero-eyebrow");
+
+        H3 title = new H3("Mieteinheit bearbeiten");
+        title.addClassName("form-hero-title");
+
+        Paragraph subtitle = new Paragraph("Passe Stammdaten, Raumdaten und Status der Einheit an. Bestehende Verträge und Buchungen bleiben unverändert.");
+        subtitle.addClassName("form-hero-subtitle");
+
+        Div bullets = new Div();
+        bullets.addClassName("mieteinheit-hero-bullets");
+        bullets.add(
+                erstelleHeroBullet("Live-Vorschau"),
+                erstelleHeroBullet("Validierte Felder"),
+                erstelleHeroBullet("Rückkehr zur Detailseite")
+        );
+
+        textArea.add(eyebrow, title, subtitle, bullets);
+
+        hero.add(textArea, erstelleVorschauKarte());
+        return hero;
+    }
+
+    private Component erstelleHeroBullet(String text) {
+        Span bullet = new Span(text);
+        bullet.addClassName("mieteinheit-hero-bullet");
+        return bullet;
+    }
+
+    private Div erstelleVorschauKarte() {
+        Div preview = new Div();
+        preview.addClassName("mieteinheit-preview-card");
+        preview.addClassName("mieteinheit-edit-preview-card");
+
+        Div illustration = new Div();
+        illustration.addClassName("mieteinheit-preview-illustration");
+
+        Div door = new Div();
+        door.addClassName("mieteinheit-preview-door");
+
+        Div window = new Div();
+        window.addClassName("mieteinheit-preview-window");
+
+        illustration.add(door, window);
+
+        Div content = new Div();
+        content.addClassName("mieteinheit-preview-content");
+
+        previewBezeichnung.addClassName("mieteinheit-preview-title");
+        previewTyp.addClassName("mieteinheit-preview-subtitle");
+        previewStatus.addClassNames("status-badge", "neutral");
+
+        Div meta = new Div();
+        meta.addClassName("mieteinheit-preview-meta");
+        meta.add(
+                erstellePreviewMeta("Fläche", previewGroesse),
+                erstellePreviewMeta("Zimmer", previewZimmer),
+                erstellePreviewMeta("Lage", previewStockwerk)
+        );
+
+        content.add(previewBezeichnung, previewTyp, previewStatus, meta);
+        preview.add(illustration, content);
+
+        return preview;
+    }
+
+    private Component erstellePreviewMeta(String labelText, Span value) {
+        Div item = new Div();
+        item.addClassName("mieteinheit-preview-meta-item");
+
+        Span label = new Span(labelText);
+        label.addClassName("mieteinheit-preview-meta-label");
+
+        value.addClassName("mieteinheit-preview-meta-value");
+
+        item.add(label, value);
+        return item;
+    }
+
+    private Component erstelleFormularLayout() {
+        Div layout = new Div();
+        layout.addClassName("mieteinheit-form-grid");
+
+        layout.add(
+                erstelleBasisdatenKarte(),
+                erstelleRaumdatenKarte(),
+                erstelleHinweisKarte()
+        );
+
+        return layout;
+    }
+
+    private Component erstelleBasisdatenKarte() {
+        FormLayout formular = erstelleZweispaltigesFormular();
+        formular.add(einheitNummerFeld, mieteinheitTypAuswahl, statusAuswahl);
+        formular.setColspan(einheitNummerFeld, 2);
+        formular.setColspan(statusAuswahl, 2);
+
+        return erstelleFormularKarte(
+                "Basisdaten",
+                "Bezeichnung, Typ und aktueller Status der Einheit.",
+                VaadinIcon.HOME,
+                formular
+        );
+    }
+
+    private Component erstelleRaumdatenKarte() {
+        FormLayout formular = erstelleZweispaltigesFormular();
+        formular.add(groesseFeld, zimmeranzahlFeld, stockwerkFeld);
+        formular.setColspan(stockwerkFeld, 2);
+
+        return erstelleFormularKarte(
+                "Raumdaten",
+                "Fläche, Zimmeranzahl und Lage innerhalb der Immobilie.",
+                VaadinIcon.CUBES,
+                formular
+        );
+    }
+
+    private Component erstelleHinweisKarte() {
+        Div card = new Div();
+        card.addClassNames("form-card", "mieteinheit-info-card", "mieteinheit-edit-note-card");
+
+        Div iconBox = new Div(VaadinIcon.INFO_CIRCLE.create());
+        iconBox.addClassName("mieteinheit-info-icon");
+
+        Div text = new Div();
+        text.addClassName("mieteinheit-info-text");
+
+        Span title = new Span("Hinweis zur Bearbeitung");
+        title.addClassName("mieteinheit-info-title");
+
+        Paragraph body = new Paragraph("Diese Ansicht ändert nur die Stammdaten der Mieteinheit. Mietverträge, Mieter und Zahlungsvorgänge bleiben so bestehen, wie sie sind.");
+        body.addClassName("mieteinheit-info-body");
+
+        text.add(title, body);
+        card.add(iconBox, text);
+
+        return card;
+    }
+
+    private Div erstelleFormularKarte(String titleText, String subtitleText, VaadinIcon icon, Component content) {
+        Div card = new Div();
+        card.addClassName("form-card");
+        card.setWidthFull();
+
+        Div header = new Div();
+        header.addClassName("form-card-header");
+
+        Div titleArea = new Div();
+        titleArea.addClassName("form-card-title-area");
+
+        Div iconBox = new Div(icon.create());
+        iconBox.addClassName("form-card-icon");
+
+        Div textArea = new Div();
+
+        Span title = new Span(titleText);
+        title.addClassName("form-card-title");
+
+        Paragraph subtitle = new Paragraph(subtitleText);
+        subtitle.addClassName("form-card-subtitle");
+
+        textArea.add(title, subtitle);
+        titleArea.add(iconBox, textArea);
+        header.add(titleArea);
+
+        Div body = new Div();
+        body.addClassName("form-card-content");
+        body.add(content);
+
+        card.add(header, body);
+        return card;
     }
 
     private void konfiguriereFormularFelder() {
         einheitNummerFeld.setPlaceholder("z. B. WE-01, Büro EG, Gesamtobjekt");
+        einheitNummerFeld.setRequiredIndicatorVisible(true);
+        einheitNummerFeld.setWidthFull();
 
         mieteinheitTypAuswahl.setLabel("Typ");
         mieteinheitTypAuswahl.setItems(MieteinheitTyp.values());
+        mieteinheitTypAuswahl.setPlaceholder("Typ auswählen");
         mieteinheitTypAuswahl.setItemLabelGenerator(MieteinheitTyp::getLabel);
+        mieteinheitTypAuswahl.setRequiredIndicatorVisible(true);
+        mieteinheitTypAuswahl.setWidthFull();
 
         groesseFeld.setPlaceholder("z. B. 85");
         groesseFeld.setMin(0);
         groesseFeld.setErrorMessage("Größe darf nicht negativ sein");
+        groesseFeld.setSuffixComponent(new Span("m²"));
+        groesseFeld.setClearButtonVisible(true);
+        groesseFeld.setWidthFull();
 
-        stockwerkFeld.setPlaceholder("z. B. EG, 1. OG");
+        stockwerkFeld.setPlaceholder("z. B. EG, 1. OG, Dachgeschoss");
+        stockwerkFeld.setWidthFull();
 
         zimmeranzahlFeld.setPlaceholder("z. B. 3");
         zimmeranzahlFeld.setMin(0);
         zimmeranzahlFeld.setErrorMessage("Zimmeranzahl darf nicht negativ sein");
+        zimmeranzahlFeld.setClearButtonVisible(true);
+        zimmeranzahlFeld.setWidthFull();
 
         statusAuswahl.setLabel("Status");
         statusAuswahl.setItems(Mieteinheitstatus.values());
+        statusAuswahl.setPlaceholder("Status auswählen");
         statusAuswahl.setItemLabelGenerator(Mieteinheitstatus::getLabel);
-
-        einheitNummerFeld.setRequiredIndicatorVisible(true);
-        mieteinheitTypAuswahl.setRequiredIndicatorVisible(true);
         statusAuswahl.setRequiredIndicatorVisible(true);
+        statusAuswahl.setWidthFull();
+    }
+
+    private void konfiguriereLiveVorschau() {
+        einheitNummerFeld.addValueChangeListener(event -> aktualisiereVorschau());
+        mieteinheitTypAuswahl.addValueChangeListener(event -> aktualisiereVorschau());
+        statusAuswahl.addValueChangeListener(event -> aktualisiereVorschau());
+        groesseFeld.addValueChangeListener(event -> aktualisiereVorschau());
+        zimmeranzahlFeld.addValueChangeListener(event -> aktualisiereVorschau());
+        stockwerkFeld.addValueChangeListener(event -> aktualisiereVorschau());
+
+        aktualisiereVorschau();
+    }
+
+    private void aktualisiereVorschau() {
+        String bezeichnung = einheitNummerFeld.getValue();
+        previewBezeichnung.setText(bezeichnung == null || bezeichnung.isBlank() ? "Mieteinheit" : bezeichnung);
+
+        MieteinheitTyp typ = mieteinheitTypAuswahl.getValue();
+        previewTyp.setText(typ == null ? "Typ auswählen" : typ.getLabel());
+
+        Mieteinheitstatus status = statusAuswahl.getValue();
+        previewStatus.setText(status == null ? "Status wählen" : status.getLabel());
+        previewStatus.removeClassNames("success", "warning", "danger", "neutral", "primary");
+        previewStatus.addClassName(ermittleStatusStil(status));
+
+        Integer groesse = groesseFeld.getValue();
+        previewGroesse.setText(groesse == null ? "– m²" : groesse + " m²");
+
+        Integer zimmer = zimmeranzahlFeld.getValue();
+        previewZimmer.setText(zimmer == null ? "– Zimmer" : zimmer + " Zimmer");
+
+        String stockwerk = stockwerkFeld.getValue();
+        previewStockwerk.setText(stockwerk == null || stockwerk.isBlank() ? "Stockwerk –" : stockwerk);
+    }
+
+    private String ermittleStatusStil(Mieteinheitstatus status) {
+        if (status == null) {
+            return "neutral";
+        }
+
+        String statusName = status.name();
+
+        if (statusName.contains("FREI")) {
+            return "success";
+        }
+
+        if (statusName.contains("RENOV")) {
+            return "warning";
+        }
+
+        if (statusName.contains("VERMIET")) {
+            return "primary";
+        }
+
+        return "neutral";
     }
 
     private Div erstelleFormularAktionen() {
         Div aktionen = new Div();
-        aktionen.addClassName("form-actions");
+        aktionen.addClassName("form-bottom-actions");
 
-        Button abbrechenButton = new Button("Abbrechen");
+        Button abbrechenButton = new Button("Abbrechen", VaadinIcon.CLOSE.create());
         abbrechenButton.addClassName("secondary-button");
         abbrechenButton.addClickListener(event ->
                 getUI().ifPresent(ui -> ui.navigate(
@@ -189,6 +428,18 @@ public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnt
         aktionen.add(abbrechenButton, speichernButton);
 
         return aktionen;
+    }
+
+    private FormLayout erstelleZweispaltigesFormular() {
+        FormLayout form = new FormLayout();
+        form.addClassName("form-layout-two-columns");
+
+        form.setResponsiveSteps(
+                new FormLayout.ResponsiveStep("0", 1),
+                new FormLayout.ResponsiveStep("620px", 2)
+        );
+
+        return form;
     }
 
     private void speichereAenderungen() {
@@ -223,7 +474,9 @@ public class MieteinheitEditView extends Div implements HasPageHeader, BeforeEnt
 
     @Override
     public String getPageTitle() {
-        return "Mieteinheit bearbeiten";
+        return mieteinheit != null
+                ? "Mieteinheit " + mieteinheit.getBezeichnung() + " bearbeiten"
+                : "Mieteinheit bearbeiten";
     }
 
     @Override
