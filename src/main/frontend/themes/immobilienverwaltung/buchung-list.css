@@ -1,231 +1,185 @@
 /* =========================================================
    Buchungen: Übersicht
    Datei: buchung-list.css
+   Passend zur aktuellen BuchungListView mit:
+   - Immobilienfilter
+   - Mietvertrag-Spalte
+   - Pagination-Bar
    ========================================================= */
 
 .buchung-list-view {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 22px;
 }
 
-/* ---------- Hero ---------- */
+/* ---------- Aktionsleiste ---------- */
 
-.buchungen-hero {
+.buchung-list-view .immobilien-action-bar {
     position: relative;
     overflow: hidden;
+    margin-bottom: 0 !important;
+    padding: 18px !important;
 
-    border: 1px solid rgba(37, 99, 235, 0.14);
-    border-radius: 30px;
-    padding: 30px;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 14px !important;
+    flex-wrap: wrap;
 
+    border: 1px solid rgba(37, 99, 235, 0.13);
+    border-radius: 24px;
     background:
-            radial-gradient(circle at top right, rgba(59, 130, 246, 0.24), transparent 34%),
-            linear-gradient(135deg, #ffffff 0%, #eef6ff 50%, #f8fafc 100%);
-
-    box-shadow: 0 24px 65px -38px rgba(15, 23, 42, 0.55);
-
-    display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.9fr);
-    gap: 28px;
-    align-items: stretch;
+            radial-gradient(circle at top right, rgba(37, 99, 235, 0.14), transparent 34%),
+            linear-gradient(135deg, #ffffff 0%, #f8fbff 54%, #f1f5f9 100%);
+    box-shadow: var(--shadow-soft);
 }
 
-.buchungen-eyebrow {
+.buchung-list-view .immobilien-action-bar::before {
+    content: "Buchungen";
     display: inline-flex;
-    width: fit-content;
-    margin-bottom: 12px;
-    padding: 7px 12px;
+    align-items: center;
+    height: 38px;
+    padding: 0 14px;
+    margin-right: auto;
 
     border-radius: 999px;
     background: rgba(37, 99, 235, 0.10);
     color: var(--color-primary);
 
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 900;
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
 
-.buchungen-hero-title {
-    margin: 0;
-    max-width: 720px;
-
-    color: var(--color-text-dark);
-    font-size: clamp(30px, 4vw, 46px);
-    font-weight: 850;
-    letter-spacing: -0.05em;
-    line-height: 1.02;
-}
-
-.buchungen-hero-subtitle {
-    max-width: 660px;
-    margin: 14px 0 0 0;
-
-    color: var(--color-text-muted);
-    font-size: 15px;
-    line-height: 1.65;
-}
-
-.buchungen-hero-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 24px;
-}
-
-.buchungen-hero-stats {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-}
-
-.buchungen-hero-stat {
-    min-height: 118px;
-    padding: 18px;
-
-    border: 1px solid rgba(255, 255, 255, 0.75);
-    border-radius: 22px;
-
-    background: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(14px);
-    box-shadow: 0 18px 45px -34px rgba(15, 23, 42, 0.70);
-
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
-.buchungen-hero-stat-icon {
-    width: 38px;
-    height: 38px;
-    border-radius: 14px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    background: var(--color-primary-light);
-    color: var(--color-primary);
-}
-
-.buchungen-hero-stat-label {
-    margin-top: 12px;
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--color-text-muted);
-}
-
-.buchungen-hero-stat-value {
-    margin-top: 6px;
-    color: var(--color-text-dark);
-    font-size: 22px;
-    font-weight: 850;
-    letter-spacing: -0.03em;
+.buchung-list-view .immobilien-action-bar vaadin-button {
+    min-height: 42px;
 }
 
 /* ---------- Filter ---------- */
 
-.buchungen-filter-card {
+.buchung-list-view .filter-card {
     display: grid;
-    grid-template-columns: minmax(280px, 2fr) repeat(3, minmax(160px, 1fr));
+    grid-template-columns: minmax(280px, 1.6fr) repeat(4, minmax(150px, 1fr));
     gap: 16px;
     align-items: end;
 
     padding: 18px;
-
     border: 1px solid var(--color-border);
-    border-radius: 22px;
-    background: rgba(255, 255, 255, 0.88);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.90);
     box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(14px);
 }
 
-.buchungen-filter-card vaadin-text-field,
-.buchungen-filter-card vaadin-select {
+.buchung-list-view .filter-card vaadin-text-field,
+.buchung-list-view .filter-card vaadin-select {
     width: 100%;
+    min-width: 0;
+}
+
+.buchung-list-view vaadin-text-field::part(input-field),
+.buchung-list-view vaadin-select::part(input-field) {
+    border-radius: 16px;
+    background: #f8fafc;
+    border: 1px solid transparent;
+    box-shadow: none;
+}
+
+.buchung-list-view vaadin-text-field:focus-within::part(input-field),
+.buchung-list-view vaadin-select:focus-within::part(input-field) {
+    background: #ffffff;
+    border-color: rgba(37, 99, 235, 0.35);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
 }
 
 /* ---------- Tabelle ---------- */
 
-.buchungen-table-card {
+.buchung-list-view .table-card {
     overflow: hidden;
+    padding: 0;
 
     border: 1px solid var(--color-border);
-    border-radius: 24px;
-    background: white;
+    border-radius: 26px;
+    background: #ffffff;
     box-shadow: var(--shadow-soft);
 }
 
-.buchungen-table-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 18px;
+.buchung-list-view .table-card::before {
+    content: "Buchungsliste";
+    display: block;
+    padding: 22px 24px 6px 24px;
 
-    padding: 24px 26px;
+    color: var(--color-text-dark);
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: -0.035em;
+}
+
+.buchung-list-view .table-card::after {
+    content: "Gefilterte Übersicht mit Mieteinheit, Mietvertrag, Status und Betrag";
+    display: block;
+    padding: 0 24px 18px 24px;
+    border-bottom: 1px solid var(--color-border);
+
+    color: var(--color-text-muted);
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.buchung-list-view .buchung-grid,
+.buchung-list-view .clickable-booking-grid {
+    width: 100%;
+    border: none;
+    min-height: 560px;
+    --vaadin-grid-cell-padding: 0 16px;
+}
+
+.buchung-list-view .buchung-grid::part(header-cell) {
+    background: #f8fafc;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.055em;
+    text-transform: uppercase;
     border-bottom: 1px solid var(--color-border);
 }
 
-.buchungen-table-header .card-title {
-    margin: 0 0 6px 0;
-}
-
-.buchungen-table-header .card-subtitle {
-    margin: 0;
-}
-
-.buchungen-result-count {
-    flex-shrink: 0;
-    padding: 8px 12px;
-
-    border-radius: 999px;
-    background: var(--color-primary-light);
-    color: var(--color-primary);
-
-    font-size: 13px;
-    font-weight: 800;
-}
-
-.buchungen-modern-grid {
-    border: none;
-}
-
-.buchungen-modern-grid::part(row) {
-    transition: background 160ms ease;
-}
-
-.buchungen-modern-grid::part(body-cell) {
+.buchung-list-view .buchung-grid::part(body-cell) {
     cursor: pointer;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.78);
+    font-size: 14px;
 }
 
-.buchungen-modern-grid::part(row):hover {
+.buchung-list-view .buchung-grid::part(row) {
+    transition: background 160ms ease, transform 160ms ease;
+}
+
+.buchung-list-view .buchung-grid::part(row):hover {
     --vaadin-grid-cell-background: #f8fafc;
 }
 
-.buchung-type-badge,
+.buchung-list-view .buchung-grid::part(focused-cell) {
+    box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.22);
+}
+
+/* ---------- Status-Badges ---------- */
+
 .buchung-status-badge {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     width: fit-content;
+    min-width: 74px;
 
     border-radius: 999px;
-    padding: 6px 10px;
+    padding: 7px 11px;
 
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 900;
     line-height: 1;
-}
-
-.buchung-type-badge.income {
-    background: var(--color-success-light);
-    color: var(--color-success);
-}
-
-.buchung-type-badge.expense {
-    background: var(--color-danger-light);
-    color: var(--color-danger);
+    letter-spacing: 0.01em;
 }
 
 .buchung-status-badge.status-bezahlt {
@@ -243,67 +197,158 @@
     color: var(--color-text-muted);
 }
 
-.buchung-amount {
+/* ---------- Pagination ---------- */
+
+.buchung-list-view .pagination-bar {
+    margin: 0 !important;
+    padding: 16px 20px;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 16px;
+    flex-wrap: wrap;
+
+    border-top: 1px solid var(--color-border);
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.buchung-list-view .pagination-bar span {
+    color: var(--color-text-muted);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.buchung-list-view .pagination-bar > div {
+    display: flex !important;
+    gap: 10px !important;
+}
+
+.buchung-list-view .pagination-bar vaadin-button {
+    min-height: 38px;
+    border-radius: 999px;
     font-weight: 850;
-    letter-spacing: -0.02em;
 }
 
-.buchung-amount.income {
-    color: var(--color-success);
-}
-
-.buchung-amount.expense {
-    color: var(--color-danger);
-}
-
-/* ---------- Vaadin Input Feinschliff ---------- */
-
-.buchung-list-view vaadin-text-field::part(input-field),
-.buchung-list-view vaadin-select::part(input-field) {
-    border-radius: 16px;
-    background: #f8fafc;
-    border: 1px solid transparent;
-    box-shadow: none;
-}
-
-.buchung-list-view vaadin-text-field:focus-within::part(input-field),
-.buchung-list-view vaadin-select:focus-within::part(input-field) {
-    background: #fff;
-    border-color: rgba(37, 99, 235, 0.35);
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
+.buchung-list-view .pagination-bar vaadin-button[disabled] {
+    opacity: 0.46;
 }
 
 /* ---------- Responsive ---------- */
 
-@media (max-width: 1200px) {
-    .buchungen-hero {
-        grid-template-columns: 1fr;
+@media (max-width: 1280px) {
+    .buchung-list-view .filter-card {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
 @media (max-width: 900px) {
-    .buchungen-filter-card {
-        grid-template-columns: 1fr 1fr;
+    .buchung-list-view .immobilien-action-bar {
+        align-items: stretch !important;
+    }
+
+    .buchung-list-view .immobilien-action-bar::before {
+        width: 100%;
+        box-sizing: border-box;
+        justify-content: center;
+        margin-right: 0;
+    }
+
+    .buchung-list-view .filter-card {
+        grid-template-columns: 1fr;
+    }
+
+    .buchung-list-view .buchung-grid,
+    .buchung-list-view .clickable-booking-grid {
+        min-height: 520px;
     }
 }
 
 @media (max-width: 640px) {
-    .buchungen-hero {
-        padding: 22px;
-        border-radius: 24px;
+    .buchung-list-view {
+        gap: 18px;
     }
 
-    .buchungen-hero-stats,
-    .buchungen-filter-card {
+    .buchung-list-view .immobilien-action-bar,
+    .buchung-list-view .filter-card {
+        border-radius: 20px;
+        padding: 14px !important;
+    }
+
+    .buchung-list-view .table-card {
+        border-radius: 20px;
+    }
+
+    .buchung-list-view .pagination-bar {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+
+    .buchung-list-view .pagination-bar > div {
+        width: 100%;
+    }
+
+    .buchung-list-view .pagination-bar vaadin-button {
+        flex: 1;
+    }
+}
+
+/* =========================================================
+   Fix: Pagination-Buttons nicht am rechten Rand abschneiden
+   ========================================================= */
+
+.buchung-list-view,
+.buchung-list-view .table-card,
+.buchung-list-view .pagination-bar {
+    box-sizing: border-box;
+    max-width: 100%;
+}
+
+.buchung-list-view .pagination-bar {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center !important;
+    justify-content: normal !important;
+    column-gap: 18px;
+    row-gap: 12px;
+    padding: 16px 28px 16px 20px;
+    overflow: visible;
+}
+
+.buchung-list-view .pagination-bar span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.buchung-list-view .pagination-bar > div {
+    min-width: max-content;
+    justify-self: end;
+    flex-shrink: 0;
+    padding-right: 2px;
+}
+
+.buchung-list-view .pagination-bar vaadin-button {
+    flex: 0 0 auto;
+    max-width: none;
+}
+
+@media (max-width: 640px) {
+    .buchung-list-view .pagination-bar {
         grid-template-columns: 1fr;
+        padding: 16px;
     }
 
-    .buchungen-table-header {
-        flex-direction: column;
-        align-items: stretch;
+    .buchung-list-view .pagination-bar span {
+        white-space: normal;
     }
 
-    .buchungen-hero-actions {
-        flex-direction: column;
+    .buchung-list-view .pagination-bar > div {
+        width: 100%;
+        min-width: 0;
+        justify-self: stretch;
+        padding-right: 0;
     }
 }

@@ -1,38 +1,32 @@
 package de.hsbi.immobilienverwaltung.ui.finanzen;
-
-import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.domain.Ausgabe;
 import de.hsbi.immobilienverwaltung.domain.Immobilie;
 import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
+import de.hsbi.immobilienverwaltung.domain.Mieter;
 import de.hsbi.immobilienverwaltung.domain.Mietvertrag;
 import de.hsbi.immobilienverwaltung.domain.Zahlungseingang;
 import de.hsbi.immobilienverwaltung.domain.enums.Ausgabenkategorie;
+import de.hsbi.immobilienverwaltung.domain.enums.Vertragsstatus;
 import de.hsbi.immobilienverwaltung.domain.enums.Zahlungseingangtyp;
 import de.hsbi.immobilienverwaltung.service.interfaces.AusgabeService;
+import de.hsbi.immobilienverwaltung.service.interfaces.MietvertragService;
 import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
+import java.time.LocalDate;
+import java.util.Comparator;
 import jakarta.annotation.security.PermitAll;
 
-import java.math.BigDecimal;
 import java.text.NumberFormat;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -41,66 +35,70 @@ import java.util.Locale;
 public class BuchungListView extends Div implements HasPageHeader {
 
     private static final String ALLE_KATEGORIEN = "Alle Kategorien";
-    private static final DateTimeFormatter DATE_FORMATTER =
-            DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    private static final String ALLE_IMMOBILIEN = "Alle Immobilien";
+    private static final int BUCHUNGEN_PRO_SEITE = 20;
 
     private final Grid<BuchungRow> grid = new Grid<>(BuchungRow.class, false);
-    private final TextField searchField = new TextField();
-    private final Select<String> typSelect = new Select<>();
+
+    private final TextField searchField = new TextField("Suche");
+    private final Select<String> buchungTypSelect = new Select<>();
     private final Select<String> statusSelect = new Select<>();
     private final Select<String> kategorieSelect = new Select<>();
+    private final Select<String> immobilieSelect = new Select<>();
+    private final Button vorherigeSeiteButton = new Button("Zurück");
+    private final Button naechsteSeiteButton = new Button("Weiter");
+    private final Span seitenInfo = new Span();
+
+    private List<BuchungRow> gefilterteBuchungen = new ArrayList<>();
+    private int aktuelleSeite = 0;
+
 
     private final AusgabeService ausgabeService;
     private final ZahlungsEingangService zahlungsEingangService;
+    private final MietvertragService mietvertragService;
 
     private List<BuchungRow> alleBuchungen = new ArrayList<>();
 
-    private Span gesamtAnzahlValue;
-    private Span einnahmenValue;
-    private Span ausgabenValue;
-    private Span offenePostenValue;
-    private Span resultCount;
-
-    public BuchungListView(
-            AusgabeService ausgabeService,
-            ZahlungsEingangService zahlungsEingangService
-    ) {
+    public BuchungListView(AusgabeService ausgabeService,
+                           ZahlungsEingangService zahlungsEingangService,
+                           MietvertragService mietvertragService) {
         this.ausgabeService = ausgabeService;
         this.zahlungsEingangService = zahlungsEingangService;
+        this.mietvertragService = mietvertragService;
 
-        addClassNames("page-content", "buchung-list-view");
+        addClassName("buchung-list-view");
+        addClassName("page-content");
 
         add(
-                createHeroSection(),
+                createActionBar(),
                 createFilterCard(),
                 createTableCard()
         );
     }
 
-    private Component createHeroSection() {
-        Div hero = new Div();
-        hero.addClassName("buchungen-hero");
+    @Override
+    public String getPageTitle() {
+        return "Buchungsübersicht";
+    }
 
-        Div left = new Div();
-        left.addClassName("buchungen-hero-left");
+    @Override
+    public String getPageSubtitle() {
+        return "Finanzen › Alle Buchungen";
+    }
 
-        Span eyebrow = new Span("Finanzcenter");
-        eyebrow.addClassName("buchungen-eyebrow");
+    private Div createActionBar() {
+        Div actionBar = new Div();
+        actionBar.addClassName("immobilien-action-bar");
+        actionBar.getStyle()
+                .set("display", "flex")
+                .set("gap", "16px")
+                .set("align-items", "center")
+                .set("margin-bottom", "20px")
+                .set("padding", "8px 0");
 
-        H2 title = new H2("Buchungen im Überblick");
-        title.addClassName("buchungen-hero-title");
-
-        Paragraph subtitle = new Paragraph(
-                "Alle Einnahmen und Ausgaben gebündelt, filterbar und direkt bearbeitbar."
-        );
-        subtitle.addClassName("buchungen-hero-subtitle");
-
-        Div actions = new Div();
-        actions.addClassName("buchungen-hero-actions");
-
-        Button backButton = new Button("Zurück zum Finanz-Dashboard", VaadinIcon.ARROW_LEFT.create());
-        backButton.addClassName("secondary-button");
-        backButton.addClickListener(event ->
+        Button zurueckButton = new Button("Zurück", VaadinIcon.ARROW_LEFT.create());
+        zurueckButton.addClassName("secondary-button");
+        zurueckButton.addClickListener(event ->
                 getUI().ifPresent(ui -> ui.navigate(FinanzDashboardView.class))
         );
 
@@ -110,61 +108,24 @@ public class BuchungListView extends Div implements HasPageHeader {
                 getUI().ifPresent(ui -> ui.navigate(BuchungFormView.class))
         );
 
-        actions.add(backButton, newButton);
-        left.add(eyebrow, title, subtitle, actions);
+        actionBar.add(zurueckButton, newButton);
 
-        Div stats = new Div();
-        stats.addClassName("buchungen-hero-stats");
-
-        gesamtAnzahlValue = new Span("0");
-        einnahmenValue = new Span("0,00 €");
-        ausgabenValue = new Span("0,00 €");
-        offenePostenValue = new Span("0");
-
-        stats.add(
-                createHeroStat("Buchungen", gesamtAnzahlValue, VaadinIcon.ARCHIVE),
-                createHeroStat("Einnahmen", einnahmenValue, VaadinIcon.TRENDING_UP),
-                createHeroStat("Ausgaben", ausgabenValue, VaadinIcon.TRENDING_DOWN),
-                createHeroStat("Offen", offenePostenValue, VaadinIcon.WARNING)
-        );
-
-        hero.add(left, stats);
-
-        return hero;
-    }
-
-    private Component createHeroStat(String label, Span value, VaadinIcon icon) {
-        Div stat = new Div();
-        stat.addClassName("buchungen-hero-stat");
-
-        Div iconBox = new Div(new Icon(icon));
-        iconBox.addClassName("buchungen-hero-stat-icon");
-
-        Span labelSpan = new Span(label);
-        labelSpan.addClassName("buchungen-hero-stat-label");
-
-        value.addClassName("buchungen-hero-stat-value");
-
-        stat.add(iconBox, labelSpan, value);
-
-        return stat;
+        return actionBar;
     }
 
     private Div createFilterCard() {
         Div filterCard = new Div();
-        filterCard.addClassName("buchungen-filter-card");
+        filterCard.addClassName("filter-card");
 
-        searchField.setLabel("Suche");
-        searchField.setPlaceholder("Beschreibung, Kategorie, Immobilie...");
+        searchField.setPlaceholder("Beschreibung, Kategorie, Mietvertrag...");
         searchField.setPrefixComponent(VaadinIcon.SEARCH.create());
         searchField.setClearButtonVisible(true);
-        searchField.setValueChangeMode(ValueChangeMode.LAZY);
         searchField.addValueChangeListener(event -> filtereBuchungen());
 
-        typSelect.setLabel("Typ");
-        typSelect.setItems("Alle", "Einnahme", "Ausgabe");
-        typSelect.setValue("Alle");
-        typSelect.addValueChangeListener(event -> {
+        buchungTypSelect.setLabel("Typ");
+        buchungTypSelect.setItems("Alle", "Einnahme", "Ausgabe");
+        buchungTypSelect.setValue("Alle");
+        buchungTypSelect.addValueChangeListener(event -> {
             aktualisiereKategorieFilter();
             filtereBuchungen();
         });
@@ -178,49 +139,126 @@ public class BuchungListView extends Div implements HasPageHeader {
         aktualisiereKategorieFilter();
         kategorieSelect.addValueChangeListener(event -> filtereBuchungen());
 
-        filterCard.add(searchField, typSelect, statusSelect, kategorieSelect);
+        immobilieSelect.setLabel("Immobilie");
+        immobilieSelect.setItems(ALLE_IMMOBILIEN);
+        immobilieSelect.setValue(ALLE_IMMOBILIEN);
+        immobilieSelect.addValueChangeListener(event -> filtereBuchungen());
+
+        filterCard.add(
+                searchField,
+                buchungTypSelect,
+                statusSelect,
+                kategorieSelect,
+                immobilieSelect
+        );
 
         return filterCard;
     }
 
     private Div createTableCard() {
         Div tableCard = new Div();
-        tableCard.addClassName("buchungen-table-card");
-
-        Div header = new Div();
-        header.addClassName("buchungen-table-header");
-
-        Div titleBox = new Div();
-
-        H3 title = new H3("Alle Buchungen");
-        title.addClassName("card-title");
-
-        Paragraph subtitle = new Paragraph("Klicke auf eine Zeile, um Einnahmen oder Ausgaben zu bearbeiten.");
-        subtitle.addClassName("card-subtitle");
-
-        titleBox.add(title, subtitle);
-
-        resultCount = new Span("0 Einträge");
-        resultCount.addClassName("buchungen-result-count");
-
-        header.add(titleBox, resultCount);
+        tableCard.addClassName("table-card");
 
         configureGrid();
 
-        tableCard.add(header, grid);
+        tableCard.add(grid, createPaginationBar());
 
         return tableCard;
     }
+    private Div createPaginationBar() {
+        Div paginationBar = new Div();
+        paginationBar.addClassName("pagination-bar");
 
+        paginationBar.getStyle()
+                .set("display", "flex")
+                .set("justify-content", "space-between")
+                .set("align-items", "center")
+                .set("margin-top", "16px");
+
+        vorherigeSeiteButton.addClickListener(event -> {
+            if (aktuelleSeite > 0) {
+                aktuelleSeite--;
+                aktualisiereAngezeigteSeite();
+            }
+        });
+
+        naechsteSeiteButton.addClickListener(event -> {
+            if (aktuelleSeite < ermittleLetzteSeite()) {
+                aktuelleSeite++;
+                aktualisiereAngezeigteSeite();
+            }
+        });
+
+        Div buttons = new Div();
+        buttons.getStyle()
+                .set("display", "flex")
+                .set("gap", "8px");
+
+        buttons.add(vorherigeSeiteButton, naechsteSeiteButton);
+
+        paginationBar.add(seitenInfo, buttons);
+
+        return paginationBar;
+    }
+    private void aktualisiereAngezeigteSeite() {
+        int start = aktuelleSeite * BUCHUNGEN_PRO_SEITE;
+        int ende = Math.min(start + BUCHUNGEN_PRO_SEITE, gefilterteBuchungen.size());
+
+        if (start >= gefilterteBuchungen.size() && aktuelleSeite > 0) {
+            aktuelleSeite = ermittleLetzteSeite();
+            aktualisiereAngezeigteSeite();
+            return;
+        }
+
+        List<BuchungRow> buchungenDerSeite;
+
+        if (gefilterteBuchungen.isEmpty()) {
+            buchungenDerSeite = new ArrayList<>();
+        } else {
+            buchungenDerSeite = gefilterteBuchungen.subList(start, ende);
+        }
+
+        grid.setItems(buchungenDerSeite);
+        aktualisierePaginationAnzeige();
+    }
+    private void aktualisierePaginationAnzeige() {
+        int gesamt = gefilterteBuchungen.size();
+
+        if (gesamt == 0) {
+            seitenInfo.setText("Keine Buchungen gefunden");
+            vorherigeSeiteButton.setEnabled(false);
+            naechsteSeiteButton.setEnabled(false);
+            return;
+        }
+
+        int ersteBuchung = aktuelleSeite * BUCHUNGEN_PRO_SEITE + 1;
+        int letzteBuchung = Math.min((aktuelleSeite + 1) * BUCHUNGEN_PRO_SEITE, gesamt);
+
+        seitenInfo.setText(
+                "Zeige " + ersteBuchung + " - " + letzteBuchung + " von " + gesamt + " Buchungen"
+        );
+
+        vorherigeSeiteButton.setEnabled(aktuelleSeite > 0);
+        naechsteSeiteButton.setEnabled(aktuelleSeite < ermittleLetzteSeite());
+    }
+    private int ermittleLetzteSeite() {
+        if (gefilterteBuchungen.isEmpty()) {
+            return 0;
+        }
+
+        return (gefilterteBuchungen.size() - 1) / BUCHUNGEN_PRO_SEITE;
+    }
     private void configureGrid() {
-        grid.addClassNames("buchung-grid", "buchungen-modern-grid");
-        grid.setAllRowsVisible(true);
+        grid.addClassName("buchung-grid");
+        grid.addClassName("clickable-booking-grid");
+        grid.setAllRowsVisible(false);
+        grid.setPageSize(BUCHUNGEN_PRO_SEITE);
 
-        grid.addColumn(BuchungRow::formatDatum)
+        grid.addColumn(BuchungRow::datum)
                 .setHeader("Datum")
                 .setAutoWidth(true);
 
-        grid.addComponentColumn(this::createTypBadge)
+        grid.addColumn(BuchungRow::typ)
                 .setHeader("Typ")
                 .setAutoWidth(true);
 
@@ -234,12 +272,17 @@ public class BuchungListView extends Div implements HasPageHeader {
                 .setAutoWidth(true)
                 .setFlexGrow(1);
 
+        grid.addColumn(BuchungRow::mietvertrag)
+                .setHeader("Mietvertrag")
+                .setAutoWidth(true)
+                .setFlexGrow(1);
+
         grid.addColumn(BuchungRow::beschreibung)
                 .setHeader("Beschreibung")
                 .setAutoWidth(true)
                 .setFlexGrow(2);
 
-        grid.addComponentColumn(this::createAmount)
+        grid.addColumn(BuchungRow::betrag)
                 .setHeader("Betrag")
                 .setAutoWidth(true);
 
@@ -264,24 +307,6 @@ public class BuchungListView extends Div implements HasPageHeader {
         aktualisiereGrid();
     }
 
-    private Component createTypBadge(BuchungRow row) {
-        Span badge = new Span(row.typ());
-        badge.addClassNames(
-                "buchung-type-badge",
-                "Einnahme".equals(row.typ()) ? "income" : "expense"
-        );
-        return badge;
-    }
-
-    private Component createAmount(BuchungRow row) {
-        Span amount = new Span(row.betrag());
-        amount.addClassNames(
-                "buchung-amount",
-                "Einnahme".equals(row.typ()) ? "income" : "expense"
-        );
-        return amount;
-    }
-
     private Span createStatusBadge(String status) {
         Span badge = new Span(status != null ? status : "-");
         badge.addClassName("buchung-status-badge");
@@ -299,81 +324,61 @@ public class BuchungListView extends Div implements HasPageHeader {
         return badge;
     }
 
+
     private void aktualisiereGrid() {
         alleBuchungen = new ArrayList<>();
 
         for (Ausgabe ausgabe : ausgabeService.findeAlleAusgaben()) {
+            Immobilie immobilie = ermittleImmobilie(ausgabe);
+            Mietvertrag mietvertrag = findeMietvertragFuerAusgabe(ausgabe);
+
             alleBuchungen.add(new BuchungRow(
                     ausgabe.getId(),
-                    ausgabe.getDatum(),
+                    ausgabe.getDatum() != null ? ausgabe.getDatum().toString() : "-",
                     "Ausgabe",
                     ausgabe.getKategorie() != null ? ausgabe.getKategorie().getLabel() : "-",
-                    formatiereImmobilie(ausgabe),
-                    ausgabe.getBeschreibung() != null && !ausgabe.getBeschreibung().isBlank()
-                            ? ausgabe.getBeschreibung()
-                            : "-",
+                    formatiereImmobilie(immobilie),
+                    formatiereMietvertrag(mietvertrag),
+                    ausgabe.getBeschreibung() != null ? ausgabe.getBeschreibung() : "-",
                     formatiereBetrag(ausgabe.getBetrag()),
-                    ausgabe.getStatus() != null ? ausgabe.getStatus() : "-",
-                    ausgabe.getBetrag() == null ? BigDecimal.ZERO : ausgabe.getBetrag()
+                    ausgabe.getStatus() != null ? ausgabe.getStatus() : "-"
             ));
         }
 
         for (Zahlungseingang zahlungseingang : zahlungsEingangService.findeAlleZahlungseingaenge()) {
+            Mietvertrag mietvertrag = zahlungseingang.getMietvertrag();
+            Immobilie immobilie = ermittleImmobilie(mietvertrag);
+
             alleBuchungen.add(new BuchungRow(
                     zahlungseingang.getId(),
-                    zahlungseingang.getZahlungsdatum(),
+                    zahlungseingang.getZahlungsdatum() != null ? zahlungseingang.getZahlungsdatum().toString() : "-",
                     "Einnahme",
                     zahlungseingang.getTyp() != null ? zahlungseingang.getTyp().getLabel() : "-",
-                    formatiereImmobilie(zahlungseingang),
-                    zahlungseingang.getBeschreibung() != null && !zahlungseingang.getBeschreibung().isBlank()
-                            ? zahlungseingang.getBeschreibung()
-                            : "-",
+                    formatiereImmobilie(immobilie),
+                    formatiereMietvertrag(mietvertrag),
+                    zahlungseingang.getBeschreibung() != null ? zahlungseingang.getBeschreibung() : "-",
                     formatiereBetrag(zahlungseingang.getBetrag()),
-                    zahlungseingang.getStatus() != null ? zahlungseingang.getStatus() : "-",
-                    zahlungseingang.getBetrag() == null ? BigDecimal.ZERO : zahlungseingang.getBetrag()
+                    zahlungseingang.getStatus() != null ? zahlungseingang.getStatus() : "-"
             ));
         }
-
         alleBuchungen.sort(
-                Comparator.comparing(BuchungRow::datumWert, Comparator.nullsLast(Comparator.reverseOrder()))
+                Comparator.comparing(
+                        buchung -> LocalDate.parse(buchung.datum()),
+                        Comparator.reverseOrder()
+                )
         );
-
-        aktualisiereHeroKennzahlen();
         filtereBuchungen();
-    }
-
-    private void aktualisiereHeroKennzahlen() {
-        BigDecimal einnahmen = BigDecimal.ZERO;
-        BigDecimal ausgaben = BigDecimal.ZERO;
-        long offenePosten = 0;
-
-        for (BuchungRow row : alleBuchungen) {
-            if ("Einnahme".equals(row.typ())) {
-                einnahmen = einnahmen.add(row.betragWert());
-            } else if ("Ausgabe".equals(row.typ())) {
-                ausgaben = ausgaben.add(row.betragWert());
-            }
-
-            if ("Offen / Ausstehend".equals(row.status())) {
-                offenePosten++;
-            }
-        }
-
-        gesamtAnzahlValue.setText(String.valueOf(alleBuchungen.size()));
-        einnahmenValue.setText(formatiereBetrag(einnahmen));
-        ausgabenValue.setText(formatiereBetrag(ausgaben));
-        offenePostenValue.setText(String.valueOf(offenePosten));
+        aktualisiereImmobilienFilter();
     }
 
     private void aktualisiereKategorieFilter() {
         String bisherigeKategorie = kategorieSelect.getValue();
-
         List<String> kategorien = new ArrayList<>();
         kategorien.add(ALLE_KATEGORIEN);
 
-        if ("Einnahme".equals(typSelect.getValue())) {
+        if ("Einnahme".equals(buchungTypSelect.getValue())) {
             fuegeZahlungseingangtypenHinzu(kategorien);
-        } else if ("Ausgabe".equals(typSelect.getValue())) {
+        } else if ("Ausgabe".equals(buchungTypSelect.getValue())) {
             fuegeAusgabenkategorienHinzu(kategorien);
         } else {
             fuegeZahlungseingangtypenHinzu(kategorien);
@@ -412,20 +417,26 @@ public class BuchungListView extends Div implements HasPageHeader {
                 ? searchField.getValue().trim().toLowerCase()
                 : "";
 
-        String typ = typSelect.getValue();
+        String typ = buchungTypSelect.getValue();
         String status = statusSelect.getValue();
         String kategorie = kategorieSelect.getValue();
+        String immobilie = immobilieSelect.getValue();
 
-        List<BuchungRow> gefilterteBuchungen = alleBuchungen.stream()
+        this.gefilterteBuchungen = alleBuchungen.stream()
                 .filter(buchung -> {
                     boolean passtZumSuchtext = suchtext.isEmpty()
                             || buchung.typ().toLowerCase().contains(suchtext)
                             || buchung.kategorie().toLowerCase().contains(suchtext)
                             || buchung.immobilie().toLowerCase().contains(suchtext)
+                            || buchung.mietvertrag().toLowerCase().contains(suchtext)
                             || buchung.beschreibung().toLowerCase().contains(suchtext)
                             || buchung.betrag().toLowerCase().contains(suchtext)
-                            || buchung.formatDatum().toLowerCase().contains(suchtext)
+                            || buchung.datum().toLowerCase().contains(suchtext)
                             || buchung.status().toLowerCase().contains(suchtext);
+
+                    boolean passtZurImmobilie = immobilie == null
+                            || ALLE_IMMOBILIEN.equals(immobilie)
+                            || buchung.immobilie().equals(immobilie);
 
                     boolean passtZumTyp = typ == null
                             || "Alle".equals(typ)
@@ -441,17 +452,41 @@ public class BuchungListView extends Div implements HasPageHeader {
                             || buchung.kategorie().equals(kategorie);
 
                     return passtZumSuchtext
+                            && passtZurImmobilie
                             && passtZumTyp
                             && passtZumStatus
                             && passtZurKategorie;
                 })
                 .toList();
 
-        grid.setItems(gefilterteBuchungen);
-        resultCount.setText(gefilterteBuchungen.size() + " Einträge");
+        aktuelleSeite = 0;
+        aktualisiereAngezeigteSeite();
+    }
+    private void aktualisiereImmobilienFilter() {
+        String bisherigeImmobilie = immobilieSelect.getValue();
+
+        List<String> immobilien = new ArrayList<>();
+        immobilien.add(ALLE_IMMOBILIEN);
+
+        for (BuchungRow buchung : alleBuchungen) {
+            if (buchung.immobilie() != null
+                    && !buchung.immobilie().isBlank()
+                    && !"-".equals(buchung.immobilie())
+                    && !immobilien.contains(buchung.immobilie())) {
+                immobilien.add(buchung.immobilie());
+            }
+        }
+
+        immobilieSelect.setItems(immobilien);
+
+        if (bisherigeImmobilie != null && immobilien.contains(bisherigeImmobilie)) {
+            immobilieSelect.setValue(bisherigeImmobilie);
+        } else {
+            immobilieSelect.setValue(ALLE_IMMOBILIEN);
+        }
     }
 
-    private String formatiereBetrag(BigDecimal betrag) {
+    private String formatiereBetrag(java.math.BigDecimal betrag) {
         if (betrag == null) {
             return "-";
         }
@@ -460,9 +495,9 @@ public class BuchungListView extends Div implements HasPageHeader {
         return formatter.format(betrag);
     }
 
-    private String formatiereImmobilie(Ausgabe ausgabe) {
+    private Immobilie ermittleImmobilie(Ausgabe ausgabe) {
         if (ausgabe == null) {
-            return "-";
+            return null;
         }
 
         Immobilie immobilie = ausgabe.getImmobilie();
@@ -471,62 +506,98 @@ public class BuchungListView extends Div implements HasPageHeader {
             immobilie = ausgabe.getMieteinheit().getImmobilie();
         }
 
-        return formatiereImmobilie(immobilie);
+        return immobilie;
     }
 
-    private String formatiereImmobilie(Zahlungseingang zahlungseingang) {
-        if (zahlungseingang == null) {
-            return "-";
+    private Immobilie ermittleImmobilie(Mietvertrag mietvertrag) {
+        if (mietvertrag == null
+                || mietvertrag.getMieteinheit() == null) {
+            return null;
         }
 
-        Mietvertrag mietvertrag = zahlungseingang.getMietvertrag();
+        return mietvertrag.getMieteinheit().getImmobilie();
+    }
 
-        if (mietvertrag == null) {
-            return "-";
+    private Mietvertrag findeMietvertragFuerAusgabe(Ausgabe ausgabe) {
+        if (ausgabe == null
+                || ausgabe.getMieteinheit() == null
+                || ausgabe.getMieteinheit().getId() == null) {
+            return null;
         }
 
-        Mieteinheit mieteinheit = mietvertrag.getMieteinheit();
+        List<Mietvertrag> vertraege =
+                mietvertragService.findeMietvertraegeNachMieteinheit(ausgabe.getMieteinheit().getId());
 
-        if (mieteinheit == null) {
-            return "-";
+        if (vertraege.isEmpty()) {
+            return null;
         }
 
-        return formatiereImmobilie(mieteinheit.getImmobilie());
+        for (Mietvertrag vertrag : vertraege) {
+            if (vertrag.getStatus() == Vertragsstatus.AKTIV) {
+                return vertrag;
+            }
+        }
+
+        for (Mietvertrag vertrag : vertraege) {
+            if (vertrag.getStatus() == Vertragsstatus.GEKUENDIGT) {
+                return vertrag;
+            }
+        }
+
+        return vertraege.getFirst();
     }
 
     private String formatiereImmobilie(Immobilie immobilie) {
-        if (immobilie == null
-                || immobilie.getBezeichnung() == null
-                || immobilie.getBezeichnung().isBlank()) {
+        if (immobilie == null || immobilie.getBezeichnung() == null || immobilie.getBezeichnung().isBlank()) {
             return "-";
         }
 
         return immobilie.getBezeichnung();
     }
 
-    @Override
-    public String getPageTitle() {
-        return "Buchungsübersicht";
+    private String formatiereMietvertrag(Mietvertrag mietvertrag) {
+        if (mietvertrag == null) {
+            return "-";
+        }
+
+        return "MV-" + mietvertrag.getId()
+                + " - "
+                + formatiereMieter(mietvertrag.getMieter())
+                + " - "
+                + formatiereMieteinheit(mietvertrag.getMieteinheit());
     }
 
-    @Override
-    public String getPageSubtitle() {
-        return "Finanzen › Alle Buchungen";
+    private String formatiereMieter(Mieter mieter) {
+        if (mieter == null) {
+            return "Unbekannter Mieter";
+        }
+
+        String name = (wertOderLeer(mieter.getVorname()) + " " + wertOderLeer(mieter.getNachname())).trim();
+        return name.isBlank() ? "Unbekannter Mieter" : name;
+    }
+
+    private String formatiereMieteinheit(Mieteinheit mieteinheit) {
+        if (mieteinheit == null || mieteinheit.getBezeichnung() == null || mieteinheit.getBezeichnung().isBlank()) {
+            return "Unbekannte Mieteinheit";
+        }
+
+        return mieteinheit.getBezeichnung();
+    }
+
+    private String wertOderLeer(String wert) {
+        return wert == null ? "" : wert;
     }
 
     private record BuchungRow(
             Long id,
-            LocalDate datumWert,
+            String datum,
             String typ,
             String kategorie,
             String immobilie,
+            String mietvertrag,
             String beschreibung,
             String betrag,
-            String status,
-            BigDecimal betragWert
+            String status
     ) {
-        String formatDatum() {
-            return datumWert == null ? "-" : datumWert.format(DATE_FORMATTER);
-        }
     }
 }
