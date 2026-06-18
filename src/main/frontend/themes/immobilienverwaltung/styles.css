@@ -5,6 +5,10 @@
 @import url('buchungsform.css');
 @import url('finanzdashboard.css');
 @import url('mieter-vertraege.css');
+@import url('mieter-form.css');
+@import url('mieter-detail.css');
+@import url('mietvertrag-form.css');
+@import url('mietvertrag-detail.css');
 
 /* =========================================================
    Global Component Styles

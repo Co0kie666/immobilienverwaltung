@@ -1,0 +1,579 @@
+/* =========================================================
+   Mietvertrag Formular
+   ========================================================= */
+
+.contract-form-page {
+    min-height: 100%;
+}
+
+.contract-form-wrapper {
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+}
+
+.contract-form-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* ---------- Hero ---------- */
+
+.contract-form-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-2xl, 28px);
+    padding: 32px;
+    box-sizing: border-box;
+
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.75fr);
+    gap: 28px;
+    align-items: stretch;
+
+    background:
+            radial-gradient(circle at 88% 12%, rgba(255, 255, 255, 0.50), transparent 24%),
+            linear-gradient(135deg, #0f172a 0%, #047857 48%, #22c55e 100%);
+    color: white;
+    box-shadow: 0 30px 70px -42px rgba(15, 23, 42, 0.85);
+}
+
+.contract-form-hero::before,
+.contract-form-hero::after {
+    content: "";
+    position: absolute;
+    border-radius: 999px;
+    pointer-events: none;
+}
+
+.contract-form-hero::before {
+    width: 260px;
+    height: 260px;
+    right: -98px;
+    bottom: -98px;
+    background: rgba(255, 255, 255, 0.16);
+}
+
+.contract-form-hero::after {
+    width: 160px;
+    height: 160px;
+    top: -64px;
+    right: 33%;
+    background: rgba(255, 255, 255, 0.10);
+}
+
+.contract-form-hero-content,
+.contract-form-preview {
+    position: relative;
+    z-index: 1;
+}
+
+.contract-form-hero-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.contract-form-eyebrow {
+    width: fit-content;
+    padding: 7px 13px;
+    border-radius: 999px;
+    margin-bottom: 18px;
+
+    background: rgba(255, 255, 255, 0.17);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    color: rgba(255, 255, 255, 0.94);
+
+    font-size: 12px;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.contract-form-title {
+    margin: 0;
+    max-width: 720px;
+    color: white;
+    font-size: clamp(32px, 4vw, 48px);
+    line-height: 1.02;
+    font-weight: 900;
+    letter-spacing: -0.055em;
+}
+
+.contract-form-subtitle {
+    max-width: 720px;
+    margin: 18px 0 0 0;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 16px;
+    line-height: 1.65;
+}
+
+.contract-form-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 26px;
+}
+
+.contract-form-hero .primary-button {
+    background: white;
+    color: #065f46;
+    box-shadow: 0 18px 36px -22px rgba(255, 255, 255, 0.9);
+}
+
+.contract-form-hero .secondary-button {
+    background: rgba(255, 255, 255, 0.14);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.24);
+    backdrop-filter: blur(14px);
+}
+
+.contract-form-hero .secondary-button:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+/* ---------- Live Preview ---------- */
+
+.contract-form-preview {
+    padding: 24px;
+    border-radius: 26px;
+    min-height: 290px;
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    backdrop-filter: blur(18px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.contract-preview-label {
+    align-self: flex-start;
+    margin-bottom: 14px;
+    font-size: 12px;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.contract-preview-icon {
+    width: 92px;
+    height: 92px;
+    border-radius: 30px;
+    margin-bottom: 18px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background:
+            linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(220, 252, 231, 0.88));
+    color: #065f46;
+    box-shadow: 0 20px 40px -22px rgba(15, 23, 42, 0.8);
+}
+
+.contract-preview-icon vaadin-icon {
+    width: 34px;
+    height: 34px;
+}
+
+.contract-preview-title {
+    display: block;
+    max-width: 100%;
+    margin-bottom: 6px;
+
+    color: white;
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.contract-preview-subtitle {
+    display: block;
+    max-width: 100%;
+
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 13px;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.contract-preview-facts {
+    width: 100%;
+    display: grid;
+    gap: 10px;
+    margin-top: 22px;
+}
+
+.contract-preview-fact {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    padding: 11px 12px;
+    border-radius: 17px;
+
+    background: rgba(255, 255, 255, 0.11);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.contract-preview-fact-icon {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    border-radius: 12px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(255, 255, 255, 0.14);
+    color: white;
+}
+
+.contract-preview-fact-icon vaadin-icon {
+    width: 17px;
+    height: 17px;
+}
+
+.contract-preview-fact-text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.contract-preview-fact-label {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 11px;
+    font-weight: 850;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.contract-preview-fact-value {
+    max-width: 100%;
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 13px;
+    font-weight: 750;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ---------- Cards & Fields ---------- */
+
+.contract-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.contract-form-card {
+    width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+
+    background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.92));
+    border: 1px solid rgba(226, 232, 240, 0.95);
+    border-radius: var(--radius-2xl, 28px);
+    box-shadow: var(--shadow-card, 0 18px 45px -28px rgba(15, 23, 42, 0.50));
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.contract-form-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(187, 247, 208, 0.95);
+    box-shadow: 0 24px 55px -34px rgba(15, 23, 42, 0.65);
+}
+
+.contract-form-card-header {
+    padding: 22px 24px;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.88);
+    gap: 16px;
+}
+
+.contract-form-card-title-area {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.contract-form-card-icon {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    border-radius: 16px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: var(--color-success-light, rgba(16, 185, 129, 0.12));
+    color: var(--color-success, #10b981);
+}
+
+.contract-form-card-icon vaadin-icon {
+    width: 21px;
+    height: 21px;
+}
+
+.contract-form-card-title {
+    display: block;
+    margin-bottom: 4px;
+
+    color: var(--color-text);
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+}
+
+.contract-form-card-subtitle {
+    display: block;
+    max-width: 540px;
+
+    color: var(--color-text-muted);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.contract-form-card-content {
+    padding: 24px;
+}
+
+.contract-form-layout {
+    width: 100%;
+}
+
+.contract-form-layout {
+    --vaadin-form-layout-column-spacing: 24px;
+    --vaadin-form-layout-row-spacing: 18px;
+}
+
+.contract-form-card vaadin-select::part(label),
+.contract-form-card vaadin-date-picker::part(label),
+.contract-form-card vaadin-number-field::part(label) {
+    color: var(--color-text-muted);
+    font-size: 13px;
+    font-weight: 750;
+}
+
+.contract-form-card vaadin-select::part(input-field),
+.contract-form-card vaadin-date-picker::part(input-field),
+.contract-form-card vaadin-number-field::part(input-field) {
+    min-height: 46px;
+    border-radius: 16px;
+    background: #f8fafc;
+    border: 1px solid transparent;
+    box-shadow: none;
+}
+
+.contract-form-card vaadin-select:hover::part(input-field),
+.contract-form-card vaadin-date-picker:hover::part(input-field),
+.contract-form-card vaadin-number-field:hover::part(input-field) {
+    background: white;
+    border-color: var(--color-border-hover);
+}
+
+.contract-form-card vaadin-select:focus-within::part(input-field),
+.contract-form-card vaadin-date-picker:focus-within::part(input-field),
+.contract-form-card vaadin-number-field:focus-within::part(input-field) {
+    background: white;
+    border-color: var(--color-success, #10b981);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.10);
+}
+
+.contract-form-card vaadin-select[invalid]::part(input-field),
+.contract-form-card vaadin-date-picker[invalid]::part(input-field),
+.contract-form-card vaadin-number-field[invalid]::part(input-field) {
+    background: var(--color-danger-light);
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
+.contract-form-card vaadin-select[readonly]::part(input-field) {
+    background: #ecfdf5;
+    border-color: rgba(16, 185, 129, 0.26);
+}
+
+/* ---------- Money Summary ---------- */
+
+.contract-money-summary {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    padding: 18px;
+    border-radius: 22px;
+    box-sizing: border-box;
+
+    background:
+            radial-gradient(circle at top right, rgba(16, 185, 129, 0.16), transparent 40%),
+            linear-gradient(135deg, #f8fafc, #ecfdf5);
+    border: 1px solid rgba(187, 247, 208, 0.95);
+}
+
+.contract-money-summary-icon {
+    width: 54px;
+    height: 54px;
+    min-width: 54px;
+    border-radius: 19px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: white;
+    color: var(--color-success, #10b981);
+    box-shadow: 0 16px 34px -26px rgba(15, 23, 42, 0.55);
+}
+
+.contract-money-summary-icon vaadin-icon {
+    width: 24px;
+    height: 24px;
+}
+
+.contract-money-summary-text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.contract-money-summary-label {
+    color: var(--color-text-muted);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.contract-money-summary-value {
+    color: var(--color-text);
+    font-size: 28px;
+    font-weight: 950;
+    letter-spacing: -0.04em;
+}
+
+.contract-money-summary-hint {
+    color: var(--color-text-muted);
+    font-size: 13px;
+}
+
+/* ---------- Bottom Actions ---------- */
+
+.contract-form-actions {
+    position: sticky;
+    bottom: 20px;
+    z-index: 10;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+
+    padding: 18px 20px;
+    border-radius: 24px;
+    box-sizing: border-box;
+
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(226, 232, 240, 0.95);
+    box-shadow: 0 24px 65px -40px rgba(15, 23, 42, 0.70);
+    backdrop-filter: blur(18px);
+}
+
+.contract-form-action-hint {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.contract-form-action-title {
+    color: var(--color-text);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+}
+
+.contract-form-action-subtitle {
+    color: var(--color-text-muted);
+    font-size: 13px;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 1100px) {
+    .contract-form-hero {
+        grid-template-columns: 1fr;
+    }
+
+    .contract-form-preview {
+        min-height: auto;
+    }
+}
+
+@media (max-width: 920px) {
+    .contract-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .contract-form-actions {
+        position: static;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .contract-form-actions vaadin-horizontal-layout {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
+@media (max-width: 640px) {
+    .contract-form-wrapper {
+        max-width: 100%;
+    }
+
+    .contract-form-hero,
+    .contract-form-card-header,
+    .contract-form-card-content,
+    .contract-form-actions {
+        padding: 20px;
+    }
+
+    .contract-form-hero {
+        border-radius: 24px;
+    }
+
+    .contract-form-title {
+        font-size: 32px;
+    }
+
+    .contract-form-subtitle {
+        font-size: 15px;
+    }
+
+    .contract-form-card-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .contract-money-summary {
+        align-items: flex-start;
+    }
+
+    .contract-money-summary-value {
+        font-size: 24px;
+    }
+}
