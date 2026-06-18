@@ -863,17 +863,17 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         grid.addClassName("finance-dashboard-grid");
 
         Div chartCard = new Div();
-        chartCard.addClassNames("card", "finance-main-chart-card");
+        chartCard.addClassNames("card", "finance-main-chart-card", "finance-split-main-chart-card");
 
         Div header = new Div();
         header.addClassName("finance-card-header");
 
         Div titleBox = new Div();
 
-        H3 chartTitle = new H3("Einnahmen vs. Ausgaben");
+        H3 chartTitle = new H3("Einnahmen & Ausgaben");
         chartTitle.addClassName("card-title");
 
-        Paragraph subtitle = new Paragraph(getZeitraumText());
+        Paragraph subtitle = new Paragraph(getZeitraumText() + " · getrennte Entwicklung");
         subtitle.addClassName("card-subtitle");
 
         titleBox.add(chartTitle, subtitle);
@@ -882,7 +882,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         badge.addClassNames("status-badge", "primary");
 
         header.add(titleBox, badge);
-        chartCard.add(header, createLineChart());
+        chartCard.add(header, createSplitFinanceCharts());
 
         Div side = new Div();
         side.addClassName("finance-side-column");
@@ -900,54 +900,106 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         return grid;
     }
 
-    private Component createLineChart() {
-        Div wrapper = new Div();
-        wrapper.addClassName("finance-chart-wrapper");
+    private Component createSplitFinanceCharts() {
+        Div stack = new Div();
+        stack.addClassName("finance-split-chart-stack");
+
+        stack.add(
+                createSingleFinanceChart(
+                        "Einnahmen",
+                        "Bezahlte Zahlungseingänge im gewählten Zeitraum",
+                        formatEuro(summeEinnahmen),
+                        "financeIncomeChart",
+                        "financeIncomeChartInstance",
+                        chartEinnahmen,
+                        "--color-success",
+                        "success"
+                ),
+                createSingleFinanceChart(
+                        "Ausgaben",
+                        "Bezahlte Ausgaben im gewählten Zeitraum",
+                        formatEuro(summeAusgaben),
+                        "financeExpenseChart",
+                        "financeExpenseChartInstance",
+                        chartAusgaben,
+                        "--color-danger",
+                        "danger"
+                )
+        );
+
+        return stack;
+    }
+
+    private Component createSingleFinanceChart(
+            String title,
+            String subtitle,
+            String value,
+            String canvasId,
+            String instanceName,
+            double[] data,
+            String colorToken,
+            String type
+    ) {
+        Div block = new Div();
+        block.addClassNames("finance-split-chart-block", type);
+
+        Div header = new Div();
+        header.addClassName("finance-split-chart-header");
+
+        Div titleBox = new Div();
+
+        Span titleText = new Span(title);
+        titleText.addClassName("finance-split-chart-title");
+
+        Span subtitleText = new Span(subtitle);
+        subtitleText.addClassName("finance-split-chart-subtitle");
+
+        titleBox.add(titleText, subtitleText);
+
+        Span valueText = new Span(value);
+        valueText.addClassName("finance-split-chart-value");
+
+        header.add(titleBox, valueText);
+
+        Div chartArea = new Div();
+        chartArea.addClassName("finance-split-chart-canvas");
 
         Element canvas = new Element("canvas");
-        canvas.setAttribute("id", "financeLineChart");
+        canvas.setAttribute("id", canvasId);
 
-        wrapper.getElement().appendChild(canvas);
+        chartArea.getElement().appendChild(canvas);
+        block.add(header, chartArea);
 
         executeJsIfUiAvailable("""
             setTimeout(() => {
-                const ctx = document.getElementById('financeLineChart');
+                const ctx = document.getElementById($0);
 
                 if (!ctx || !window.Chart) return;
 
                 const styles = getComputedStyle(document.documentElement);
-                const success = styles.getPropertyValue('--color-success').trim() || '#10b981';
-                const danger = styles.getPropertyValue('--color-danger').trim() || '#ef4444';
-                const grid = styles.getPropertyValue('--color-border').trim() || '#e5e7eb';
+                const chartColor = styles.getPropertyValue($4).trim() || '#2563eb';
+                const gridColor = styles.getPropertyValue('--color-border').trim() || '#e5e7eb';
+                const textColor = styles.getPropertyValue('--color-text-muted').trim() || '#6b7280';
 
-                if (window.financeLineChartInstance) {
-                    window.financeLineChartInstance.destroy();
+                if (window[$5]) {
+                    window[$5].destroy();
                 }
 
-                window.financeLineChartInstance = new Chart(ctx, {
+                window[$5] = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: $0,
+                        labels: $1,
                         datasets: [
                             {
-                                label: 'Einnahmen',
-                                data: $1,
-                                borderColor: success,
-                                backgroundColor: success,
-                                tension: 0.4,
-                                fill: false,
-                                pointRadius: 4,
-                                pointHoverRadius: 7
-                            },
-                            {
-                                label: 'Ausgaben',
+                                label: $3,
                                 data: $2,
-                                borderColor: danger,
-                                backgroundColor: danger,
-                                tension: 0.4,
-                                fill: false,
-                                pointRadius: 4,
-                                pointHoverRadius: 7
+                                borderColor: chartColor,
+                                backgroundColor: chartColor + '22',
+                                tension: 0.42,
+                                fill: true,
+                                pointRadius: 3,
+                                pointHoverRadius: 7,
+                                borderWidth: 3
                             }
                         ]
                     },
@@ -956,33 +1008,51 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                         maintainAspectRatio: false,
                         plugins: {
                             legend: {
-                                position: 'bottom',
-                                labels: {
-                                    usePointStyle: true,
-                                    boxWidth: 8,
-                                    boxHeight: 8
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const value = context.raw || 0;
+                                        return $3 + ': ' + new Intl.NumberFormat('de-DE', {
+                                            style: 'currency',
+                                            currency: 'EUR'
+                                        }).format(value);
+                                    }
                                 }
                             }
                         },
                         scales: {
                             x: {
+                                ticks: {
+                                    color: textColor
+                                },
                                 grid: {
                                     display: false
                                 }
                             },
                             y: {
                                 beginAtZero: true,
+                                ticks: {
+                                    color: textColor,
+                                    callback: function(value) {
+                                        return new Intl.NumberFormat('de-DE', {
+                                            notation: 'compact',
+                                            maximumFractionDigits: 1
+                                        }).format(value) + ' €';
+                                    }
+                                },
                                 grid: {
-                                    color: grid
+                                    color: gridColor
                                 }
                             }
                         }
                     }
                 });
             }, 300);
-        """, chartMonate, chartEinnahmen, chartAusgaben);
+        """, canvasId, chartMonate, data, title, colorToken, instanceName);
 
-        return wrapper;
+        return block;
     }
 
     private Component createPaymentStatusCard() {

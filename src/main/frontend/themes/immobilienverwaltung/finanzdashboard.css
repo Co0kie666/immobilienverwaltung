@@ -612,3 +612,121 @@
         font-size: 24px;
     }
 }
+
+/* =========================================================
+   Finanz-Dashboard: getrennte Charts für Einnahmen/Ausgaben
+   Ergänzung zur bestehenden finanzdashboard.css
+   ========================================================= */
+
+.finance-split-main-chart-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 760px;
+}
+
+.finance-split-main-chart-card > .finance-card-header {
+    flex: 0 0 auto;
+}
+
+.finance-split-chart-stack {
+    flex: 1;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 18px;
+    min-height: 640px;
+    margin-top: 18px;
+}
+
+.finance-split-chart-block {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 18px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background:
+            radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 34%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.88));
+    box-shadow: 0 14px 35px rgba(15, 23, 42, 0.06);
+    overflow: hidden;
+}
+
+.finance-split-chart-block.success {
+    border-left: 4px solid var(--color-success);
+}
+
+.finance-split-chart-block.danger {
+    border-left: 4px solid var(--color-danger);
+}
+
+.finance-split-chart-header {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+}
+
+.finance-split-chart-title {
+    display: block;
+    font-size: 15px;
+    font-weight: 850;
+    color: var(--color-text);
+    letter-spacing: -0.01em;
+}
+
+.finance-split-chart-subtitle {
+    display: block;
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--color-text-muted);
+}
+
+.finance-split-chart-value {
+    white-space: nowrap;
+    font-size: 18px;
+    font-weight: 850;
+    color: var(--color-text-dark);
+}
+
+.finance-split-chart-canvas {
+    flex: 1;
+    min-height: 220px;
+    position: relative;
+}
+
+.finance-split-chart-canvas canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+@media (max-width: 1200px) {
+    .finance-split-main-chart-card {
+        min-height: auto;
+    }
+
+    .finance-split-chart-stack {
+        min-height: 600px;
+    }
+}
+
+@media (max-width: 700px) {
+    .finance-split-chart-stack {
+        grid-template-rows: auto auto;
+        min-height: auto;
+    }
+
+    .finance-split-chart-block {
+        min-height: 300px;
+    }
+
+    .finance-split-chart-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .finance-split-chart-value {
+        white-space: normal;
+    }
+}
