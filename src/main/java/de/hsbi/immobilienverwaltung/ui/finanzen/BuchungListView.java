@@ -6,7 +6,6 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.domain.Ausgabe;
 import de.hsbi.immobilienverwaltung.domain.Immobilie;
@@ -22,6 +21,8 @@ import de.hsbi.immobilienverwaltung.service.interfaces.MietvertragService;
 import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
+import java.time.LocalDate;
+import java.util.Comparator;
 import jakarta.annotation.security.PermitAll;
 
 import java.text.NumberFormat;
@@ -34,6 +35,8 @@ import java.util.Locale;
 public class BuchungListView extends Div implements HasPageHeader {
 
     private static final String ALLE_KATEGORIEN = "Alle Kategorien";
+    private static final String ALLE_IMMOBILIEN = "Alle Immobilien";
+    private static final int BUCHUNGEN_PRO_SEITE = 20;
 
     private final Grid<BuchungRow> grid = new Grid<>(BuchungRow.class, false);
 
@@ -41,7 +44,14 @@ public class BuchungListView extends Div implements HasPageHeader {
     private final Select<String> buchungTypSelect = new Select<>();
     private final Select<String> statusSelect = new Select<>();
     private final Select<String> kategorieSelect = new Select<>();
-    private final TextField immobilieFilterField = new TextField("Immobilie");
+    private final Select<String> immobilieSelect = new Select<>();
+    private final Button vorherigeSeiteButton = new Button("Zurück");
+    private final Button naechsteSeiteButton = new Button("Weiter");
+    private final Span seitenInfo = new Span();
+
+    private List<BuchungRow> gefilterteBuchungen = new ArrayList<>();
+    private int aktuelleSeite = 0;
+
 
     private final AusgabeService ausgabeService;
     private final ZahlungsEingangService zahlungsEingangService;
@@ -129,18 +139,17 @@ public class BuchungListView extends Div implements HasPageHeader {
         aktualisiereKategorieFilter();
         kategorieSelect.addValueChangeListener(event -> filtereBuchungen());
 
-        immobilieFilterField.setPlaceholder("Immobilienname...");
-        immobilieFilterField.setPrefixComponent(VaadinIcon.BUILDING.create());
-        immobilieFilterField.setClearButtonVisible(true);
-        immobilieFilterField.setValueChangeMode(ValueChangeMode.LAZY);
-        immobilieFilterField.addValueChangeListener(event -> filtereBuchungen());
+        immobilieSelect.setLabel("Immobilie");
+        immobilieSelect.setItems(ALLE_IMMOBILIEN);
+        immobilieSelect.setValue(ALLE_IMMOBILIEN);
+        immobilieSelect.addValueChangeListener(event -> filtereBuchungen());
 
         filterCard.add(
                 searchField,
                 buchungTypSelect,
                 statusSelect,
                 kategorieSelect,
-                immobilieFilterField
+                immobilieSelect
         );
 
         return filterCard;
@@ -152,15 +161,98 @@ public class BuchungListView extends Div implements HasPageHeader {
 
         configureGrid();
 
-        tableCard.add(grid);
+        tableCard.add(grid, createPaginationBar());
 
         return tableCard;
     }
+    private Div createPaginationBar() {
+        Div paginationBar = new Div();
+        paginationBar.addClassName("pagination-bar");
 
+        paginationBar.getStyle()
+                .set("display", "flex")
+                .set("justify-content", "space-between")
+                .set("align-items", "center")
+                .set("margin-top", "16px");
+
+        vorherigeSeiteButton.addClickListener(event -> {
+            if (aktuelleSeite > 0) {
+                aktuelleSeite--;
+                aktualisiereAngezeigteSeite();
+            }
+        });
+
+        naechsteSeiteButton.addClickListener(event -> {
+            if (aktuelleSeite < ermittleLetzteSeite()) {
+                aktuelleSeite++;
+                aktualisiereAngezeigteSeite();
+            }
+        });
+
+        Div buttons = new Div();
+        buttons.getStyle()
+                .set("display", "flex")
+                .set("gap", "8px");
+
+        buttons.add(vorherigeSeiteButton, naechsteSeiteButton);
+
+        paginationBar.add(seitenInfo, buttons);
+
+        return paginationBar;
+    }
+    private void aktualisiereAngezeigteSeite() {
+        int start = aktuelleSeite * BUCHUNGEN_PRO_SEITE;
+        int ende = Math.min(start + BUCHUNGEN_PRO_SEITE, gefilterteBuchungen.size());
+
+        if (start >= gefilterteBuchungen.size() && aktuelleSeite > 0) {
+            aktuelleSeite = ermittleLetzteSeite();
+            aktualisiereAngezeigteSeite();
+            return;
+        }
+
+        List<BuchungRow> buchungenDerSeite;
+
+        if (gefilterteBuchungen.isEmpty()) {
+            buchungenDerSeite = new ArrayList<>();
+        } else {
+            buchungenDerSeite = gefilterteBuchungen.subList(start, ende);
+        }
+
+        grid.setItems(buchungenDerSeite);
+        aktualisierePaginationAnzeige();
+    }
+    private void aktualisierePaginationAnzeige() {
+        int gesamt = gefilterteBuchungen.size();
+
+        if (gesamt == 0) {
+            seitenInfo.setText("Keine Buchungen gefunden");
+            vorherigeSeiteButton.setEnabled(false);
+            naechsteSeiteButton.setEnabled(false);
+            return;
+        }
+
+        int ersteBuchung = aktuelleSeite * BUCHUNGEN_PRO_SEITE + 1;
+        int letzteBuchung = Math.min((aktuelleSeite + 1) * BUCHUNGEN_PRO_SEITE, gesamt);
+
+        seitenInfo.setText(
+                "Zeige " + ersteBuchung + " - " + letzteBuchung + " von " + gesamt + " Buchungen"
+        );
+
+        vorherigeSeiteButton.setEnabled(aktuelleSeite > 0);
+        naechsteSeiteButton.setEnabled(aktuelleSeite < ermittleLetzteSeite());
+    }
+    private int ermittleLetzteSeite() {
+        if (gefilterteBuchungen.isEmpty()) {
+            return 0;
+        }
+
+        return (gefilterteBuchungen.size() - 1) / BUCHUNGEN_PRO_SEITE;
+    }
     private void configureGrid() {
         grid.addClassName("buchung-grid");
         grid.addClassName("clickable-booking-grid");
-        grid.setAllRowsVisible(true);
+        grid.setAllRowsVisible(false);
+        grid.setPageSize(BUCHUNGEN_PRO_SEITE);
 
         grid.addColumn(BuchungRow::datum)
                 .setHeader("Datum")
@@ -232,6 +324,7 @@ public class BuchungListView extends Div implements HasPageHeader {
         return badge;
     }
 
+
     private void aktualisiereGrid() {
         alleBuchungen = new ArrayList<>();
 
@@ -268,8 +361,14 @@ public class BuchungListView extends Div implements HasPageHeader {
                     zahlungseingang.getStatus() != null ? zahlungseingang.getStatus() : "-"
             ));
         }
-
+        alleBuchungen.sort(
+                Comparator.comparing(
+                        buchung -> LocalDate.parse(buchung.datum()),
+                        Comparator.reverseOrder()
+                )
+        );
         filtereBuchungen();
+        aktualisiereImmobilienFilter();
     }
 
     private void aktualisiereKategorieFilter() {
@@ -318,15 +417,12 @@ public class BuchungListView extends Div implements HasPageHeader {
                 ? searchField.getValue().trim().toLowerCase()
                 : "";
 
-        String immobilieSuchtext = immobilieFilterField.getValue() != null
-                ? immobilieFilterField.getValue().trim().toLowerCase()
-                : "";
-
         String typ = buchungTypSelect.getValue();
         String status = statusSelect.getValue();
         String kategorie = kategorieSelect.getValue();
+        String immobilie = immobilieSelect.getValue();
 
-        List<BuchungRow> gefilterteBuchungen = alleBuchungen.stream()
+        this.gefilterteBuchungen = alleBuchungen.stream()
                 .filter(buchung -> {
                     boolean passtZumSuchtext = suchtext.isEmpty()
                             || buchung.typ().toLowerCase().contains(suchtext)
@@ -338,8 +434,9 @@ public class BuchungListView extends Div implements HasPageHeader {
                             || buchung.datum().toLowerCase().contains(suchtext)
                             || buchung.status().toLowerCase().contains(suchtext);
 
-                    boolean passtZurImmobilie = immobilieSuchtext.isEmpty()
-                            || buchung.immobilie().toLowerCase().contains(immobilieSuchtext);
+                    boolean passtZurImmobilie = immobilie == null
+                            || ALLE_IMMOBILIEN.equals(immobilie)
+                            || buchung.immobilie().equals(immobilie);
 
                     boolean passtZumTyp = typ == null
                             || "Alle".equals(typ)
@@ -362,7 +459,31 @@ public class BuchungListView extends Div implements HasPageHeader {
                 })
                 .toList();
 
-        grid.setItems(gefilterteBuchungen);
+        aktuelleSeite = 0;
+        aktualisiereAngezeigteSeite();
+    }
+    private void aktualisiereImmobilienFilter() {
+        String bisherigeImmobilie = immobilieSelect.getValue();
+
+        List<String> immobilien = new ArrayList<>();
+        immobilien.add(ALLE_IMMOBILIEN);
+
+        for (BuchungRow buchung : alleBuchungen) {
+            if (buchung.immobilie() != null
+                    && !buchung.immobilie().isBlank()
+                    && !"-".equals(buchung.immobilie())
+                    && !immobilien.contains(buchung.immobilie())) {
+                immobilien.add(buchung.immobilie());
+            }
+        }
+
+        immobilieSelect.setItems(immobilien);
+
+        if (bisherigeImmobilie != null && immobilien.contains(bisherigeImmobilie)) {
+            immobilieSelect.setValue(bisherigeImmobilie);
+        } else {
+            immobilieSelect.setValue(ALLE_IMMOBILIEN);
+        }
     }
 
     private String formatiereBetrag(java.math.BigDecimal betrag) {
@@ -423,7 +544,7 @@ public class BuchungListView extends Div implements HasPageHeader {
             }
         }
 
-        return vertraege.get(0);
+        return vertraege.getFirst();
     }
 
     private String formatiereImmobilie(Immobilie immobilie) {
