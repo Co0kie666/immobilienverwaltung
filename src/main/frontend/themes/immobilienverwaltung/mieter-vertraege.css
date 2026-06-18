@@ -81,6 +81,7 @@
 
 .tenant-hero-title {
     margin: 0;
+    color: #ffffff !important;
     font-size: clamp(32px, 4vw, 48px);
     line-height: 1.02;
     font-weight: 900;
