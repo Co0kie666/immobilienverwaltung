@@ -1,0 +1,483 @@
+/* =========================================================
+   Mieter Formular
+   ========================================================= */
+
+.tenant-form-page {
+    min-height: 100%;
+}
+
+.tenant-form-wrapper {
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+}
+
+.tenant-form-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* ---------- Hero ---------- */
+
+.tenant-form-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-2xl, 28px);
+    padding: 32px;
+    box-sizing: border-box;
+
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(310px, 0.75fr);
+    gap: 28px;
+    align-items: stretch;
+
+    background:
+            radial-gradient(circle at 88% 12%, rgba(255, 255, 255, 0.48), transparent 24%),
+            linear-gradient(135deg, #0f172a 0%, #1d4ed8 52%, #38bdf8 100%);
+    color: white;
+    box-shadow: 0 30px 70px -42px rgba(15, 23, 42, 0.85);
+}
+
+.tenant-form-hero::before,
+.tenant-form-hero::after {
+    content: "";
+    position: absolute;
+    border-radius: 999px;
+    pointer-events: none;
+}
+
+.tenant-form-hero::before {
+    width: 250px;
+    height: 250px;
+    right: -88px;
+    bottom: -96px;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.tenant-form-hero::after {
+    width: 160px;
+    height: 160px;
+    top: -64px;
+    right: 33%;
+    background: rgba(255, 255, 255, 0.10);
+}
+
+.tenant-form-hero-content,
+.tenant-form-preview {
+    position: relative;
+    z-index: 1;
+}
+
+.tenant-form-hero-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.tenant-form-eyebrow {
+    width: fit-content;
+    padding: 7px 13px;
+    border-radius: 999px;
+    margin-bottom: 18px;
+
+    background: rgba(255, 255, 255, 0.17);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    color: rgba(255, 255, 255, 0.94);
+
+    font-size: 12px;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.tenant-form-title {
+    margin: 0;
+    max-width: 700px;
+    font-size: clamp(32px, 4vw, 48px);
+    line-height: 1.02;
+    font-weight: 900;
+    letter-spacing: -0.055em;
+}
+
+.tenant-form-subtitle {
+    max-width: 720px;
+    margin: 18px 0 0 0;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 16px;
+    line-height: 1.65;
+}
+
+.tenant-form-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 26px;
+}
+
+.tenant-form-hero .primary-button {
+    background: white;
+    color: var(--color-primary-dark);
+    box-shadow: 0 18px 36px -22px rgba(255, 255, 255, 0.9);
+}
+
+.tenant-form-hero .secondary-button {
+    background: rgba(255, 255, 255, 0.14);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.24);
+    backdrop-filter: blur(14px);
+}
+
+.tenant-form-hero .secondary-button:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+/* ---------- Live Preview ---------- */
+
+.tenant-form-preview {
+    padding: 24px;
+    border-radius: 26px;
+    min-height: 260px;
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    backdrop-filter: blur(18px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.tenant-form-preview-label {
+    align-self: flex-start;
+    margin-bottom: 14px;
+    font-size: 12px;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.tenant-form-preview-avatar {
+    width: 92px;
+    height: 92px;
+    border-radius: 30px;
+    margin-bottom: 18px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background:
+            linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(219, 234, 254, 0.88));
+    color: var(--color-primary-dark);
+    box-shadow: 0 20px 40px -22px rgba(15, 23, 42, 0.8);
+}
+
+.tenant-form-preview-initials {
+    font-size: 30px;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+}
+
+.tenant-form-preview-name {
+    display: block;
+    max-width: 100%;
+    margin-bottom: 6px;
+
+    color: white;
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tenant-form-preview-meta {
+    display: block;
+    max-width: 100%;
+
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 13px;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tenant-form-preview-facts {
+    width: 100%;
+    display: grid;
+    gap: 10px;
+    margin-top: 22px;
+}
+
+.tenant-form-preview-fact {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 10px 12px;
+    border-radius: 16px;
+
+    background: rgba(255, 255, 255, 0.11);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+
+    color: rgba(255, 255, 255, 0.84);
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.tenant-form-preview-fact-icon {
+    width: 16px;
+    height: 16px;
+    color: white;
+}
+
+/* ---------- Form Layout ---------- */
+
+.tenant-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.tenant-form-card {
+    width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+
+    background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.92));
+    border: 1px solid rgba(226, 232, 240, 0.95);
+    border-radius: var(--radius-2xl, 28px);
+    box-shadow: var(--shadow-card, 0 18px 45px -28px rgba(15, 23, 42, 0.50));
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.tenant-form-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(191, 219, 254, 0.95);
+    box-shadow: 0 24px 55px -34px rgba(15, 23, 42, 0.65);
+}
+
+.tenant-form-card-active {
+    border-color: rgba(37, 99, 235, 0.35);
+    box-shadow:
+            0 24px 55px -34px rgba(15, 23, 42, 0.65),
+            0 0 0 4px rgba(37, 99, 235, 0.08);
+}
+
+.tenant-form-card-header {
+    padding: 22px 24px;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.88);
+    gap: 16px;
+}
+
+.tenant-form-card-title-area {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.tenant-form-card-icon {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    border-radius: 16px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+}
+
+.tenant-form-card-icon vaadin-icon {
+    width: 21px;
+    height: 21px;
+}
+
+.tenant-form-card-title {
+    display: block;
+    margin-bottom: 4px;
+
+    color: var(--color-text);
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+}
+
+.tenant-form-card-subtitle {
+    display: block;
+    max-width: 520px;
+
+    color: var(--color-text-muted);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.tenant-form-card-action {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-width: fit-content;
+}
+
+.tenant-form-card-content {
+    padding: 24px;
+}
+
+.tenant-form-field::part(label),
+.tenant-form-card vaadin-select::part(label),
+.tenant-form-card vaadin-date-picker::part(label) {
+    color: var(--color-text-muted);
+    font-size: 13px;
+    font-weight: 750;
+}
+
+.tenant-form-card vaadin-text-field::part(input-field),
+.tenant-form-card vaadin-select::part(input-field),
+.tenant-form-card vaadin-date-picker::part(input-field) {
+    min-height: 46px;
+    border-radius: 16px;
+    background: #f8fafc;
+    border: 1px solid transparent;
+    box-shadow: none;
+}
+
+.tenant-form-card vaadin-text-field:hover::part(input-field),
+.tenant-form-card vaadin-select:hover::part(input-field),
+.tenant-form-card vaadin-date-picker:hover::part(input-field) {
+    background: white;
+    border-color: var(--color-border-hover);
+}
+
+.tenant-form-card vaadin-text-field:focus-within::part(input-field),
+.tenant-form-card vaadin-select:focus-within::part(input-field),
+.tenant-form-card vaadin-date-picker:focus-within::part(input-field) {
+    background: white;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
+}
+
+.tenant-form-card vaadin-text-field[invalid]::part(input-field) {
+    background: var(--color-danger-light);
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
+.tenant-bank-toggle {
+    font-weight: 750;
+    color: var(--color-text);
+}
+
+/* ---------- Bottom Actions ---------- */
+
+.tenant-form-actions {
+    position: sticky;
+    bottom: 20px;
+    z-index: 10;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+
+    padding: 18px 20px;
+    border-radius: 24px;
+    box-sizing: border-box;
+
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(226, 232, 240, 0.95);
+    box-shadow: 0 24px 65px -40px rgba(15, 23, 42, 0.70);
+    backdrop-filter: blur(18px);
+}
+
+.tenant-form-action-hint {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.tenant-form-action-title {
+    color: var(--color-text);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+}
+
+.tenant-form-action-subtitle {
+    color: var(--color-text-muted);
+    font-size: 13px;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 1100px) {
+    .tenant-form-hero {
+        grid-template-columns: 1fr;
+    }
+
+    .tenant-form-preview {
+        min-height: auto;
+    }
+}
+
+@media (max-width: 920px) {
+    .tenant-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .tenant-form-actions {
+        position: static;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .tenant-form-actions vaadin-horizontal-layout {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
+@media (max-width: 640px) {
+    .tenant-form-wrapper {
+        max-width: 100%;
+    }
+
+    .tenant-form-hero,
+    .tenant-form-card-header,
+    .tenant-form-card-content,
+    .tenant-form-actions {
+        padding: 20px;
+    }
+
+    .tenant-form-hero {
+        border-radius: 24px;
+    }
+
+    .tenant-form-title {
+        font-size: 32px;
+    }
+
+    .tenant-form-subtitle {
+        font-size: 15px;
+    }
+
+    .tenant-form-card-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .tenant-form-card-action {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}

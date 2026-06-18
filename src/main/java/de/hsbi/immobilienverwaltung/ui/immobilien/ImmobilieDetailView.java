@@ -4,10 +4,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.html.Paragraph;
-import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -84,6 +81,7 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
 
         add(
                 erstelleAktionsleiste(),
+                erstelleHeroBereich(),
                 erstelleKennzahlenBereich(),
                 erstelleUebersichtsBereich(),
                 erstelleMieteinheitenKarte()
@@ -164,6 +162,101 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         );
 
         dialog.open();
+    }
+
+
+    private Component erstelleHeroBereich() {
+        Div hero = new Div();
+        hero.addClassName("property-detail-hero");
+
+        Div visual = new Div();
+        visual.addClassNames("property-detail-visual", ermittleTypCssKlasse(immobilie));
+
+        Div visualOverlay = new Div();
+        visualOverlay.addClassName("property-detail-visual-overlay");
+        visualOverlay.add(VaadinIcon.BUILDING.create(), new Span(formatiereImmobilientyp(immobilie.getTyp())));
+
+        visual.add(visualOverlay);
+
+        Div content = new Div();
+        content.addClassName("property-detail-hero-content");
+
+        Span eyebrow = new Span("Immobilien-Exposé");
+        eyebrow.addClassName("hero-eyebrow");
+
+        H2 title = new H2(wertOderStrich(immobilie.getBezeichnung()));
+        title.addClassName("property-detail-title");
+
+        Paragraph address = new Paragraph(formatiereAdresse(immobilie));
+        address.addClassName("property-detail-address");
+
+        Div badges = new Div();
+        badges.addClassName("property-detail-badges");
+        badges.add(
+                StatusBadge.primary(formatiereImmobilientyp(immobilie.getTyp())),
+                ermittleDetailStatusBadge()
+        );
+
+        long einheitenGesamt = mieteinheitService.zaehleMieteinheiten(immobilieId);
+        long vermietet = mieteinheitService.zaehleVermieteteMieteinheiten(immobilieId);
+        long frei = mieteinheitService.zaehleFreieMieteinheiten(immobilieId);
+        long inRenovierung = mieteinheitService.zaehleMieteinheitenInRenovierung(immobilieId);
+
+        Div quickFacts = new Div();
+        quickFacts.addClassName("property-detail-quickfacts");
+        quickFacts.add(
+                erstelleHeroStat("Einheiten", String.valueOf(einheitenGesamt), VaadinIcon.BUILDING),
+                erstelleHeroStat("Vermietet", String.valueOf(vermietet), VaadinIcon.HOME),
+                erstelleHeroStat("Frei/Renovierung", String.valueOf(frei + inRenovierung), VaadinIcon.WARNING),
+                erstelleHeroStat("Fläche", formatiereFlaeche(immobilie.getFlaeche()), VaadinIcon.HOME)
+        );
+
+        content.add(eyebrow, title, address, badges, quickFacts);
+        hero.add(visual, content);
+
+        return hero;
+    }
+
+    private Component erstelleHeroStat(String label, String value, VaadinIcon icon) {
+        Div item = new Div();
+        item.addClassName("property-detail-quickfact");
+
+        Div iconBox = new Div(icon.create());
+        iconBox.addClassName("property-detail-quickfact-icon");
+
+        Div text = new Div();
+
+        Span labelText = new Span(label);
+        labelText.addClassName("property-detail-quickfact-label");
+
+        Span valueText = new Span(value);
+        valueText.addClassName("property-detail-quickfact-value");
+
+        text.add(labelText, valueText);
+        item.add(iconBox, text);
+
+        return item;
+    }
+
+    private Component ermittleDetailStatusBadge() {
+        long gesamt = mieteinheitService.zaehleMieteinheiten(immobilieId);
+        long frei = mieteinheitService.zaehleFreieMieteinheiten(immobilieId);
+        long inRenovierung = mieteinheitService.zaehleMieteinheitenInRenovierung(immobilieId);
+        long leerstand = frei + inRenovierung;
+
+        if (gesamt == 0) {
+            return StatusBadge.neutral("Keine Einheiten");
+        }
+
+        if (leerstand == 0) {
+            return StatusBadge.success("Voll vermietet");
+        }
+
+        if (leerstand == gesamt) {
+            return StatusBadge.warning("Leerstand");
+        }
+
+        return StatusBadge.warning(leerstand + " freie Einheit(en)");
     }
 
     private Component erstelleKennzahlenBereich() {
@@ -527,6 +620,20 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
 
     private String wertOderLeer(String wert) {
         return wert == null ? "" : wert;
+    }
+
+
+    private String ermittleTypCssKlasse(Immobilie immobilie) {
+        if (immobilie.getTyp() == null) {
+            return "typ-default";
+        }
+
+        String typName = immobilie.getTyp()
+                .name()
+                .toLowerCase(Locale.ROOT)
+                .replace('_', '-');
+
+        return "typ-" + typName;
     }
 
     @Override

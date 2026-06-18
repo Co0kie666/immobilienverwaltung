@@ -1,50 +1,118 @@
 /* =========================================================
-   Immobilien Übersicht
+   Immobilien Übersicht + Detailansicht
    ========================================================= */
 
-.immobilien-list-view {
+.immobilien-list-view,
+.immobilie-detail-view {
     display: flex;
     flex-direction: column;
     gap: 24px;
 }
 
-.immobilien-action-bar {
-    display: flex;
-    justify-content: flex-start;
+/* =========================================================
+   Immobilienübersicht: Hero
+   ========================================================= */
+
+.property-list-hero {
+    position: relative;
+    overflow: hidden;
+    min-height: 210px;
+    border-radius: 28px;
+    padding: 28px;
+    box-sizing: border-box;
+    background:
+            radial-gradient(circle at 85% 20%, rgba(59, 130, 246, 0.22), transparent 34%),
+            linear-gradient(135deg, #0f172a 0%, #1e3a8a 48%, #2563eb 100%);
+    color: white;
+    box-shadow: 0 24px 60px -24px rgba(15, 23, 42, 0.65);
+
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(240px, 0.7fr);
+    gap: 28px;
     align-items: center;
 }
 
-.immobilien-grid {
-    width: 100%;
+.property-list-hero::after {
+    content: "";
+    position: absolute;
+    inset: auto -60px -95px auto;
+    width: 260px;
+    height: 260px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
 }
 
-/* Hover-Effekt*/
-.immobilien-grid::part(body-cell) {
-    cursor: pointer;
+.property-list-hero-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
 }
 
-.immobilien-grid::part(row):hover {
-    --vaadin-grid-cell-background: #f9fafb;
+.hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    backdrop-filter: blur(12px);
 }
 
-/* Pagination fuer mehrerere Tabs */
-.pagination-bar {
-    width: 100%;
-    background-color: #f9fafb;
-    border-top: 1px solid #e5e7eb;
-    padding: 10px;
-    margin-top: 8px;
-    border-radius: 0 0 12px 12px;
+.property-list-hero-title {
+    margin: 0;
+    font-size: clamp(30px, 4vw, 48px);
+    line-height: 1.02;
+    letter-spacing: -0.05em;
+    font-weight: 850;
+    color: white;
+}
+
+.property-list-hero-subtitle {
+    margin: 0 0 6px 0;
+    max-width: 660px;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+.property-list-hero-visual {
+    position: relative;
+    z-index: 1;
+    min-height: 150px;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background:
+            linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06)),
+            repeating-linear-gradient(90deg, transparent 0 24px, rgba(255, 255, 255, 0.05) 24px 25px);
+    backdrop-filter: blur(14px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
 
     display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    align-items: center;
-    gap: 16px;
+    gap: 10px;
 }
 
-.pagination-info {
-    font-weight: 600;
-    color: #4b5563;
+.property-list-hero-visual vaadin-icon {
+    width: 54px;
+    height: 54px;
+    color: white;
+}
+
+.property-list-hero-visual span {
+    font-size: 22px;
+    font-weight: 850;
+    letter-spacing: -0.03em;
 }
 
 /* =========================================================
@@ -64,21 +132,431 @@
     align-items: end;
 }
 
+.filter-card-modern {
+    border-radius: 22px;
+    background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.90)),
+            radial-gradient(circle at 18% 0%, rgba(37, 99, 235, 0.08), transparent 36%);
+}
+
+/* =========================================================
+   Immobilienkarten
+   ========================================================= */
+
+.property-results-panel {
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: 24px;
+    box-shadow: var(--shadow-soft);
+    padding: 20px;
+    overflow: hidden;
+}
+
+.property-card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.property-card {
+    overflow: hidden;
+    border: 1px solid rgba(226, 232, 240, 0.95);
+    border-radius: 24px;
+    background: white;
+    cursor: pointer;
+    box-shadow: 0 12px 32px -26px rgba(15, 23, 42, 0.55);
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.property-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(37, 99, 235, 0.28);
+    box-shadow: 0 28px 60px -34px rgba(15, 23, 42, 0.7);
+}
+
+.property-card-visual {
+    position: relative;
+    height: 145px;
+    padding: 16px;
+    box-sizing: border-box;
+    background:
+            linear-gradient(135deg, rgba(15, 23, 42, 0.08), rgba(255, 255, 255, 0.04)),
+            linear-gradient(135deg, #dbeafe, #eff6ff);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.property-card-visual::before {
+    content: "";
+    position: absolute;
+    inset: 18px 18px auto auto;
+    width: 92px;
+    height: 92px;
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.24);
+    transform: rotate(12deg);
+}
+
+.property-card-visual::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 42px;
+    background:
+            linear-gradient(90deg, rgba(255, 255, 255, 0.40) 0 14%, transparent 14% 20%, rgba(255, 255, 255, 0.34) 20% 36%, transparent 36% 44%, rgba(255, 255, 255, 0.30) 44% 58%, transparent 58% 66%, rgba(255, 255, 255, 0.25) 66% 78%, transparent 78% 100%);
+    opacity: 0.8;
+}
+
+.property-card-visual-icon {
+    position: relative;
+    z-index: 1;
+    width: 48px;
+    height: 48px;
+    padding: 12px;
+    border-radius: 18px;
+    color: white;
+    background: rgba(15, 23, 42, 0.18);
+    backdrop-filter: blur(12px);
+}
+
+.property-type-chip {
+    position: relative;
+    z-index: 1;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.78);
+    color: #0f172a;
+    font-size: 12px;
+    font-weight: 800;
+    backdrop-filter: blur(12px);
+}
+
+.typ-wohnung {
+    background: linear-gradient(135deg, #60a5fa, #2563eb);
+}
+
+.typ-haus,
+.typ-einfamilienhaus,
+.typ-mehrfamilienhaus {
+    background: linear-gradient(135deg, #34d399, #059669);
+}
+
+.typ-gewerbe,
+.typ-gewerbeimmobilie {
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+}
+
+.typ-default {
+    background: linear-gradient(135deg, #94a3b8, #475569);
+}
+
+.property-card-content {
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.property-card-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.property-card-title {
+    margin: 0;
+    color: var(--color-text);
+    font-size: 18px;
+    font-weight: 850;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+}
+
+.property-card-address {
+    margin: -6px 0 0 0;
+    color: var(--color-text-muted);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.property-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.property-stat-tile {
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    background: #f8fafc;
+}
+
+.property-stat-label {
+    display: block;
+    color: var(--color-text-muted);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+}
+
+.property-stat-value {
+    display: block;
+    color: var(--color-text);
+    font-size: 14px;
+    font-weight: 850;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.property-card-action {
+    width: 100%;
+    justify-content: center;
+    border-radius: 16px;
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+    font-weight: 800;
+}
+
+.property-empty-state {
+    min-height: 300px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--color-text-muted);
+}
+
+.property-empty-state h3 {
+    margin: 8px 0 0 0;
+    color: var(--color-text);
+    font-size: 22px;
+}
+
+.property-empty-state p {
+    max-width: 440px;
+    margin: 0 0 10px 0;
+    line-height: 1.6;
+}
+
+.property-empty-icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 20px;
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.property-empty-icon vaadin-icon {
+    width: 28px;
+    height: 28px;
+}
+
+.pagination-bar {
+    width: 100%;
+    background-color: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+    padding: 10px;
+    margin-top: 8px;
+    border-radius: 0 0 12px 12px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+}
+
+.pagination-bar-modern {
+    margin-top: 20px;
+    padding: 16px 0 0 0;
+    background: transparent;
+    border-top: 1px solid var(--color-border);
+    border-radius: 0;
+}
+
+.pagination-info {
+    font-weight: 700;
+    color: #4b5563;
+}
+
+/* Altes Grid bleibt gestylt, falls ihr es in anderen Branches noch verwendet. */
+.immobilien-grid,
+.mieteinheiten-grid {
+    width: 100%;
+}
+
+.immobilien-grid::part(body-cell),
+.mieteinheiten-grid::part(body-cell) {
+    cursor: pointer;
+}
+
+.immobilien-grid::part(row):hover,
+.mieteinheiten-grid::part(row):hover {
+    --vaadin-grid-cell-background: #f9fafb;
+}
 
 /* =========================================================
    Immobilien Detail Ansicht
    ========================================================= */
 
-.immobilie-detail-view {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-}
-
 .detail-action-row {
     display: flex;
     justify-content: flex-start;
+    flex-wrap: wrap;
     gap: 12px;
+}
+
+.property-detail-hero {
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 28px;
+    background: white;
+    box-shadow: var(--shadow-soft);
+    display: grid;
+    grid-template-columns: minmax(280px, 0.75fr) minmax(0, 1.25fr);
+}
+
+.property-detail-visual {
+    position: relative;
+    min-height: 310px;
+    background: linear-gradient(135deg, #60a5fa, #2563eb);
+}
+
+.property-detail-visual::before {
+    content: "";
+    position: absolute;
+    inset: 24px;
+    border-radius: 28px;
+    background:
+            linear-gradient(90deg, rgba(255, 255, 255, 0.20) 0 14%, transparent 14% 22%, rgba(255, 255, 255, 0.18) 22% 36%, transparent 36% 48%, rgba(255, 255, 255, 0.16) 48% 64%, transparent 64% 100%),
+            linear-gradient(180deg, transparent 0 68%, rgba(15, 23, 42, 0.12) 68% 100%);
+    opacity: 0.85;
+}
+
+.property-detail-visual::after {
+    content: "";
+    position: absolute;
+    right: -46px;
+    bottom: -46px;
+    width: 180px;
+    height: 180px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16);
+}
+
+.property-detail-visual-overlay {
+    position: absolute;
+    left: 24px;
+    right: 24px;
+    bottom: 24px;
+    min-height: 82px;
+    border-radius: 24px;
+    padding: 18px;
+    box-sizing: border-box;
+    background: rgba(15, 23, 42, 0.24);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(12px);
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-weight: 850;
+    font-size: 18px;
+}
+
+.property-detail-visual-overlay vaadin-icon {
+    width: 36px;
+    height: 36px;
+}
+
+.property-detail-hero-content {
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    justify-content: center;
+}
+
+.property-detail-title {
+    margin: 0;
+    color: var(--color-text);
+    font-size: clamp(28px, 4vw, 44px);
+    line-height: 1.05;
+    letter-spacing: -0.05em;
+    font-weight: 880;
+}
+
+.property-detail-address {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.property-detail-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.property-detail-quickfacts {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.property-detail-quickfact {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 18px;
+    border: 1px solid var(--color-border);
+    background: #f8fafc;
+    min-width: 0;
+}
+
+.property-detail-quickfact-icon {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-primary);
+    background: var(--color-primary-light);
+}
+
+.property-detail-quickfact-label,
+.property-detail-quickfact-value {
+    display: block;
+}
+
+.property-detail-quickfact-label {
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.property-detail-quickfact-value {
+    color: var(--color-text);
+    font-weight: 850;
+    font-size: 16px;
 }
 
 .detail-kpi-grid {
@@ -90,29 +568,24 @@
 .detail-kpi-card {
     position: relative;
     min-height: 120px;
+    overflow: hidden;
+}
+
+.detail-kpi-card::after {
+    content: "";
+    position: absolute;
+    right: -24px;
+    top: -24px;
+    width: 96px;
+    height: 96px;
+    border-radius: 999px;
+    background: rgba(37, 99, 235, 0.06);
 }
 
 .detail-kpi-card .kpi-icon-box {
     position: absolute;
     right: 24px;
     top: 38px;
-}
-
-.detail-table-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--color-border);
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.detail-table-search {
-    width: 280px;
-}
-
-.belegung-card {
-    padding: 1.5rem;
 }
 
 .detail-overview-grid {
@@ -127,62 +600,57 @@
     box-sizing: border-box;
 }
 
-/* =========================================================
-   Mieteinheiten-Tabelle
-   ========================================================= */
-
-.mieteinheiten-grid {
-    width: 100%;
-}
-
-/* Hover-Effekt + Aktionen nur bei Hover anzeigen */
-.mieteinheiten-grid::part(body-cell) {
-    cursor: pointer;
-}
-
-.mieteinheiten-grid::part(row):hover {
-    --vaadin-grid-cell-background: #f9fafb;
-}
-
-
-
-/* =========================================================
-   Belegungsstatus Card
-   ========================================================= */
-
+.immobilie-info-card,
 .belegung-card {
-    width: 460px;
+    padding: 1.5rem;
 }
 
-.donut-placeholder {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    margin: 28px auto;
-
-    background: conic-gradient(#10b981 0 91.6%, #f3f4f6 91.6% 100%);
-
+.detail-table-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--color-border);
     display: flex;
     align-items: center;
-    justify-content: center;
-
-    font-size: 26px;
-    font-weight: 800;
-    color: var(--color-text);
+    justify-content: space-between;
+    gap: 16px;
 }
 
-.belegung-legend {
-    display: flex;
-    gap: 24px;
-
-    color: var(--color-text-muted);
-    font-size: 14px;
+.detail-table-search {
+    width: 280px;
 }
 
+.belegung-card {
+    width: auto;
+}
 
 /* =========================================================
-   Mieteinheit Detail Ansicht
+   Wiederverwendete Info- und Detailbereiche
    ========================================================= */
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    font-size: 14px;
+    color: var(--color-text-muted);
+    font-weight: 700;
+}
+
+.info-value {
+    font-size: 14px;
+    color: var(--color-text);
+    font-weight: 800;
+    text-align: right;
+}
 
 .mieteinheit-detail-view {
     display: flex;
@@ -196,39 +664,68 @@
     gap: 24px;
 }
 
-.mieteinheit-info-card {
+.mieteinheit-info-card,
+.mieteinheit-contract-card {
     display: flex;
     flex-direction: column;
     gap: 16px;
 }
 
-.info-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+/* =========================================================
+   Responsive
+   ========================================================= */
 
-    padding: 12px 0;
-    border-bottom: 1px solid var(--color-border);
+@media (max-width: 1180px) {
+    .property-card-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .filter-card {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .property-detail-hero,
+    .detail-overview-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
-.info-item:last-child {
-    border-bottom: none;
-}
+@media (max-width: 760px) {
+    .property-list-hero {
+        grid-template-columns: 1fr;
+        padding: 22px;
+    }
 
-.info-label {
-    font-size: 14px;
-    color: var(--color-text-muted);
-    font-weight: 600;
-}
+    .property-list-hero-visual {
+        display: none;
+    }
 
-.info-value {
-    font-size: 14px;
-    color: var(--color-text);
-    font-weight: 700;
-}
+    .property-card-grid,
+    .filter-card,
+    .detail-kpi-grid,
+    .property-detail-quickfacts,
+    .mieteinheit-info-grid {
+        grid-template-columns: 1fr;
+    }
 
-.mieteinheit-contract-card {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+    .property-results-panel {
+        padding: 14px;
+    }
+
+    .property-detail-hero-content {
+        padding: 24px;
+    }
+
+    .property-detail-visual {
+        min-height: 220px;
+    }
+
+    .detail-table-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .detail-table-search {
+        width: 100%;
+    }
 }
