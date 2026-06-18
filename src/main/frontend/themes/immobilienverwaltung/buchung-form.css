@@ -422,3 +422,25 @@
         border-radius: 24px;
     }
 }
+
+/* =========================================================
+   Feinschliff: mehr Abstand zwischen Kartentitel und Untertitel
+   ========================================================= */
+
+.buchung-form-view .form-card-title {
+    margin: 0 0 10px 0;
+    line-height: 1.15;
+}
+
+.buchung-form-view .form-card-subtitle {
+    margin: 0 0 24px 0;
+    line-height: 1.55;
+}
+
+.buchung-form-view .form-card-title + .form-card-subtitle {
+    margin-top: 6px;
+}
+
+.buchung-form-view .booking-type-options {
+    margin-top: 4px;
+}

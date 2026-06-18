@@ -484,3 +484,15 @@
         width: 100%;
     }
 }
+
+/* =========================================================
+   Fix: Vertragsstatus nicht doppelt in der linken Vertrag-Spalte anzeigen
+   Der Status steht bereits in der eigenen Status-Spalte.
+   ========================================================= */
+.tenant-contract-grid .tenant-contract-number-cell .tenant-contract-meta {
+    display: none;
+}
+
+.tenant-contract-grid .tenant-contract-number-cell {
+    justify-content: center;
+}
