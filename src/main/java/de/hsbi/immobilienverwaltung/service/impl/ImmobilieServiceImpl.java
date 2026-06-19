@@ -101,11 +101,11 @@ public class ImmobilieServiceImpl implements ImmobilieService {
     public void loescheImmobilie(Long id) {
         // Eine Immobilie darf nicht gelöscht werden, wenn mindestens eine ihrer
         // Mieteinheiten noch durch einen aktiven Mietvertrag belegt ist.
-        boolean hatAktiveMietvertraege = mietvertragRepository.existsByMieteinheit_Immobilie_IdAndStatus(id, Vertragsstatus.AKTIV);
+        boolean hatMietvertraege = mietvertragRepository.existsByMieteinheit_Immobilie_Id(id);
 
-        if (hatAktiveMietvertraege) {
+        if (hatMietvertraege) {
             throw new IllegalStateException(
-                    "Diese Immobilie kann nicht gelöscht werden, da mindestens eine Mieteinheit noch einen aktiven Mietvertrag hat."
+                    "Diese Immobilie kann nicht gelöscht werden, da bereits Mietverträge mit ihren Mieteinheiten verknüpft sind."
             );
         }
 

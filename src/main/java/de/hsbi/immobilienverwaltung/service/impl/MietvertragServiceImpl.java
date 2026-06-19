@@ -43,6 +43,12 @@ public class MietvertragServiceImpl implements MietvertragService {
         Mieteinheit mieteinheit = mieteinheitRepository.findById(mieteinheitId)
                 .orElseThrow(() -> new IllegalArgumentException("Mieteinheit wurde nicht gefunden."));
 
+        if (mieteinheit.getStatus() == Mieteinheitstatus.IN_RENOVIERUNG) {
+            throw new IllegalStateException(
+                    "Für diese Mieteinheit kann kein Mietvertrag erstellt werden, da sie sich aktuell in Renovierung befindet."
+            );
+        }
+
         validiereMietvertrag(mietvertrag);
 
         if (mietvertrag.getStatus() == null) {
@@ -151,6 +157,10 @@ public class MietvertragServiceImpl implements MietvertragService {
 
         if (mietvertrag.getEnddatum() != null && mietvertrag.getEnddatum().isBefore(mietvertrag.getStartdatum())) {
             throw new IllegalArgumentException("Enddatum darf nicht vor dem Startdatum liegen.");
+        }
+
+        if (mietvertrag.getEnddatum() != null && mietvertrag.getEnddatum().isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Enddatum darf nicht vor dem heutigen Datum liegen.");
         }
 
         if (mietvertrag.getKaltmiete() == null) {

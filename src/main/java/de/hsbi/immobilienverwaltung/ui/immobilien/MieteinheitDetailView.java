@@ -332,7 +332,7 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         mietvertragAnlegenButton.addClassName("primary-button");
         mietvertragAnlegenButton.addClickListener(event ->
                 getUI().ifPresent(ui -> ui.navigate(
-                        "mietvertrag-anlegen?immobilieId=" + immobilieId + "&mieteinheitId=" + mieteinheitId
+                        "mieter-vertraege/mietvertrag-anlegen?immobilieId=" + immobilieId + "&mieteinheitId=" + mieteinheitId
                 ))
         );
 

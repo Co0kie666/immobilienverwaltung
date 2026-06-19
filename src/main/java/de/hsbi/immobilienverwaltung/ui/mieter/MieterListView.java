@@ -24,13 +24,14 @@ import de.hsbi.immobilienverwaltung.service.interfaces.MietvertragService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import jakarta.annotation.security.PermitAll;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 
 import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 
-@Route(value = "mieter-details", layout = MainLayout.class)
+@Route(value = "mieter-vertraege/mieter-details", layout = MainLayout.class)
 @PermitAll
 public class MieterListView extends Div implements HasPageHeader, HasUrlParameter<String> {
 
@@ -45,7 +46,8 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
     private final TextField emailField = new TextField("E-Mail");
     private final TextField telefonField = new TextField("Telefon");
     private final TextField berufField = new TextField("Beruf / Tätigkeit");
-    private final TextField strasseField = new TextField("Straße und Hausnummer");
+    private final TextField strasseField = new TextField("Straße");
+    private final TextField hausnummerField = new TextField("Hausnummer");
     private final TextField plzField = new TextField("PLZ");
     private final TextField ortField = new TextField("Ort");
 
@@ -98,6 +100,7 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
                 telefonField,
                 berufField,
                 strasseField,
+                hausnummerField,
                 plzField,
                 ortField
         );
@@ -185,9 +188,7 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
 
             Button newContractButton = new Button("Neuer Mietvertrag", VaadinIcon.PLUS.create());
             newContractButton.addClassName("primary-button");
-            newContractButton.addClickListener(event ->
-                    getUI().ifPresent(ui -> ui.navigate(MietvertragFormView.class))
-            );
+            newContractButton.addClickListener(event -> navigiereZuNeuemMietvertrag());
 
             right.add(statusBadge, editButton, newContractButton);
         }
@@ -315,12 +316,21 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
             emailField.setValue(textOderLeer(aktuellerMieter.getEmail()));
             telefonField.setValue(textOderLeer(aktuellerMieter.getTelefonnummer()));
             strasseField.setValue(adresse == null ? "" : textOderLeer(adresse.getStrasse()));
+            hausnummerField.setValue(adresse == null ? "" : textOderLeer(adresse.getHausnummer()));
             plzField.setValue(adresse == null ? "" : textOderLeer(adresse.getPlz()));
             ortField.setValue(adresse == null ? "" : textOderLeer(adresse.getStadt()));
 
+            HorizontalLayout strasseHausnummerLayout = new HorizontalLayout();
+            strasseHausnummerLayout.setWidthFull();
+            strasseHausnummerLayout.setSpacing(true);
+
+            strasseHausnummerLayout.add(strasseField, hausnummerField);
+            strasseHausnummerLayout.setFlexGrow(2, strasseField);
+            strasseHausnummerLayout.setFlexGrow(1, hausnummerField);
+
             FormLayout form = createFormLayout();
-            form.add(emailField, telefonField, strasseField, plzField, ortField);
-            form.setColspan(strasseField, 2);
+            form.add(emailField, telefonField, strasseHausnummerLayout, plzField, ortField);
+            form.setColspan(strasseHausnummerLayout, 2);
 
             card.add(form);
         } else {
@@ -360,9 +370,7 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         Button newContractButton = new Button("Vertrag anlegen", VaadinIcon.PLUS.create());
         newContractButton.addClassName("primary-button");
         newContractButton.setEnabled(!bearbeitenAktiv);
-        newContractButton.addClickListener(event ->
-                getUI().ifPresent(ui -> ui.navigate(MietvertragFormView.class))
-        );
+        newContractButton.addClickListener(event -> navigiereZuNeuemMietvertrag());
 
         header.add(titleBox, newContractButton);
 
@@ -559,7 +567,7 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
             }
 
             adresse.setStrasse(strasseField.getValue());
-            adresse.setHausnummer("");
+            adresse.setHausnummer(hausnummerField.getValue());
             adresse.setPlz(plzField.getValue());
             adresse.setStadt(ortField.getValue());
 
@@ -614,6 +622,17 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         } catch (Exception ex) {
             Notification.show("Fehler beim Archivieren: " + ex.getMessage(), 4000, Notification.Position.MIDDLE);
         }
+    }
+
+    private void navigiereZuNeuemMietvertrag() {
+        if (aktuellerMieter == null || aktuellerMieter.getId() == null) {
+            Notification.show("Mieter wurde nicht gefunden.", 3000, Notification.Position.MIDDLE);
+            return;
+        }
+
+        getUI().ifPresent(ui -> ui.navigate(
+                "mieter-vertraege/mietvertrag-anlegen?mieterId=" + aktuellerMieter.getId()
+        ));
     }
 
     private List<Mietvertrag> ladeVertraege() {

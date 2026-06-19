@@ -50,7 +50,7 @@ public class MieterServiceImpl implements MieterService {
 
         if (mieter.getTelefonnummer() != null
                 && !mieter.getTelefonnummer().isBlank()
-                && !mieter.getTelefonnummer().matches("\\+?[0-9]*")) {
+                && !mieter.getTelefonnummer().matches("\\+?[0-9 ]*")) {
             throw new IllegalArgumentException("Telefonnummer darf nur Zahlen und optional ein + am Anfang enthalten.");
         }
 

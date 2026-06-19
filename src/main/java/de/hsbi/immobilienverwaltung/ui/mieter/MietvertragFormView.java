@@ -29,6 +29,7 @@ import de.hsbi.immobilienverwaltung.service.interfaces.MietvertragService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import jakarta.annotation.security.PermitAll;
+import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
 
 import java.text.NumberFormat;
 import java.time.LocalDate;
@@ -36,7 +37,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 
-@Route(value = "mietvertrag-anlegen", layout = MainLayout.class)
+@Route(value = "mieter-vertraege/mietvertrag-anlegen", layout = MainLayout.class)
 @PermitAll
 public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnterObserver {
 
@@ -238,7 +239,10 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         }
 
         List<Mieteinheit> mieteinheiten =
-                mieteinheitService.findeMieteinheitenNachImmobilie(immobilie.getId());
+                mieteinheitService.findeMieteinheitenNachImmobilie(immobilie.getId())
+                        .stream()
+                        .filter(mieteinheit -> mieteinheit.getStatus() != Mieteinheitstatus.IN_RENOVIERUNG)
+                        .toList();
 
         mieteinheitSelect.setItems(mieteinheiten);
         mieteinheitSelect.setEnabled(true);
@@ -387,7 +391,12 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         vertragsbeginnPicker.setErrorMessage("Bitte Vertragsbeginn auswählen");
         fehler |= startdatumFehlt;
 
-        if (vertragsbeginnPicker.getValue() != null
+        if (vertragsendePicker.getValue() != null
+                && vertragsendePicker.getValue().isBefore(LocalDate.now())) {
+            vertragsendePicker.setInvalid(true);
+            vertragsendePicker.setErrorMessage("Vertragsende darf nicht vor dem heutigen Datum liegen");
+            fehler = true;
+        } else if (vertragsbeginnPicker.getValue() != null
                 && vertragsendePicker.getValue() != null
                 && vertragsendePicker.getValue().isBefore(vertragsbeginnPicker.getValue())) {
             vertragsendePicker.setInvalid(true);

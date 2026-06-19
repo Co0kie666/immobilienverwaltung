@@ -25,7 +25,7 @@ import jakarta.annotation.security.PermitAll;
 import java.util.List;
 import java.util.Locale;
 
-@Route(value = "mieter-anlegen", layout = MainLayout.class)
+@Route(value = "mieter-vertraege/mieter-anlegen", layout = MainLayout.class)
 @PermitAll
 public class MieterFormView extends Div implements HasPageHeader {
 
@@ -261,7 +261,7 @@ public class MieterFormView extends Div implements HasPageHeader {
         configureTextField(plzField, "10115", false, VaadinIcon.MAP_MARKER);
         configureTextField(ortField, "Berlin", false, VaadinIcon.MAP_MARKER);
 
-        telefonField.setAllowedCharPattern("[0-9+]");
+        telefonField.setAllowedCharPattern("[0-9+ ]");
 
         emailField.addValueChangeListener(event -> updatePreview());
         ortField.addValueChangeListener(event -> updatePreview());
@@ -402,7 +402,7 @@ public class MieterFormView extends Div implements HasPageHeader {
             fehler = true;
         }
 
-        if (!telefonField.getValue().isBlank() && !telefonField.getValue().matches("\\+?[0-9]*")) {
+        if (!telefonField.getValue().isBlank() && !telefonField.getValue().matches("\\+?[0-9 ]*")) {
             telefonField.setInvalid(true);
             telefonField.setErrorMessage("Telefonnummer darf nur Zahlen und optional ein + am Anfang enthalten");
             fehler = true;

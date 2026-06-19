@@ -21,4 +21,8 @@ public interface MietvertragRepository extends JpaRepository<Mietvertrag, Long> 
     boolean existsByMieteinheit_IdAndStatus(Long mieteinheitId, Vertragsstatus status);
 
     boolean existsByMieteinheit_Immobilie_IdAndStatus(Long immobilieId, Vertragsstatus status);
+
+    boolean existsByMieteinheit_Immobilie_Id(Long immobilieId);
+
+    boolean existsByMieteinheit_Id(Long mieteinheitId);
 }

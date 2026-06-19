@@ -105,11 +105,11 @@ public class MieteinheitServiceImpl implements MieteinheitService {
     @Override
     @Transactional
     public void loescheMieteinheit(Long id) {
-        boolean hatAktivenMietvertrag = mietvertragRepository.existsByMieteinheit_IdAndStatus(id, Vertragsstatus.AKTIV);
+        boolean hatMietvertraege = mietvertragRepository.existsByMieteinheit_Id(id);
 
-        if (hatAktivenMietvertrag) {
+        if (hatMietvertraege) {
             throw new IllegalStateException(
-                    "Diese Mieteinheit kann nicht gelöscht werden, da noch ein aktiver Mietvertrag läuft."
+                    "Diese Mieteinheit kann nicht gelöscht werden, da bereits Mietverträge mit ihr verknüpft sind."
             );
         }
 

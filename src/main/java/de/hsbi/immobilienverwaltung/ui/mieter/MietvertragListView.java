@@ -23,7 +23,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Locale;
 
-@Route(value = "mietvertrag-details", layout = MainLayout.class)
+@Route(value = "mieter-vertraege/mietvertrag-details", layout = MainLayout.class)
 @PermitAll
 public class MietvertragListView extends Div implements HasPageHeader, HasUrlParameter<String> {
 
