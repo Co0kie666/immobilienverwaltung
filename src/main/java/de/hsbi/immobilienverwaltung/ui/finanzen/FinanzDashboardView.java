@@ -7,7 +7,6 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.domain.*;
@@ -452,7 +451,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         Div actions = new Div();
         actions.addClassName("finance-hero-actions");
 
-        Button addBooking = primaryButton("Buchung anlegen", VaadinIcon.PLUS);
+        Button addBooking = primaryButton("Neue Buchung", VaadinIcon.EURO);
         addBooking.addClickListener(e ->
                 getUI().ifPresent(ui -> ui.navigate("finanzen/buchung-neu"))
         );
@@ -465,54 +464,9 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         actions.add(addBooking, showBookings);
         content.add(eyebrow, title, subtitle, actions);
 
-        Div visual = new Div();
-        visual.addClassName("finance-hero-visual");
-
-        Div heroCard = new Div();
-        heroCard.addClassName("finance-hero-card");
-
-        Span cardLabel = new Span("Cashflow");
-        cardLabel.addClassName("finance-hero-card-label");
-
-        H2 cardValue = new H2(formatEuro(cashflow));
-        cardValue.addClassName("finance-hero-card-value");
-
-        Span cardMeta = new Span(getZeitraumText());
-        cardMeta.addClassName("finance-hero-card-meta");
-
-        Div sparkline = new Div();
-        sparkline.addClassName("finance-sparkline");
-
-        heroCard.add(cardLabel, cardValue, cardMeta, sparkline);
-
-        Div stats = new Div();
-        stats.addClassName("finance-hero-stats");
-
-        stats.add(
-                heroStat("Einnahmen", formatEuro(summeEinnahmen)),
-                heroStat("Ausgaben", formatEuro(summeAusgaben)),
-                heroStat("Rückstände", formatEuro(rueckstaende))
-        );
-
-        visual.add(heroCard, stats);
-        hero.add(content, visual);
+        hero.add(content);
 
         return hero;
-    }
-
-    private Component heroStat(String label, String value) {
-        Div stat = new Div();
-        stat.addClassName("finance-hero-stat");
-
-        Span labelText = new Span(label);
-        labelText.addClassName("finance-hero-stat-label");
-
-        Span valueText = new Span(value);
-        valueText.addClassName("finance-hero-stat-value");
-
-        stat.add(labelText, valueText);
-
-        return stat;
     }
 
     private Component createFilterBar() {
