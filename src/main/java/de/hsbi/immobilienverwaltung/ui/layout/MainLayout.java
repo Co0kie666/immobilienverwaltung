@@ -103,18 +103,13 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
         return sidebar;
     }
-    // Erstellt einen Navigationslink mit Icon Text
+    // Erstellt einen Navigationslink mit Icon und Text.
     private RouterLink createNavLink(String text, VaadinIcon icon, Class<? extends Component> target) {
         RouterLink link = new RouterLink();
         link.setRoute(target);
         link.addClassName("nav-link");
 
-        if (target.equals(DashboardView.class)) {
-            link.setHighlightCondition((routerLink, event) ->
-                    event.getLocation().getPath().isEmpty()
-                            || event.getLocation().getPath().equals("dashboard")
-            );
-        }
+        setzeHighlightBedingung(link, target);
 
         Icon navIcon = icon.create();
         navIcon.addClassName("nav-icon");
@@ -123,6 +118,40 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
         link.add(navIcon, label);
 
         return link;
+    }
+
+    // Sorgt dafür, dass der passende Sidebar-Eintrag auch auf Unterseiten aktiv bleibt.
+    private void setzeHighlightBedingung(
+            RouterLink link,
+            Class<? extends Component> target
+    ) {
+        link.setHighlightCondition((routerLink, event) -> {
+            String path = event.getLocation().getPath();
+
+            if (target.equals(DashboardView.class)) {
+                return path.isEmpty()
+                        || path.equals("dashboard");
+            }
+
+            if (target.equals(ImmobilienListView.class)) {
+                return path.startsWith("immobilien");
+            }
+
+            if (target.equals(MieterVertraegeView.class)) {
+                return path.startsWith("mieter")
+                        || path.startsWith("mietvertrag");
+            }
+
+            if (target.equals(FinanzDashboardView.class)) {
+                return path.startsWith("finanzen");
+            }
+
+            if (target.equals(LogoutView.class)) {
+                return path.equals("logout");
+            }
+
+            return false;
+        });
     }
 
     // Kopfzeile mit Seitentitel, Untertitel, Suchleiste und Benutzerprofil
