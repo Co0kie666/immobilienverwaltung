@@ -150,12 +150,12 @@ public class DashboardView extends Div implements HasPageHeader {
 
         Button neuerMieter = secondaryButton("Neuer Mieter", VaadinIcon.USER);
         neuerMieter.addClickListener(e ->
-                getUI().ifPresent(ui -> ui.navigate("mieter-anlegen"))
+                getUI().ifPresent(ui -> ui.navigate("mieter-vertraege/mieter-anlegen"))
         );
 
         Button neuerVertrag = secondaryButton("Neuer Vertrag", VaadinIcon.FILE_TEXT);
         neuerVertrag.addClickListener(e ->
-                getUI().ifPresent(ui -> ui.navigate("mietvertrag-anlegen"))
+                getUI().ifPresent(ui -> ui.navigate("mieter-vertraege/mietvertrag-anlegen"))
         );
 
         Button neueBuchung = secondaryButton("Neue Buchung", VaadinIcon.EURO);
