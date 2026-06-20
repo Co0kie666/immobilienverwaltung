@@ -90,7 +90,7 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         Paragraph subtitle = new Paragraph("Filtern, prüfen und direkt in die Detailansicht springen – mit kompakten Kennzahlen pro Immobilie.");
         subtitle.addClassName("property-list-hero-subtitle");
 
-        Button newButton = new Button("Neue Immobilie", VaadinIcon.PLUS.create());
+        Button newButton = new Button("Neue Immobilie", VaadinIcon.BUILDING.create());
         newButton.addClassName("primary-button");
         newButton.addClickListener(event ->
                 getUI().ifPresent(ui -> ui.navigate(ImmobilieFormView.class))

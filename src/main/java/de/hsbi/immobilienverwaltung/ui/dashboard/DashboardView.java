@@ -144,7 +144,7 @@ public class DashboardView extends Div implements HasPageHeader {
         Div actions = new Div();
         actions.addClassName("dashboard-hero-actions");
 
-        Button neueImmobilie = primaryButton("Neue Immobilie", VaadinIcon.PLUS);
+        Button neueImmobilie = primaryButton("Neue Immobilie", VaadinIcon.BUILDING);
         neueImmobilie.addClickListener(e ->
                 getUI().ifPresent(ui -> ui.navigate("immobilien/neu"))
         );
@@ -159,12 +159,12 @@ public class DashboardView extends Div implements HasPageHeader {
                 getUI().ifPresent(ui -> ui.navigate("mietvertrag-anlegen"))
         );
 
-        Button neueZahlung = secondaryButton("Neue Zahlung", VaadinIcon.EURO);
-        neueZahlung.addClickListener(e ->
+        Button neueBuchung = secondaryButton("Neue Buchung", VaadinIcon.EURO);
+        neueBuchung.addClickListener(e ->
                 getUI().ifPresent(ui -> ui.navigate("finanzen/buchung-neu"))
         );
 
-        actions.add(neueImmobilie, neuerMieter, neuerVertrag, neueZahlung);
+        actions.add(neueImmobilie, neuerMieter, neuerVertrag, neueBuchung);
         content.add(eyebrow, title, subtitle, actions);
 
         Div visual = new Div();
