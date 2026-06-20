@@ -13,7 +13,6 @@ import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Route;
-import de.hsbi.immobilienverwaltung.domain.Adresse;
 import de.hsbi.immobilienverwaltung.domain.Immobilie;
 import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
 import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
@@ -23,9 +22,8 @@ import de.hsbi.immobilienverwaltung.ui.components.StatusBadge;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import jakarta.annotation.security.PermitAll;
+import de.hsbi.immobilienverwaltung.ui.UiFormatUtils;
 
-import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -257,7 +255,7 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         Icon buildingIcon = VaadinIcon.BUILDING.create();
         buildingIcon.addClassName("property-card-visual-icon");
 
-        Span typeChip = new Span(formatiereImmobilientyp(immobilie.getTyp()));
+        Span typeChip = new Span(UiFormatUtils.formatiereImmobilientyp(immobilie.getTyp()));
         typeChip.addClassName("property-type-chip");
 
         visual.add(buildingIcon, typeChip);
@@ -268,12 +266,14 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         Div titleRow = new Div();
         titleRow.addClassName("property-card-title-row");
 
-        H3 title = new H3(wertOderStrich(immobilie.getBezeichnung()));
+        H3 title = new H3(UiFormatUtils.wertOderStrich(immobilie.getBezeichnung()));
         title.addClassName("property-card-title");
 
         titleRow.add(title, erstelleBelegungsBadge(immobilie));
 
-        Paragraph address = new Paragraph(formatAdresse(immobilie));
+        Paragraph address = new Paragraph(
+                UiFormatUtils.formatiereAdresse(immobilie, "Adresse nicht hinterlegt")
+        );
         address.addClassName("property-card-address");
 
         Div stats = new Div();
@@ -281,7 +281,7 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         stats.add(
                 erstelleStatistikKachel("Einheiten", String.valueOf(mieteinheitService.zaehleMieteinheiten(immobilie.getId()))),
                 erstelleStatistikKachel("Leerstand", ermittleLeerstandText(immobilie)),
-                erstelleStatistikKachel("Offen", formatiereBetragKurz(
+                erstelleStatistikKachel("Offen", UiFormatUtils.formatiereBetragKurz(
                         zahlungsEingangService.berechneOffeneZahlungenFuerImmobilie(immobilie.getId())
                 ))
         );
@@ -343,57 +343,6 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         return leerstand + " · " + String.format(Locale.GERMANY, "%.1f %%", leerstandsquote);
     }
 
-    private String formatiereBetrag(BigDecimal betrag) {
-        if (betrag == null) {
-            return "0,00 €";
-        }
-
-        NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.GERMANY);
-        return formatter.format(betrag);
-    }
-
-    private String formatiereBetragKurz(BigDecimal betrag) {
-        if (betrag == null || betrag.compareTo(BigDecimal.ZERO) == 0) {
-            return "0 €";
-        }
-
-        return formatiereBetrag(betrag);
-    }
-
-    private String formatAdresse(Immobilie immobilie) {
-        Adresse adresse = immobilie.getAdresse();
-
-        if (adresse == null) {
-            return "Adresse nicht hinterlegt";
-        }
-
-        String strasseUndHausnummer = (
-                wertOderLeer(adresse.getStrasse()) + " " + wertOderLeer(adresse.getHausnummer())
-        ).trim();
-
-        String plzUndStadt = (
-                wertOderLeer(adresse.getPlz()) + " " + wertOderLeer(adresse.getStadt())
-        ).trim();
-
-        if (strasseUndHausnummer.isBlank() && plzUndStadt.isBlank()) {
-            return "Adresse nicht hinterlegt";
-        }
-
-        if (strasseUndHausnummer.isBlank()) {
-            return plzUndStadt;
-        }
-
-        if (plzUndStadt.isBlank()) {
-            return strasseUndHausnummer;
-        }
-
-        return strasseUndHausnummer + ", " + plzUndStadt;
-    }
-
-    private String formatiereImmobilientyp(Immobilientyp typ) {
-        return typ == null ? "Immobilie" : typ.getLabel();
-    }
-
     private String ermittleTypCssKlasse(Immobilie immobilie) {
         if (immobilie.getTyp() == null) {
             return "typ-default";
@@ -405,22 +354,6 @@ public class ImmobilienListView extends Div implements HasPageHeader {
                 .replace('_', '-');
 
         return "typ-" + typName;
-    }
-
-    private String wertOderStrich(Object wert) {
-        if (wert == null) {
-            return "-";
-        }
-
-        if (wert instanceof String text && text.isBlank()) {
-            return "-";
-        }
-
-        return wert.toString();
-    }
-
-    private String wertOderLeer(String wert) {
-        return wert == null ? "" : wert;
     }
 
     @Override

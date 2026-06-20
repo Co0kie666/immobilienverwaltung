@@ -25,6 +25,7 @@ import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import jakarta.annotation.security.PermitAll;
+import de.hsbi.immobilienverwaltung.ui.UiFormatUtils;
 
 @Route(value = "immobilien/:immobilieId/bearbeiten", layout = MainLayout.class)
 @PermitAll
@@ -401,7 +402,7 @@ public class ImmobilieEditView extends Div implements HasPageHeader, BeforeEnter
 
     private void aktualisiereVorschau() {
         previewBezeichnung.setText(
-                istLeer(bezeichnungFeld.getValue())
+                UiFormatUtils.istLeer(bezeichnungFeld.getValue())
                         ? "Immobilie ohne Bezeichnung"
                         : bezeichnungFeld.getValue().trim()
         );
@@ -427,27 +428,13 @@ public class ImmobilieEditView extends Div implements HasPageHeader, BeforeEnter
     }
 
     private String erstelleAdressVorschau() {
-        String strasse = textOderLeer(strasseFeld.getValue());
-        String hausnummer = textOderLeer(hausnummerFeld.getValue());
-        String plz = textOderLeer(plzFeld.getValue());
-        String ort = textOderLeer(ortFeld.getValue());
-
-        String zeile1 = (strasse + " " + hausnummer).trim();
-        String zeile2 = (plz + " " + ort).trim();
-
-        if (zeile1.isBlank() && zeile2.isBlank()) {
-            return "Adresse wird während der Bearbeitung angezeigt";
-        }
-
-        if (zeile1.isBlank()) {
-            return zeile2;
-        }
-
-        if (zeile2.isBlank()) {
-            return zeile1;
-        }
-
-        return zeile1 + ", " + zeile2;
+        return UiFormatUtils.formatiereAdresse(
+                strasseFeld.getValue(),
+                hausnummerFeld.getValue(),
+                plzFeld.getValue(),
+                ortFeld.getValue(),
+                "Adresse wird während der Bearbeitung angezeigt"
+        );
     }
 
     private Div erstelleFormularAktionen() {
@@ -517,14 +504,6 @@ public class ImmobilieEditView extends Div implements HasPageHeader, BeforeEnter
                 new FormLayout.ResponsiveStep("650px", 2)
         );
         return formular;
-    }
-
-    private String textOderLeer(String text) {
-        return text == null ? "" : text;
-    }
-
-    private boolean istLeer(String text) {
-        return text == null || text.isBlank();
     }
 
     @Override

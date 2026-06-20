@@ -34,13 +34,10 @@ import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import de.hsbi.immobilienverwaltung.ui.mieter.MieterListView;
 import de.hsbi.immobilienverwaltung.ui.mieter.MietvertragListView;
 import jakarta.annotation.security.PermitAll;
-
+import de.hsbi.immobilienverwaltung.ui.UiFormatUtils;
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 
 @Route(value = "finanzen/buchungen/:typ/:id", layout = MainLayout.class)
 @PermitAll
@@ -207,8 +204,8 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         meta.addClassName("buchung-detail-meta");
         meta.add(
                 createMetaPill(VaadinIcon.FILE_TEXT, formatKategorie()),
-                createMetaPill(VaadinIcon.CALENDAR, formatDatum(getDatum())),
-                createMetaPill(VaadinIcon.BUILDING, formatiereImmobilie(ermittleImmobilie()))
+                createMetaPill(VaadinIcon.CALENDAR, UiFormatUtils.formatiereDatum(getDatum())),
+                createMetaPill(VaadinIcon.BUILDING, UiFormatUtils.formatiereImmobilienBezeichnung(ermittleImmobilie(), "-"))
         );
 
         titleBox.add(eyebrow, title, meta);
@@ -252,7 +249,7 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
     private Component createMetaPill(VaadinIcon icon, String value) {
         Div pill = new Div();
         pill.addClassName("buchung-detail-meta-pill");
-        pill.add(icon.create(), new Span(textOderStrich(value)));
+        pill.add(icon.create(), new Span(UiFormatUtils.wertOderStrich(value)));
         return pill;
     }
 
@@ -270,7 +267,7 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         grid.add(
                 createStatCard(
                         "Betrag",
-                        formatiereBetrag(getBetrag()),
+                        UiFormatUtils.formatiereBetragOderStrich(getBetrag()),
                         istAusgabe() ? "Zahlungsausgang" : "Zahlungseingang",
                         istAusgabe() ? VaadinIcon.ARROW_UP : VaadinIcon.ARROW_DOWN,
                         istAusgabe() ? "danger" : "success"
@@ -278,21 +275,21 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
                 createStatCard(
                         "Status",
                         formatStatusKurz(),
-                        textOderStrich(getStatus()),
+                        UiFormatUtils.wertOderStrich(getStatus()),
                         VaadinIcon.CHECK,
                         getStatusStyle()
                 ),
                 createStatCard(
                         getDatumLabel(),
-                        formatDatum(getDatum()),
-                        getZweitesDatumLabel() + ": " + formatDatum(getZweitesDatum()),
+                        UiFormatUtils.formatiereDatum(getDatum()),
+                        getZweitesDatumLabel() + ": " + UiFormatUtils.formatiereDatum(getZweitesDatum()),
                         VaadinIcon.CALENDAR,
                         "primary"
                 ),
                 createStatCard(
                         "Zuordnung",
-                        formatiereImmobilie(ermittleImmobilie()),
-                        formatiereMieteinheit(ermittleMieteinheit()),
+                        UiFormatUtils.formatiereImmobilienBezeichnung(ermittleImmobilie(), "-"),
+                        UiFormatUtils.formatiereMieteinheitBezeichnung(ermittleMieteinheit(), "-"),
                         VaadinIcon.BUILDING,
                         "primary"
                 )
@@ -317,10 +314,10 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         Span labelSpan = new Span(label);
         labelSpan.addClassName("buchung-detail-stat-label");
 
-        Span valueSpan = new Span(textOderStrich(value));
+        Span valueSpan = new Span(UiFormatUtils.wertOderStrich(value));
         valueSpan.addClassName("buchung-detail-stat-value");
 
-        Span subtitleSpan = new Span(textOderStrich(subtitle));
+        Span subtitleSpan = new Span(UiFormatUtils.wertOderStrich(subtitle));
         subtitleSpan.addClassName("buchung-detail-stat-subtitle");
 
         text.add(labelSpan, valueSpan, subtitleSpan);
@@ -369,16 +366,16 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         card.add(
                 createReadonlyInfoBlock("Typ", getBuchungTypLabel(), VaadinIcon.FILE_TEXT),
                 createReadonlyInfoBlock(getKategorieLabel(), formatKategorie(), VaadinIcon.TAG),
-                createReadonlyInfoBlock("Betrag", formatiereBetrag(getBetrag()), istAusgabe() ? VaadinIcon.ARROW_UP : VaadinIcon.ARROW_DOWN),
-                createReadonlyInfoBlock(getDatumLabel(), formatDatum(getDatum()), VaadinIcon.CALENDAR),
-                createReadonlyInfoBlock(getZweitesDatumLabel(), formatDatum(getZweitesDatum()), VaadinIcon.CALENDAR),
+                createReadonlyInfoBlock("Betrag", UiFormatUtils.formatiereBetragOderStrich(getBetrag()), istAusgabe() ? VaadinIcon.ARROW_UP : VaadinIcon.ARROW_DOWN),
+                createReadonlyInfoBlock(getDatumLabel(), UiFormatUtils.formatiereDatum(getDatum()), VaadinIcon.CALENDAR),
+                createReadonlyInfoBlock(getZweitesDatumLabel(), UiFormatUtils.formatiereDatum(getZweitesDatum()), VaadinIcon.CALENDAR),
                 createStatusInfoBlock()
         );
 
         if (istAusgabe()) {
             card.add(
-                    createReadonlyInfoBlock("Titel", textOderStrich(aktuelleAusgabe.getTitel()), VaadinIcon.FILE_TEXT),
-                    createReadonlyInfoBlock("Empfänger", textOderStrich(aktuelleAusgabe.getEmpfaenger()), VaadinIcon.USER)
+                    createReadonlyInfoBlock("Titel", UiFormatUtils.wertOderStrich(aktuelleAusgabe.getTitel()), VaadinIcon.FILE_TEXT),
+                    createReadonlyInfoBlock("Empfänger", UiFormatUtils.wertOderStrich(aktuelleAusgabe.getEmpfaenger()), VaadinIcon.USER)
             );
         }
 
@@ -394,7 +391,7 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
 
         Div note = new Div();
         note.addClassName("buchung-detail-note-box");
-        note.add(new Span(textOderStrich(getBeschreibung())));
+        note.add(new Span(UiFormatUtils.wertOderStrich(getBeschreibung())));
 
         card.add(note);
         return card;
@@ -435,10 +432,10 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         );
 
         card.add(
-                createReadonlyInfoBlock("Immobilie", formatiereImmobilie(ermittleImmobilie()), VaadinIcon.BUILDING),
-                createReadonlyInfoBlock("Mieteinheit", formatiereMieteinheit(ermittleMieteinheit()), VaadinIcon.FILE_TEXT),
-                createReadonlyInfoBlock("Mietvertrag", formatiereMietvertrag(ermittleMietvertrag()), VaadinIcon.FILE_TEXT),
-                createReadonlyInfoBlock("Mieter", formatiereMieter(ermittleMieter()), VaadinIcon.USER)
+                createReadonlyInfoBlock("Immobilie", UiFormatUtils.formatiereImmobilienBezeichnung(ermittleImmobilie(), "-"), VaadinIcon.BUILDING),
+                createReadonlyInfoBlock("Mieteinheit", UiFormatUtils.formatiereMieteinheitBezeichnung(ermittleMieteinheit(), "-"), VaadinIcon.FILE_TEXT),
+                createReadonlyInfoBlock("Mietvertrag", UiFormatUtils.formatiereMietvertragMitPunkten(ermittleMietvertrag()), VaadinIcon.FILE_TEXT),
+                createReadonlyInfoBlock("Mieter", UiFormatUtils.formatiereMieterName(ermittleMieter(), "-"), VaadinIcon.USER)
         );
 
         return card;
@@ -635,7 +632,7 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         Span label = new Span(labelText);
         label.addClassName("buchung-detail-info-label");
 
-        Span value = new Span(textOderStrich(valueText));
+        Span value = new Span(UiFormatUtils.wertOderStrich(valueText));
         value.addClassName("buchung-detail-info-value");
 
         text.add(label, value);
@@ -735,7 +732,7 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
             return "Offen";
         }
 
-        return textOderStrich(getStatus());
+        return UiFormatUtils.wertOderStrich(getStatus());
     }
 
     private String getStatusStyle() {
@@ -820,68 +817,6 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
     private Mieter ermittleMieter() {
         Mietvertrag mietvertrag = ermittleMietvertrag();
         return mietvertrag == null ? null : mietvertrag.getMieter();
-    }
-
-    private String formatiereImmobilie(Immobilie immobilie) {
-        if (immobilie == null || immobilie.getBezeichnung() == null || immobilie.getBezeichnung().isBlank()) {
-            return "-";
-        }
-
-        return immobilie.getBezeichnung();
-    }
-
-    private String formatiereMieteinheit(Mieteinheit mieteinheit) {
-        if (mieteinheit == null || mieteinheit.getBezeichnung() == null || mieteinheit.getBezeichnung().isBlank()) {
-            return "-";
-        }
-
-        return mieteinheit.getBezeichnung();
-    }
-
-    private String formatiereMietvertrag(Mietvertrag mietvertrag) {
-        if (mietvertrag == null) {
-            return "-";
-        }
-
-        return "MV-" + mietvertrag.getId()
-                + " • "
-                + formatiereMieter(mietvertrag.getMieter())
-                + " • "
-                + formatiereMieteinheit(mietvertrag.getMieteinheit());
-    }
-
-    private String formatiereMieter(Mieter mieter) {
-        if (mieter == null) {
-            return "-";
-        }
-
-        String name = (wertOderLeer(mieter.getVorname()) + " " + wertOderLeer(mieter.getNachname())).trim();
-        return name.isBlank() ? "-" : name;
-    }
-
-    private String formatiereBetrag(BigDecimal betrag) {
-        if (betrag == null) {
-            return "-";
-        }
-
-        NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.GERMANY);
-        return formatter.format(betrag);
-    }
-
-    private String formatDatum(LocalDate datum) {
-        if (datum == null) {
-            return "-";
-        }
-
-        return datum.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
-    }
-
-    private String textOderStrich(String text) {
-        return text == null || text.isBlank() ? "-" : text;
-    }
-
-    private String wertOderLeer(String wert) {
-        return wert == null ? "" : wert;
     }
 
     @Override

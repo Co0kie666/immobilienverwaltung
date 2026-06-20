@@ -375,21 +375,11 @@ public class MieteinheitFormView extends Div implements HasPageHeader, BeforeEnt
             return "neutral";
         }
 
-        String statusName = status.name();
-
-        if (statusName.contains("FREI")) {
-            return "success";
-        }
-
-        if (statusName.contains("RENOV")) {
-            return "warning";
-        }
-
-        if (statusName.contains("VERMIET")) {
-            return "primary";
-        }
-
-        return "neutral";
+        return switch (status) {
+            case FREI -> "success";
+            case IN_RENOVIERUNG -> "warning";
+            case VERMIETET -> "primary";
+        };
     }
 
     private Div erstelleFormularAktionen() {

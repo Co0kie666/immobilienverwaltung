@@ -14,10 +14,9 @@ import de.hsbi.immobilienverwaltung.service.interfaces.*;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import jakarta.annotation.security.PermitAll;
-
+import de.hsbi.immobilienverwaltung.ui.UiFormatUtils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -270,7 +269,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 .map(zahlung -> new BuchungTabellenZeile(
                         zahlung.getId(),
                         BuchungTyp.EINNAHME,
-                        formatiereDatum(zahlung.getZahlungsdatum()),
+                        UiFormatUtils.formatiereDatum(zahlung.getZahlungsdatum()),
                         ermittleZahlungObjektText(zahlung),
                         zahlung.getTyp() == null
                                 ? "Einnahme"
@@ -278,7 +277,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                         zahlung.getStatus() == null
                                 ? "-"
                                 : zahlung.getStatus(),
-                        formatEuro(zahlung.getBetrag())
+                        UiFormatUtils.formatiereBetrag(zahlung.getBetrag())
                 ))
                 .toList();
     }
@@ -326,7 +325,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 .map(ausgabe -> new BuchungTabellenZeile(
                         ausgabe.getId(),
                         BuchungTyp.AUSGABE,
-                        formatiereDatum(ausgabe.getDatum()),
+                        UiFormatUtils.formatiereDatum(ausgabe.getDatum()),
                         ermittleAusgabeObjektText(ausgabe),
                         ausgabe.getKategorie() == null
                                 ? "-"
@@ -334,7 +333,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                         ausgabe.getStatus() == null
                                 ? "-"
                                 : ausgabe.getStatus(),
-                        "- " + formatEuro(ausgabe.getBetrag())
+                        "- " + UiFormatUtils.formatiereBetrag(ausgabe.getBetrag())
                 ))
                 .toList();
     }
@@ -349,16 +348,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         }
 
         return "-";
-    }
-
-    private String formatiereDatum(LocalDate datum) {
-        if (datum == null) {
-            return "-";
-        }
-
-        return datum.format(
-                DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.GERMANY)
-        );
     }
 
     private LocalDate ermittleStartDatum() {
@@ -747,7 +736,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         grid.add(
                 kpiCard(
                         "Summe Einnahmen",
-                        formatEuro(summeEinnahmen),
+                        UiFormatUtils.formatiereBetrag(summeEinnahmen),
                         "bezahlt",
                         getZeitraumText(),
                         VaadinIcon.TRENDING_UP,
@@ -755,7 +744,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 ),
                 kpiCard(
                         "Summe Ausgaben",
-                        formatEuro(summeAusgaben),
+                        UiFormatUtils.formatiereBetrag(summeAusgaben),
                         "bezahlt",
                         getZeitraumText(),
                         VaadinIcon.TRENDING_DOWN,
@@ -763,7 +752,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 ),
                 kpiCard(
                         "Rückstände",
-                        formatEuro(rueckstaende),
+                        UiFormatUtils.formatiereBetrag(rueckstaende),
                         "offen",
                         "Offene Zahlungseingänge",
                         VaadinIcon.REFRESH,
@@ -771,7 +760,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 ),
                 kpiCard(
                         "Cashflow",
-                        formatEuro(cashflow),
+                        UiFormatUtils.formatiereBetrag(cashflow),
                         cashflow.signum() >= 0 ? "positiv" : "negativ",
                         "Einnahmen minus Ausgaben",
                         VaadinIcon.WALLET,
@@ -888,7 +877,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                         "financeIncomeChart",
                         "Einnahmen",
                         "Bezahlte Zahlungseingänge im Zeitraum",
-                        formatEuro(summeEinnahmen),
+                        UiFormatUtils.formatiereBetrag(summeEinnahmen),
                         chartEinnahmen,
                         "success",
                         "Einnahmen"
@@ -897,7 +886,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                         "financeExpenseChart",
                         "Ausgaben",
                         "Bezahlte Ausgaben im Zeitraum",
-                        formatEuro(summeAusgaben),
+                        UiFormatUtils.formatiereBetrag(summeAusgaben),
                         chartAusgaben,
                         "danger",
                         "Ausgaben"
@@ -1243,7 +1232,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 new Span("-"),
                 new Span("Keine Daten"),
                 status,
-                new Span(formatEuro(BigDecimal.ZERO))
+                new Span(UiFormatUtils.formatiereBetrag(BigDecimal.ZERO))
         );
 
         return row;
@@ -1377,16 +1366,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         }
 
         return monate;
-    }
-
-    private String formatEuro(BigDecimal betrag) {
-        if (betrag == null) {
-            betrag = BigDecimal.ZERO;
-        }
-
-        return NumberFormat
-                .getCurrencyInstance(Locale.GERMANY)
-                .format(betrag);
     }
 
     @Override

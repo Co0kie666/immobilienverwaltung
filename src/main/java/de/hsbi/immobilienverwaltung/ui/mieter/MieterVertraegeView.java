@@ -16,20 +16,17 @@ import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.domain.Mieter;
-import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
 import de.hsbi.immobilienverwaltung.domain.Mietvertrag;
 import de.hsbi.immobilienverwaltung.domain.enums.Vertragsstatus;
 import de.hsbi.immobilienverwaltung.service.interfaces.MieterService;
 import de.hsbi.immobilienverwaltung.service.interfaces.MietvertragService;
+import de.hsbi.immobilienverwaltung.ui.UiFormatUtils;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import jakarta.annotation.security.PermitAll;
 
-import java.text.NumberFormat;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 
 @Route(value = "mieter-vertraege", layout = MainLayout.class)
 @PermitAll
@@ -205,12 +202,12 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
                 .setAutoWidth(true)
                 .setFlexGrow(2);
 
-        mieterGrid.addColumn(mieter -> textOderStrich(mieter.getTelefonnummer()))
+        mieterGrid.addColumn(mieter -> UiFormatUtils.wertOderStrich(mieter.getTelefonnummer()))
                 .setHeader("Telefon")
                 .setAutoWidth(true)
                 .setFlexGrow(1);
 
-        mieterGrid.addColumn(mieter -> textOderStrich(mieter.getEmail()))
+        mieterGrid.addColumn(mieter -> UiFormatUtils.wertOderStrich(mieter.getEmail()))
                 .setHeader("E-Mail")
                 .setAutoWidth(true)
                 .setFlexGrow(2);
@@ -241,12 +238,12 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
                 .setAutoWidth(true)
                 .setFlexGrow(1);
 
-        mietvertragGrid.addColumn(mietvertrag -> formatMieterName(mietvertrag.getMieter()))
+        mietvertragGrid.addColumn(mietvertrag -> UiFormatUtils.formatiereMieterName(mietvertrag.getMieter()))
                 .setHeader("Mieter")
                 .setAutoWidth(true)
                 .setFlexGrow(2);
 
-        mietvertragGrid.addColumn(this::formatMietobjekt)
+        mietvertragGrid.addColumn(UiFormatUtils::formatiereMietobjekt)
                 .setHeader("Einheit")
                 .setAutoWidth(true)
                 .setFlexGrow(2);
@@ -277,15 +274,15 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
 
         Div avatar = new Div();
         avatar.addClassName("tenant-avatar");
-        avatar.setText(ermittleInitialen(mieter));
+        avatar.setText(UiFormatUtils.erstelleInitialen(mieter));
 
         Div text = new Div();
         text.addClassName("tenant-person-text");
 
-        Span name = new Span(formatMieterName(mieter));
+        Span name = new Span(UiFormatUtils.formatiereMieterName(mieter));
         name.addClassName("tenant-person-name");
 
-        Span meta = new Span(textOderStrich(mieter == null ? null : mieter.getEmail()));
+        Span meta = new Span(UiFormatUtils.wertOderStrich(mieter == null ? null : mieter.getEmail()));
         meta.addClassName("tenant-person-meta");
 
         text.add(name, meta);
@@ -309,7 +306,7 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
     }
 
     private Component createWarmmieteCell(Mietvertrag mietvertrag) {
-        Span value = new Span(formatWarmmiete(mietvertrag));
+        Span value = new Span(UiFormatUtils.formatiereWarmmiete(mietvertrag));
         value.addClassName("tenant-rent-value");
         return value;
     }
@@ -468,9 +465,9 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
 
         return mieterListe.stream()
                 .filter(mieter -> suche.isBlank()
-                        || formatMieterName(mieter).toLowerCase().contains(suche)
-                        || textOderLeer(mieter.getEmail()).toLowerCase().contains(suche)
-                        || textOderLeer(mieter.getTelefonnummer()).toLowerCase().contains(suche)
+                        || UiFormatUtils.formatiereMieterName(mieter).toLowerCase().contains(suche)
+                        || UiFormatUtils.wertOderLeer(mieter.getEmail()).toLowerCase().contains(suche)
+                        || UiFormatUtils.wertOderLeer(mieter.getTelefonnummer()).toLowerCase().contains(suche)
                         || findeAktuelleEinheit(mieter).toLowerCase().contains(suche)
                 )
                 .filter(mieter -> status == null
@@ -488,8 +485,8 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
                 .filter(this::passtZumAktivenVertragsTab)
                 .filter(mietvertrag -> suche.isBlank()
                         || ("MV-" + mietvertrag.getId()).toLowerCase().contains(suche)
-                        || formatMieterName(mietvertrag.getMieter()).toLowerCase().contains(suche)
-                        || formatMietobjekt(mietvertrag).toLowerCase().contains(suche)
+                        || UiFormatUtils.formatiereMieterName(mietvertrag.getMieter()).toLowerCase().contains(suche)
+                        || UiFormatUtils.formatiereMietobjekt(mietvertrag).toLowerCase().contains(suche)
                 )
                 .filter(mietvertrag -> aktiverModus != TabellenModus.VERTRAEGE
                         || status == null
@@ -578,84 +575,25 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
         return vertraege.stream()
                 .filter(this::istAktiverVertrag)
                 .findFirst()
-                .map(this::formatMietobjekt)
+                .map(UiFormatUtils::formatiereMietobjekt)
                 .orElseGet(() -> vertraege.stream()
                         .filter(this::istAuslaufenderVertrag)
                         .findFirst()
-                        .map(this::formatMietobjekt)
+                        .map(UiFormatUtils::formatiereMietobjekt)
                         .orElse("-")
                 );
     }
 
-    private String formatMieterName(Mieter mieter) {
-        if (mieter == null) {
-            return "-";
-        }
-
-        String name = (textOderLeer(mieter.getVorname()) + " " + textOderLeer(mieter.getNachname())).trim();
-
-        return name.isBlank() ? "-" : name;
-    }
-
-    private String ermittleInitialen(Mieter mieter) {
-        if (mieter == null) {
-            return "?";
-        }
-
-        String vorname = textOderLeer(mieter.getVorname()).trim();
-        String nachname = textOderLeer(mieter.getNachname()).trim();
-
-        String ersteInitiale = vorname.isBlank() ? "" : vorname.substring(0, 1);
-        String zweiteInitiale = nachname.isBlank() ? "" : nachname.substring(0, 1);
-        String initialen = (ersteInitiale + zweiteInitiale).toUpperCase(Locale.GERMANY);
-
-        return initialen.isBlank() ? "?" : initialen;
-    }
-
-    private String formatMietobjekt(Mietvertrag mietvertrag) {
-        if (mietvertrag == null || mietvertrag.getMieteinheit() == null) {
-            return "-";
-        }
-
-        Mieteinheit mieteinheit = mietvertrag.getMieteinheit();
-
-        if (mieteinheit.getImmobilie() == null) {
-            return mieteinheit.getBezeichnung();
-        }
-
-        return mieteinheit.getImmobilie().getBezeichnung() + " / " + mieteinheit.getBezeichnung();
-    }
-
     private String formatLaufzeitOderZeitraum(Mietvertrag mietvertrag) {
         if (aktiverModus == TabellenModus.ARCHIV) {
-            return formatZeitraum(mietvertrag);
+            return UiFormatUtils.formatiereZeitraum(mietvertrag);
         }
 
         if (mietvertrag.getEnddatum() == null) {
             return "unbefristet";
         }
 
-        return "bis " + mietvertrag.getEnddatum().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
-    }
-
-    private String formatZeitraum(Mietvertrag mietvertrag) {
-        String start = mietvertrag.getStartdatum() == null
-                ? "-"
-                : mietvertrag.getStartdatum().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
-
-        String ende = mietvertrag.getEnddatum() == null
-                ? "-"
-                : mietvertrag.getEnddatum().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
-
-        return start + " - " + ende;
-    }
-
-    private String formatWarmmiete(Mietvertrag mietvertrag) {
-        double kaltmiete = mietvertrag.getKaltmiete() == null ? 0 : mietvertrag.getKaltmiete();
-        double nebenkosten = mietvertrag.getNebenkosten() == null ? 0 : mietvertrag.getNebenkosten();
-
-        NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.GERMANY);
-        return formatter.format(kaltmiete + nebenkosten);
+        return "bis " + UiFormatUtils.formatiereDatum(mietvertrag.getEnddatum());
     }
 
     private String formatVertragsstatus(Mietvertrag mietvertrag) {
@@ -692,14 +630,6 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
         }
 
         return "neutral";
-    }
-
-    private String textOderLeer(String text) {
-        return text == null ? "" : text;
-    }
-
-    private String textOderStrich(String text) {
-        return text == null || text.isBlank() ? "-" : text;
     }
 
     @Override

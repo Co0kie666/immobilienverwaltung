@@ -34,18 +34,11 @@ import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import jakarta.annotation.security.PermitAll;
-
-import java.math.BigDecimal;
-import java.text.NumberFormat;
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
+import de.hsbi.immobilienverwaltung.ui.UiFormatUtils;
 
 @Route(value = "finanzen/buchung-neu", layout = MainLayout.class)
 @PermitAll
 public class BuchungFormView extends VerticalLayout implements HasPageHeader {
-
-    private static final DateTimeFormatter DATE_FORMATTER =
-            DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     private final AusgabeService ausgabeService;
     private final ImmobilieService immobilieService;
@@ -148,17 +141,21 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
 
         immobilieField = new ComboBox<>("Immobilie");
         immobilieField.setItems(immobilieService.findeAlleImmobilien());
-        immobilieField.setItemLabelGenerator(Immobilie::getBezeichnung);
+        immobilieField.setItemLabelGenerator(
+                immobilie -> UiFormatUtils.formatiereImmobilienBezeichnung(immobilie, "")
+        );
         immobilieField.setAllowCustomValue(false);
         immobilieField.setWidthFull();
 
         mieteinheitField = new ComboBox<>("Mieteinheit");
-        mieteinheitField.setItemLabelGenerator(Mieteinheit::getBezeichnung);
+        mieteinheitField.setItemLabelGenerator(
+                mieteinheit -> UiFormatUtils.formatiereMieteinheitBezeichnung(mieteinheit, "")
+        );
         mieteinheitField.setAllowCustomValue(false);
         mieteinheitField.setWidthFull();
 
         mieterVertragField = new ComboBox<>("Mieter / Vertrag");
-        mieterVertragField.setItemLabelGenerator(this::formatiereMietvertrag);
+        mieterVertragField.setItemLabelGenerator(UiFormatUtils::formatiereMietvertragAuswahl);
         mieterVertragField.setAllowCustomValue(false);
         mieterVertragField.setWidthFull();
 
@@ -642,7 +639,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
         previewTyp.setClassName("buchung-preview-type");
         previewTyp.addClassName(istAusgabe ? "expense" : "income");
 
-        previewBetrag.setText(formatMoney(betragField.getValue()));
+        previewBetrag.setText(UiFormatUtils.formatiereBetrag(betragField.getValue()));
         previewBetrag.setClassName("buchung-preview-amount");
         previewBetrag.addClassName(istAusgabe ? "expense" : "income");
 
@@ -665,7 +662,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
         previewDatum.setText(
                 buchungsdatumField.getValue() == null
                         ? "-"
-                        : buchungsdatumField.getValue().format(DATE_FORMATTER)
+                        : UiFormatUtils.formatiereDatum(buchungsdatumField.getValue())
         );
 
         previewZuordnung.setText(ermittleZuordnungPreview());
@@ -673,36 +670,24 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
 
     private String ermittleZuordnungPreview() {
         if (mieterVertragField.getValue() != null) {
-            return formatiereMietvertrag(mieterVertragField.getValue());
+            return UiFormatUtils.formatiereMietvertragAuswahl(mieterVertragField.getValue());
         }
 
         if (mieteinheitField.getValue() != null) {
-            return mieteinheitField.getValue().getBezeichnung();
+            return UiFormatUtils.formatiereMieteinheitBezeichnung(
+                    mieteinheitField.getValue(),
+                    "-"
+            );
         }
 
         if (immobilieField.getValue() != null) {
-            return immobilieField.getValue().getBezeichnung();
+            return UiFormatUtils.formatiereImmobilienBezeichnung(
+                    immobilieField.getValue(),
+                    "-"
+            );
         }
 
         return "-";
-    }
-
-    private String formatiereMietvertrag(Mietvertrag mietvertrag) {
-        if (mietvertrag == null) {
-            return "";
-        }
-
-        String mieterName = mietvertrag.getMieter() != null
-                ? textOderLeer(mietvertrag.getMieter().getVorname())
-                  + " "
-                  + textOderLeer(mietvertrag.getMieter().getNachname())
-                : "Unbekannter Mieter";
-
-        String einheit = mietvertrag.getMieteinheit() != null
-                ? mietvertrag.getMieteinheit().getBezeichnung()
-                : "Unbekannte Mieteinheit";
-
-        return mieterName.trim() + " - " + einheit;
     }
 
     private Div createCard(String title, String subtitle) {
@@ -730,22 +715,6 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
         );
 
         return form;
-    }
-
-    private String formatMoney(BigDecimal value) {
-        if (value == null) {
-            return NumberFormat
-                    .getCurrencyInstance(Locale.GERMANY)
-                    .format(BigDecimal.ZERO);
-        }
-
-        return NumberFormat
-                .getCurrencyInstance(Locale.GERMANY)
-                .format(value);
-    }
-
-    private String textOderLeer(String text) {
-        return text == null ? "" : text;
     }
 
     @Override

@@ -24,12 +24,9 @@ import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import de.hsbi.immobilienverwaltung.ui.mieter.MietvertragListView;
 import jakarta.annotation.security.PermitAll;
-
-import java.text.NumberFormat;
+import de.hsbi.immobilienverwaltung.ui.UiFormatUtils;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 
 @Route(value = "immobilien/:immobilieId/einheiten/:mieteinheitId/details", layout = MainLayout.class)
 @PermitAll
@@ -103,7 +100,7 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         Div iconCircle = new Div(VaadinIcon.HOME.create());
         iconCircle.addClassName("unit-hero-icon");
 
-        Span typeLabel = new Span(formatiereMieteinheitTyp());
+        Span typeLabel = new Span(UiFormatUtils.formatiereMieteinheitTyp(mieteinheit));
         typeLabel.addClassName("unit-hero-type");
 
         visual.add(iconCircle, typeLabel);
@@ -119,22 +116,22 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
 
         eyebrowRow.add(eyebrow, erstelleMieteinheitStatusBadge());
 
-        H2 title = new H2(wertOderStrich(mieteinheit.getBezeichnung()));
+        H2 title = new H2(UiFormatUtils.wertOderStrich(mieteinheit.getBezeichnung()));
         title.addClassName("unit-hero-title");
 
         Paragraph subtitle = new Paragraph(
-                formatiereMieteinheitTyp()
+                UiFormatUtils.formatiereMieteinheitTyp(mieteinheit.getTyp())
                         + " • "
-                        + formatiereFlaeche(mieteinheit.getGroesse())
+                        + UiFormatUtils.formatiereFlaeche(mieteinheit.getGroesse())
                         + " • "
-                        + formatiereZimmer()
+                        + UiFormatUtils.formatiereZimmer(mieteinheit.getZimmerzahl())
         );
         subtitle.addClassName("unit-hero-subtitle");
 
         Div facts = new Div();
         facts.addClassName("unit-hero-facts");
         facts.add(
-                erstelleHeroFact("Stockwerk", wertOderStrich(mieteinheit.getStockwerk())),
+                erstelleHeroFact("Stockwerk", UiFormatUtils.wertOderStrich(mieteinheit.getStockwerk())),
                 erstelleHeroFact("Historie", zaehleHistorischeVertraege() + " Vertrag(e)"),
                 erstelleHeroFact("Warmmiete", formatiereAktuelleWarmmiete())
         );
@@ -192,15 +189,15 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         grid.add(
                 erstelleKpiKarte(
                         "Status",
-                        formatiereMieteinheitStatus(),
+                        UiFormatUtils.formatiereMieteinheitStatus(mieteinheit.getStatus()),
                         aktuellerMietvertrag == null ? "Aktuell ohne laufenden Vertrag" : "Laufender Vertrag vorhanden",
                         VaadinIcon.INFO_CIRCLE,
                         ermittleStatusCssKlasse()
                 ),
                 erstelleKpiKarte(
                         "Größe",
-                        formatiereFlaeche(mieteinheit.getGroesse()),
-                        formatiereZimmer(),
+                        UiFormatUtils.formatiereFlaeche(mieteinheit.getGroesse()),
+                        UiFormatUtils.formatiereZimmer(mieteinheit.getZimmerzahl()),
                         VaadinIcon.EXPAND_SQUARE,
                         "primary"
                 ),
@@ -283,11 +280,11 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         liste.addClassName("unit-info-list");
 
         liste.add(
-                erstelleInfoEintrag("Einheit-Nr.", wertOderStrich(mieteinheit.getBezeichnung())),
-                erstelleInfoEintrag("Typ", formatiereMieteinheitTyp()),
-                erstelleInfoEintrag("Größe", formatiereFlaeche(mieteinheit.getGroesse())),
-                erstelleInfoEintrag("Stockwerk", wertOderStrich(mieteinheit.getStockwerk())),
-                erstelleInfoEintrag("Zimmeranzahl", wertOderStrich(mieteinheit.getZimmerzahl())),
+                erstelleInfoEintrag("Einheit-Nr.", UiFormatUtils.wertOderStrich(mieteinheit.getBezeichnung())),
+                erstelleInfoEintrag("Typ", UiFormatUtils.formatiereMieteinheitTyp(mieteinheit.getTyp())),
+                erstelleInfoEintrag("Größe", UiFormatUtils.formatiereFlaeche(mieteinheit.getGroesse())),
+                erstelleInfoEintrag("Stockwerk", UiFormatUtils.wertOderStrich(mieteinheit.getStockwerk())),
+                erstelleInfoEintrag("Zimmeranzahl", UiFormatUtils.wertOderStrich(mieteinheit.getZimmerzahl())),
                 erstelleStatusEintrag("Status", erstelleMieteinheitStatusBadge())
         );
 
@@ -363,12 +360,12 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         liste.addClassName("unit-info-list");
 
         liste.add(
-                erstelleInfoEintrag("Mieter", formatiereMieterName(mietvertrag)),
-                erstelleInfoEintrag("Vertragsbeginn", formatiereDatum(mietvertrag.getStartdatum())),
-                erstelleInfoEintrag("Vertragsende", formatiereVertragsende(mietvertrag)),
-                erstelleInfoEintrag("Kaltmiete", formatiereEuro(mietvertrag.getKaltmiete())),
-                erstelleInfoEintrag("Nebenkosten", formatiereEuro(mietvertrag.getNebenkosten())),
-                erstelleInfoEintrag("Warmmiete", formatiereWarmmiete(mietvertrag))
+                erstelleInfoEintrag("Mieter", UiFormatUtils.formatiereMieterName(mietvertrag)),
+                erstelleInfoEintrag("Vertragsbeginn", UiFormatUtils.formatiereDatum(mietvertrag.getStartdatum())),
+                erstelleInfoEintrag("Vertragsende", UiFormatUtils.formatiereVertragsende(mietvertrag)),
+                erstelleInfoEintrag("Kaltmiete", UiFormatUtils.formatiereEuro(mietvertrag.getKaltmiete())),
+                erstelleInfoEintrag("Nebenkosten", UiFormatUtils.formatiereEuro(mietvertrag.getNebenkosten())),
+                erstelleInfoEintrag("Warmmiete", UiFormatUtils.formatiereWarmmiete(mietvertrag))
         );
 
         Button mietvertragAnzeigenButton = new Button("Mietvertrag anzeigen", VaadinIcon.EYE.create());
@@ -453,10 +450,10 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         Div main = new Div();
         main.addClassName("unit-contract-history-main");
 
-        Span title = new Span("MV-" + mietvertrag.getId() + " • " + formatiereMieterName(mietvertrag));
+        Span title = new Span("MV-" + mietvertrag.getId() + " • " + UiFormatUtils.formatiereMieterName(mietvertrag));
         title.addClassName("unit-contract-history-title");
 
-        Span subtitle = new Span(formatiereZeitraum(mietvertrag));
+        Span subtitle = new Span(UiFormatUtils.formatiereZeitraum(mietvertrag));
         subtitle.addClassName("unit-contract-history-subtitle");
 
         main.add(title, subtitle);
@@ -465,7 +462,7 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         rent.addClassName("unit-contract-history-rent");
         rent.add(
                 new Span("Warmmiete"),
-                new Span(formatiereWarmmiete(mietvertrag))
+                new Span(UiFormatUtils.formatiereWarmmiete(mietvertrag))
         );
 
         Button anzeigenButton = new Button("Anzeigen", VaadinIcon.EYE.create());
@@ -614,14 +611,6 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         return StatusBadge.neutral("Beendet");
     }
 
-    private String formatiereMieteinheitStatus() {
-        if (mieteinheit == null || mieteinheit.getStatus() == null) {
-            return "-";
-        }
-
-        return mieteinheit.getStatus().getLabel();
-    }
-
     private String ermittleStatusCssKlasse() {
         if (mieteinheit == null || mieteinheit.getStatus() == null) {
             return "neutral";
@@ -634,72 +623,10 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         };
     }
 
-    private String formatiereMieteinheitTyp() {
-        if (mieteinheit == null || mieteinheit.getTyp() == null) {
-            return "-";
-        }
-
-        return mieteinheit.getTyp().getLabel();
-    }
-
-    private String formatiereZimmer() {
-        if (mieteinheit == null || mieteinheit.getZimmerzahl() == null) {
-            return "Zimmer nicht angegeben";
-        }
-
-        if (mieteinheit.getZimmerzahl() == 1) {
-            return "1 Zimmer";
-        }
-
-        return mieteinheit.getZimmerzahl() + " Zimmer";
-    }
-
-    private String formatiereMieterName(Mietvertrag mietvertrag) {
-        if (mietvertrag == null || mietvertrag.getMieter() == null) {
-            return "-";
-        }
-
-        String vorname = mietvertrag.getMieter().getVorname() == null
-                ? ""
-                : mietvertrag.getMieter().getVorname();
-
-        String nachname = mietvertrag.getMieter().getNachname() == null
-                ? ""
-                : mietvertrag.getMieter().getNachname();
-
-        String name = (vorname + " " + nachname).trim();
-
-        return name.isBlank() ? "-" : name;
-    }
-
-    private String formatiereZeitraum(Mietvertrag mietvertrag) {
-        return formatiereDatum(mietvertrag.getStartdatum())
-                + " - "
-                + formatiereDatum(mietvertrag.getEnddatum());
-    }
-
-    private String formatiereVertragsende(Mietvertrag mietvertrag) {
-        if (mietvertrag.getEnddatum() == null) {
-            return "unbefristet";
-        }
-
-        return formatiereDatum(mietvertrag.getEnddatum());
-    }
-
-    private String formatiereDatum(LocalDate datum) {
-        if (datum == null) {
-            return "-";
-        }
-
-        return datum.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
-    }
-
-    private String formatiereFlaeche(Integer flaeche) {
-        if (flaeche == null) {
-            return "-";
-        }
-
-        return flaeche + " m²";
+    private int zaehleHistorischeVertraege() {
+        return (int) mietvertraege.stream()
+                .filter(this::istHistorischerVertrag)
+                .count();
     }
 
     private String formatiereAktuelleWarmmiete() {
@@ -709,37 +636,7 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
             return "-";
         }
 
-        return formatiereWarmmiete(aktuellerMietvertrag);
-    }
-
-    private String formatiereWarmmiete(Mietvertrag mietvertrag) {
-        double kaltmiete = mietvertrag.getKaltmiete() == null ? 0 : mietvertrag.getKaltmiete();
-        double nebenkosten = mietvertrag.getNebenkosten() == null ? 0 : mietvertrag.getNebenkosten();
-
-        return formatiereEuro(kaltmiete + nebenkosten);
-    }
-
-    private String formatiereEuro(Double betrag) {
-        double wert = betrag == null ? 0 : betrag;
-        return NumberFormat.getCurrencyInstance(Locale.GERMANY).format(wert);
-    }
-
-    private int zaehleHistorischeVertraege() {
-        return (int) mietvertraege.stream()
-                .filter(this::istHistorischerVertrag)
-                .count();
-    }
-
-    private String wertOderStrich(Object wert) {
-        if (wert == null) {
-            return "-";
-        }
-
-        if (wert instanceof String text && text.isBlank()) {
-            return "-";
-        }
-
-        return wert.toString();
+        return UiFormatUtils.formatiereWarmmiete(aktuellerMietvertrag);
     }
 
     @Override

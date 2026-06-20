@@ -18,6 +18,7 @@ import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.domain.Adresse;
 import de.hsbi.immobilienverwaltung.domain.Mieter;
 import de.hsbi.immobilienverwaltung.service.interfaces.MieterService;
+import de.hsbi.immobilienverwaltung.ui.UiFormatUtils;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import jakarta.annotation.security.PermitAll;
@@ -421,7 +422,7 @@ public class MieterFormView extends Div implements HasPageHeader {
     }
 
     private boolean markierePflichtfeld(TextField field, String errorMessage) {
-        boolean leer = field.getValue() == null || field.getValue().isBlank();
+        boolean leer = UiFormatUtils.istLeer(field.getValue());
 
         field.setInvalid(leer);
         field.setErrorMessage(errorMessage);
@@ -495,10 +496,10 @@ public class MieterFormView extends Div implements HasPageHeader {
     }
 
     private void updatePreview() {
-        String vorname = textOderLeer(vornameField.getValue()).trim();
-        String nachname = textOderLeer(nachnameField.getValue()).trim();
-        String email = textOderLeer(emailField.getValue()).trim();
-        String ort = textOderLeer(ortField.getValue()).trim();
+        String vorname = UiFormatUtils.wertOderLeer(vornameField.getValue()).trim();
+        String nachname = UiFormatUtils.wertOderLeer(nachnameField.getValue()).trim();
+        String email = UiFormatUtils.wertOderLeer(emailField.getValue()).trim();
+        String ort = UiFormatUtils.wertOderLeer(ortField.getValue()).trim();
 
         String name = (vorname + " " + nachname).trim();
 
@@ -507,7 +508,7 @@ public class MieterFormView extends Div implements HasPageHeader {
             previewInitials.setText("+");
         } else {
             previewName.setText(name);
-            previewInitials.setText(ermittleInitialen(vorname, nachname));
+            previewInitials.setText(UiFormatUtils.erstelleInitialen(vorname, nachname));
         }
 
         String meta = email.isBlank() ? "Noch keine E-Mail hinterlegt" : email;
@@ -517,24 +518,6 @@ public class MieterFormView extends Div implements HasPageHeader {
         }
 
         previewMeta.setText(meta);
-    }
-
-    private String ermittleInitialen(String vorname, String nachname) {
-        StringBuilder initialen = new StringBuilder();
-
-        if (!vorname.isBlank()) {
-            initialen.append(vorname.charAt(0));
-        }
-
-        if (!nachname.isBlank()) {
-            initialen.append(nachname.charAt(0));
-        }
-
-        return initialen.toString().toUpperCase(Locale.GERMANY);
-    }
-
-    private String textOderLeer(String text) {
-        return text == null ? "" : text;
     }
 
     @Override

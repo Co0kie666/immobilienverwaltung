@@ -9,9 +9,4 @@ public interface HasPageHeader {
     default String getPageSubtitle() {
         return "";
     }
-
-    default List<String> getBreadcrumbItems() {
-        return List.of();
-    }
-
 }

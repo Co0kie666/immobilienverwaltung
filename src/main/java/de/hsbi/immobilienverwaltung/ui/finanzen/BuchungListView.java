@@ -23,14 +23,11 @@ import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import jakarta.annotation.security.PermitAll;
-
-import java.math.BigDecimal;
-import java.text.NumberFormat;
+import de.hsbi.immobilienverwaltung.ui.UiFormatUtils;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 @Route(value = "finanzen/buchungen", layout = MainLayout.class)
 @PermitAll
@@ -511,11 +508,11 @@ public class BuchungListView extends Div implements HasPageHeader {
                     ausgabe.getDatum() != null ? ausgabe.getDatum().toString() : "-",
                     "Ausgabe",
                     ausgabe.getKategorie() != null ? ausgabe.getKategorie().getLabel() : "-",
-                    formatiereImmobilie(immobilie),
-                    formatiereMietvertrag(mietvertrag),
-                    ausgabe.getBeschreibung() != null ? ausgabe.getBeschreibung() : "-",
-                    formatiereBetrag(ausgabe.getBetrag()),
-                    ausgabe.getStatus() != null ? ausgabe.getStatus() : "-"
+                    UiFormatUtils.formatiereImmobilienBezeichnung(immobilie, "-"),
+                    UiFormatUtils.formatiereMietvertragKurz(mietvertrag),
+                    UiFormatUtils.wertOderStrich(ausgabe.getBeschreibung()),
+                    UiFormatUtils.formatiereBetragOderStrich(ausgabe.getBetrag()),
+                    UiFormatUtils.wertOderStrich(ausgabe.getStatus())
             ));
         }
 
@@ -528,11 +525,11 @@ public class BuchungListView extends Div implements HasPageHeader {
                     zahlungseingang.getZahlungsdatum() != null ? zahlungseingang.getZahlungsdatum().toString() : "-",
                     "Einnahme",
                     zahlungseingang.getTyp() != null ? zahlungseingang.getTyp().getLabel() : "-",
-                    formatiereImmobilie(immobilie),
-                    formatiereMietvertrag(mietvertrag),
-                    zahlungseingang.getBeschreibung() != null ? zahlungseingang.getBeschreibung() : "-",
-                    formatiereBetrag(zahlungseingang.getBetrag()),
-                    zahlungseingang.getStatus() != null ? zahlungseingang.getStatus() : "-"
+                    UiFormatUtils.formatiereImmobilienBezeichnung(immobilie, "-"),
+                    UiFormatUtils.formatiereMietvertragKurz(mietvertrag),
+                    UiFormatUtils.wertOderStrich(zahlungseingang.getBeschreibung()),
+                    UiFormatUtils.formatiereBetragOderStrich(zahlungseingang.getBetrag()),
+                    UiFormatUtils.wertOderStrich(zahlungseingang.getStatus())
             ));
         }
 
@@ -681,14 +678,6 @@ public class BuchungListView extends Div implements HasPageHeader {
                 .count();
     }
 
-    private String formatiereBetrag(BigDecimal betrag) {
-        if (betrag == null) {
-            return "-";
-        }
-
-        NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.GERMANY);
-        return formatter.format(betrag);
-    }
 
     private Immobilie ermittleImmobilie(Ausgabe ausgabe) {
         if (ausgabe == null) {
@@ -740,47 +729,6 @@ public class BuchungListView extends Div implements HasPageHeader {
         }
 
         return vertraege.getFirst();
-    }
-
-    private String formatiereImmobilie(Immobilie immobilie) {
-        if (immobilie == null || immobilie.getBezeichnung() == null || immobilie.getBezeichnung().isBlank()) {
-            return "-";
-        }
-
-        return immobilie.getBezeichnung();
-    }
-
-    private String formatiereMietvertrag(Mietvertrag mietvertrag) {
-        if (mietvertrag == null) {
-            return "-";
-        }
-
-        return "MV-" + mietvertrag.getId()
-                + " - "
-                + formatiereMieter(mietvertrag.getMieter())
-                + " - "
-                + formatiereMieteinheit(mietvertrag.getMieteinheit());
-    }
-
-    private String formatiereMieter(Mieter mieter) {
-        if (mieter == null) {
-            return "Unbekannter Mieter";
-        }
-
-        String name = (wertOderLeer(mieter.getVorname()) + " " + wertOderLeer(mieter.getNachname())).trim();
-        return name.isBlank() ? "Unbekannter Mieter" : name;
-    }
-
-    private String formatiereMieteinheit(Mieteinheit mieteinheit) {
-        if (mieteinheit == null || mieteinheit.getBezeichnung() == null || mieteinheit.getBezeichnung().isBlank()) {
-            return "Unbekannte Mieteinheit";
-        }
-
-        return mieteinheit.getBezeichnung();
-    }
-
-    private String wertOderLeer(String wert) {
-        return wert == null ? "" : wert;
     }
 
     private record BuchungRow(

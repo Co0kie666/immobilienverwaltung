@@ -28,6 +28,7 @@ import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import jakarta.annotation.security.PermitAll;
+import de.hsbi.immobilienverwaltung.ui.UiFormatUtils;
 
 @Route(value = "immobilien/neu", layout = MainLayout.class)
 @PermitAll
@@ -382,7 +383,7 @@ public class ImmobilieFormView extends Div implements HasPageHeader {
 
     private void aktualisiereVorschau() {
         previewBezeichnung.setText(
-                istLeer(bezeichnungFeld.getValue())
+                UiFormatUtils.istLeer(bezeichnungFeld.getValue())
                         ? "Neue Immobilie"
                         : bezeichnungFeld.getValue().trim()
         );
@@ -412,27 +413,13 @@ public class ImmobilieFormView extends Div implements HasPageHeader {
     }
 
     private String erstelleAdressVorschau() {
-        String strasse = textOderLeer(strasseFeld.getValue());
-        String hausnummer = textOderLeer(hausnummerFeld.getValue());
-        String plz = textOderLeer(plzFeld.getValue());
-        String ort = textOderLeer(ortFeld.getValue());
-
-        String zeile1 = (strasse + " " + hausnummer).trim();
-        String zeile2 = (plz + " " + ort).trim();
-
-        if (zeile1.isBlank() && zeile2.isBlank()) {
-            return "Adresse wird während der Eingabe angezeigt";
-        }
-
-        if (zeile1.isBlank()) {
-            return zeile2;
-        }
-
-        if (zeile2.isBlank()) {
-            return zeile1;
-        }
-
-        return zeile1 + ", " + zeile2;
+        return UiFormatUtils.formatiereAdresse(
+                strasseFeld.getValue(),
+                hausnummerFeld.getValue(),
+                plzFeld.getValue(),
+                ortFeld.getValue(),
+                "Adresse wird während der Eingabe angezeigt"
+        );
     }
 
     private Div erstelleFormularAktionen() {
@@ -530,14 +517,6 @@ public class ImmobilieFormView extends Div implements HasPageHeader {
                 new FormLayout.ResponsiveStep("650px", 2)
         );
         return formular;
-    }
-
-    private String textOderLeer(String text) {
-        return text == null ? "" : text;
-    }
-
-    private boolean istLeer(String text) {
-        return text == null || text.isBlank();
     }
 
     @Override

@@ -21,21 +21,19 @@ import de.hsbi.immobilienverwaltung.domain.Immobilie;
 import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
 import de.hsbi.immobilienverwaltung.domain.Mieter;
 import de.hsbi.immobilienverwaltung.domain.Mietvertrag;
+import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
 import de.hsbi.immobilienverwaltung.domain.enums.Vertragsstatus;
 import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
 import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
 import de.hsbi.immobilienverwaltung.service.interfaces.MieterService;
 import de.hsbi.immobilienverwaltung.service.interfaces.MietvertragService;
+import de.hsbi.immobilienverwaltung.ui.UiFormatUtils;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import jakarta.annotation.security.PermitAll;
-import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
 
-import java.text.NumberFormat;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 
 @Route(value = "mieter-vertraege/mietvertrag-anlegen", layout = MainLayout.class)
 @PermitAll
@@ -62,7 +60,7 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
     private final Span previewMieter = new Span("Noch kein Mieter gewählt");
     private final Span previewObjekt = new Span("Noch kein Mietobjekt gewählt");
     private final Span previewZeitraum = new Span("Vertragsbeginn offen");
-    private final Span previewWarmmiete = new Span("0,00 €");
+    private final Span previewWarmmiete = new Span("0,00 €");
     private final Span previewKuendigungsfrist = new Span("3 Monate");
 
     private Long immobilieId;
@@ -191,7 +189,7 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
     private Component createMietobjektMieterCard() {
         mieterSelect.setLabel("Mieter auswählen");
         mieterSelect.setItems(mieterService.findeAlleMieter());
-        mieterSelect.setItemLabelGenerator(this::formatMieter);
+        mieterSelect.setItemLabelGenerator(mieter -> UiFormatUtils.formatiereMieterName(mieter, ""));
         mieterSelect.setPlaceholder("Bitte wählen...");
         mieterSelect.setRequiredIndicatorVisible(true);
         mieterSelect.setWidthFull();
@@ -199,13 +197,13 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
 
         immobilieSelect.setLabel("Immobilie");
         immobilieSelect.setItems(immobilieService.findeAlleImmobilien());
-        immobilieSelect.setItemLabelGenerator(this::formatImmobilie);
+        immobilieSelect.setItemLabelGenerator(immobilie -> UiFormatUtils.formatiereImmobilienBezeichnung(immobilie, ""));
         immobilieSelect.setPlaceholder("Bitte wählen...");
         immobilieSelect.setRequiredIndicatorVisible(true);
         immobilieSelect.setWidthFull();
 
         mieteinheitSelect.setLabel("Wohneinheit");
-        mieteinheitSelect.setItemLabelGenerator(this::formatMieteinheit);
+        mieteinheitSelect.setItemLabelGenerator(mieteinheit -> UiFormatUtils.formatiereMieteinheitBezeichnung(mieteinheit, ""));
         mieteinheitSelect.setPlaceholder("Zuerst Immobilie wählen...");
         mieteinheitSelect.setRequiredIndicatorVisible(true);
         mieteinheitSelect.setWidthFull();
@@ -494,21 +492,12 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
             NumberField nebenkostenField,
             Span warmmieteValue
     ) {
-        double kaltmiete = zahlOderNull(kaltmieteField.getValue());
-        double nebenkosten = zahlOderNull(nebenkostenField.getValue());
+        double kaltmiete = kaltmieteField.getValue() == null ? 0 : kaltmieteField.getValue();
+        double nebenkosten = nebenkostenField.getValue() == null ? 0 : nebenkostenField.getValue();
         double warmmiete = kaltmiete + nebenkosten;
 
-        warmmieteValue.setText(formatMoneyValue(warmmiete));
-        previewWarmmiete.setText(formatMoneyValue(warmmiete));
-    }
-
-    private double zahlOderNull(Double value) {
-        return value == null ? 0 : value;
-    }
-
-    private String formatMoneyValue(double value) {
-        NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.GERMANY);
-        return formatter.format(value);
+        warmmieteValue.setText(UiFormatUtils.formatiereEuro(warmmiete));
+        previewWarmmiete.setText(UiFormatUtils.formatiereEuro(warmmiete));
     }
 
     private Component createBottomActions() {
@@ -600,16 +589,24 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         Immobilie immobilie = immobilieSelect.getValue();
         Mieteinheit mieteinheit = mieteinheitSelect.getValue();
 
-        previewMieter.setText(mieter == null ? "Noch kein Mieter gewählt" : formatMieter(mieter));
+        previewMieter.setText(
+                mieter == null
+                        ? "Noch kein Mieter gewählt"
+                        : UiFormatUtils.formatiereMieterName(mieter, "")
+        );
 
         if (immobilie == null && mieteinheit == null) {
             previewObjekt.setText("Noch kein Mietobjekt gewählt");
         } else if (mieteinheit == null) {
-            previewObjekt.setText(formatImmobilie(immobilie));
+            previewObjekt.setText(UiFormatUtils.formatiereImmobilienBezeichnung(immobilie, ""));
         } else if (immobilie == null) {
-            previewObjekt.setText(formatMieteinheit(mieteinheit));
+            previewObjekt.setText(UiFormatUtils.formatiereMieteinheitBezeichnung(mieteinheit, ""));
         } else {
-            previewObjekt.setText(formatImmobilie(immobilie) + " / " + formatMieteinheit(mieteinheit));
+            previewObjekt.setText(
+                    UiFormatUtils.formatiereImmobilienBezeichnung(immobilie, "")
+                            + " / "
+                            + UiFormatUtils.formatiereMieteinheitBezeichnung(mieteinheit, "")
+            );
         }
 
         LocalDate start = vertragsbeginnPicker.getValue();
@@ -618,9 +615,9 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         if (start == null) {
             previewZeitraum.setText("Vertragsbeginn offen");
         } else if (ende == null) {
-            previewZeitraum.setText("ab " + formatiereDatum(start) + " · unbefristet");
+            previewZeitraum.setText("ab " + UiFormatUtils.formatiereDatum(start) + " · unbefristet");
         } else {
-            previewZeitraum.setText(formatiereDatum(start) + " – " + formatiereDatum(ende));
+            previewZeitraum.setText(UiFormatUtils.formatiereDatum(start) + " – " + UiFormatUtils.formatiereDatum(ende));
         }
 
         previewKuendigungsfrist.setText(formatiereKuendigungsfrist());
@@ -634,37 +631,6 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         }
 
         return value;
-    }
-
-    private String formatiereDatum(LocalDate datum) {
-        return datum.format(DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.GERMANY));
-    }
-
-    private String formatMieter(Mieter mieter) {
-        if (mieter == null) {
-            return "";
-        }
-
-        String vorname = mieter.getVorname() == null ? "" : mieter.getVorname();
-        String nachname = mieter.getNachname() == null ? "" : mieter.getNachname();
-
-        return (vorname + " " + nachname).trim();
-    }
-
-    private String formatImmobilie(Immobilie immobilie) {
-        if (immobilie == null) {
-            return "";
-        }
-
-        return immobilie.getBezeichnung();
-    }
-
-    private String formatMieteinheit(Mieteinheit mieteinheit) {
-        if (mieteinheit == null) {
-            return "";
-        }
-
-        return mieteinheit.getBezeichnung();
     }
 
     @Override

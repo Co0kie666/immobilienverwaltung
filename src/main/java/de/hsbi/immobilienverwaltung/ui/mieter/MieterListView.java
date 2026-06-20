@@ -25,11 +25,8 @@ import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import jakarta.annotation.security.PermitAll;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-
-import java.text.NumberFormat;
-import java.time.format.DateTimeFormatter;
+import de.hsbi.immobilienverwaltung.ui.UiFormatUtils;
 import java.util.List;
-import java.util.Locale;
 
 @Route(value = "mieter-vertraege/mieter-details", layout = MainLayout.class)
 @PermitAll
@@ -133,7 +130,7 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
 
         Div avatar = new Div();
         avatar.addClassName("mieter-detail-avatar");
-        avatar.setText(erstelleInitialen(aktuellerMieter));
+        avatar.setText(UiFormatUtils.erstelleInitialen(aktuellerMieter));
 
         Div titleBox = new Div();
         titleBox.addClassName("mieter-detail-title-box");
@@ -141,14 +138,13 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         Span eyebrow = new Span("Mieterprofil · ID " + aktuellerMieter.getId());
         eyebrow.addClassName("mieter-detail-eyebrow");
 
-        H2 name = new H2(formatMieterName(aktuellerMieter));
-        name.addClassName("mieter-detail-name");
+        H2 name = new H2(UiFormatUtils.formatiereMieterName(aktuellerMieter));        name.addClassName("mieter-detail-name");
 
         Div meta = new Div();
         meta.addClassName("mieter-detail-meta");
-        meta.add(createMetaPill(VaadinIcon.ENVELOPE, textOderStrich(aktuellerMieter.getEmail())));
-        meta.add(createMetaPill(VaadinIcon.PHONE, textOderStrich(aktuellerMieter.getTelefonnummer())));
-        meta.add(createMetaPill(VaadinIcon.MAP_MARKER, formatAdresseKurz(aktuellerMieter.getAdresse())));
+        meta.add(createMetaPill(VaadinIcon.ENVELOPE, UiFormatUtils.wertOderStrich(aktuellerMieter.getEmail())));
+        meta.add(createMetaPill(VaadinIcon.PHONE, UiFormatUtils.wertOderStrich(aktuellerMieter.getTelefonnummer())));
+        meta.add(createMetaPill(VaadinIcon.MAP_MARKER, UiFormatUtils.formatiereAdresseKurz(aktuellerMieter.getAdresse())));
 
         titleBox.add(eyebrow, name, meta);
         left.add(backButton, avatar, titleBox);
@@ -231,7 +227,7 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
                 createStatCard("Mietverträge", String.valueOf(vertraege.size()), "Gesamte Historie", VaadinIcon.FILE_TEXT, "primary"),
                 createStatCard("Aktiv", String.valueOf(aktiveVertraege), "Laufende Verträge", VaadinIcon.CHECK_CIRCLE, "success"),
                 createStatCard("Läuft aus", String.valueOf(auslaufendeVertraege), "Gekündigte Verträge", VaadinIcon.CLOCK, "warning"),
-                createStatCard("Warmmiete", formatiereBetrag(warmmiete), "Aktive Verträge mtl.", VaadinIcon.EURO, "danger")
+                createStatCard("Warmmiete", UiFormatUtils.formatiereEuro(warmmiete), "Aktive Verträge mtl.", VaadinIcon.EURO, "danger")
         );
 
         return stats;
@@ -288,9 +284,9 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         Div card = createDetailCard("Stammdaten", "Personenbezogene Angaben und beruflicher Kontext", VaadinIcon.USER);
 
         if (bearbeitenAktiv) {
-            vornameField.setValue(textOderLeer(aktuellerMieter.getVorname()));
-            nachnameField.setValue(textOderLeer(aktuellerMieter.getNachname()));
-            berufField.setValue(textOderLeer(aktuellerMieter.getBeruf()));
+            vornameField.setValue(UiFormatUtils.wertOderLeer(aktuellerMieter.getVorname()));
+            nachnameField.setValue(UiFormatUtils.wertOderLeer(aktuellerMieter.getNachname()));
+            berufField.setValue(UiFormatUtils.wertOderLeer(aktuellerMieter.getBeruf()));
 
             FormLayout form = createFormLayout();
             form.add(vornameField, nachnameField, berufField);
@@ -299,9 +295,9 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
             card.add(form);
         } else {
             card.add(
-                    createInfoRow(VaadinIcon.USER, "Vollständiger Name", formatMieterName(aktuellerMieter)),
-                    createInfoRow(VaadinIcon.CALENDAR, "Geburtsdatum", formatDatum(aktuellerMieter)),
-                    createInfoRow(VaadinIcon.BRIEFCASE, "Beruf / Tätigkeit", textOderStrich(aktuellerMieter.getBeruf()))
+                    createInfoRow(VaadinIcon.USER, "Vollständiger Name", UiFormatUtils.formatiereMieterName(aktuellerMieter)),
+                    createInfoRow(VaadinIcon.CALENDAR, "Geburtsdatum", UiFormatUtils.formatiereDatum(aktuellerMieter.getGeburtsdatum())),
+                    createInfoRow(VaadinIcon.BRIEFCASE, "Beruf / Tätigkeit", UiFormatUtils.wertOderStrich(aktuellerMieter.getBeruf()))
             );
         }
 
@@ -313,12 +309,12 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
         Adresse adresse = aktuellerMieter.getAdresse();
 
         if (bearbeitenAktiv) {
-            emailField.setValue(textOderLeer(aktuellerMieter.getEmail()));
-            telefonField.setValue(textOderLeer(aktuellerMieter.getTelefonnummer()));
-            strasseField.setValue(adresse == null ? "" : textOderLeer(adresse.getStrasse()));
-            hausnummerField.setValue(adresse == null ? "" : textOderLeer(adresse.getHausnummer()));
-            plzField.setValue(adresse == null ? "" : textOderLeer(adresse.getPlz()));
-            ortField.setValue(adresse == null ? "" : textOderLeer(adresse.getStadt()));
+            emailField.setValue(UiFormatUtils.wertOderLeer(aktuellerMieter.getEmail()));
+            telefonField.setValue(UiFormatUtils.wertOderLeer(aktuellerMieter.getTelefonnummer()));
+            strasseField.setValue(adresse == null ? "" : UiFormatUtils.wertOderLeer(adresse.getStrasse()));
+            hausnummerField.setValue(adresse == null ? "" : UiFormatUtils.wertOderLeer(adresse.getHausnummer()));
+            plzField.setValue(adresse == null ? "" : UiFormatUtils.wertOderLeer(adresse.getPlz()));
+            ortField.setValue(adresse == null ? "" : UiFormatUtils.wertOderLeer(adresse.getStadt()));
 
             HorizontalLayout strasseHausnummerLayout = new HorizontalLayout();
             strasseHausnummerLayout.setWidthFull();
@@ -335,9 +331,9 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
             card.add(form);
         } else {
             card.add(
-                    createInfoRow(VaadinIcon.ENVELOPE, "E-Mail", textOderStrich(aktuellerMieter.getEmail())),
-                    createInfoRow(VaadinIcon.PHONE, "Telefon", textOderStrich(aktuellerMieter.getTelefonnummer())),
-                    createInfoRow(VaadinIcon.HOME, "Adresse", formatAdresse(adresse))
+                    createInfoRow(VaadinIcon.ENVELOPE, "E-Mail", UiFormatUtils.wertOderStrich(aktuellerMieter.getEmail())),
+                    createInfoRow(VaadinIcon.PHONE, "Telefon", UiFormatUtils.wertOderStrich(aktuellerMieter.getTelefonnummer())),
+                    createInfoRow(VaadinIcon.HOME, "Adresse", UiFormatUtils.formatiereAdresse(adresse))
             );
         }
 
@@ -384,12 +380,12 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
                 .setAutoWidth(true)
                 .setFlexGrow(1);
 
-        grid.addColumn(this::formatMietobjekt)
+        grid.addColumn(UiFormatUtils::formatiereMietobjekt)
                 .setHeader("Einheit")
                 .setAutoWidth(true)
                 .setFlexGrow(2);
 
-        grid.addColumn(this::formatLaufzeit)
+        grid.addColumn(UiFormatUtils::formatiereVertragslaufzeit)
                 .setHeader("Laufzeit")
                 .setAutoWidth(true)
                 .setFlexGrow(1);
@@ -440,13 +436,13 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
     }
 
     private Component createWarmmieteCell(Mietvertrag mietvertrag) {
-        Span value = new Span(formatWarmmiete(mietvertrag));
+        Span value = new Span(UiFormatUtils.formatiereWarmmiete(mietvertrag));
         value.addClassName("mieter-detail-money");
         return value;
     }
 
     private Component createVertragsStatusBadge(Mietvertrag mietvertrag) {
-        Span badge = new Span(formatStatus(mietvertrag));
+        Span badge = new Span(UiFormatUtils.formatiereVertragsstatus(mietvertrag));
         badge.addClassNames("status-badge", getVertragsStatusStyle(mietvertrag));
         return badge;
     }
@@ -478,9 +474,9 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
             card.add(empty);
         } else {
             card.add(
-                    createInfoRow(VaadinIcon.USER, "Kontoinhaber", textOderStrich(aktuellerMieter.getKontoinhaber())),
-                    createInfoRow(VaadinIcon.CREDIT_CARD, "IBAN", maskiereIban(aktuellerMieter.getIban())),
-                    createInfoRow(VaadinIcon.BUILDING, "BIC / Bankname", textOderStrich(aktuellerMieter.getBic()))
+                    createInfoRow(VaadinIcon.USER, "Kontoinhaber", UiFormatUtils.wertOderStrich(aktuellerMieter.getKontoinhaber())),
+                    createInfoRow(VaadinIcon.CREDIT_CARD, "IBAN", UiFormatUtils.maskiereIban(aktuellerMieter.getIban())),
+                    createInfoRow(VaadinIcon.BUILDING, "BIC / Bankname", UiFormatUtils.wertOderStrich(aktuellerMieter.getBic()))
             );
         }
 
@@ -683,147 +679,18 @@ public class MieterListView extends Div implements HasPageHeader, HasUrlParamete
             case AKTIV -> "success";
             case GEKUENDIGT -> "warning";
             case BEENDET -> "neutral";
-            default -> "neutral";
         };
     }
 
-    private String formatMieterName(Mieter mieter) {
-        if (mieter == null) {
-            return "-";
-        }
-
-        String name = (textOderLeer(mieter.getVorname()) + " " + textOderLeer(mieter.getNachname())).trim();
-        return name.isBlank() ? "Unbenannter Mieter" : name;
-    }
-
-    private String erstelleInitialen(Mieter mieter) {
-        String vorname = textOderLeer(mieter.getVorname()).trim();
-        String nachname = textOderLeer(mieter.getNachname()).trim();
-
-        String ersteInitiale = vorname.isBlank() ? "" : vorname.substring(0, 1).toUpperCase(Locale.GERMANY);
-        String zweiteInitiale = nachname.isBlank() ? "" : nachname.substring(0, 1).toUpperCase(Locale.GERMANY);
-        String initialen = ersteInitiale + zweiteInitiale;
-
-        return initialen.isBlank() ? "M" : initialen;
-    }
-
-    private String formatDatum(Mieter mieter) {
-        if (mieter.getGeburtsdatum() == null) {
-            return "-";
-        }
-
-        return mieter.getGeburtsdatum().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
-    }
-
-    private String formatAdresse(Adresse adresse) {
-        if (adresse == null) {
-            return "-";
-        }
-
-        String strasse = textOderLeer(adresse.getStrasse()).trim();
-        String hausnummer = textOderLeer(adresse.getHausnummer()).trim();
-        String plz = textOderLeer(adresse.getPlz()).trim();
-        String stadt = textOderLeer(adresse.getStadt()).trim();
-
-        String zeile1 = (strasse + " " + hausnummer).trim();
-        String zeile2 = (plz + " " + stadt).trim();
-
-        if (zeile1.isBlank() && zeile2.isBlank()) {
-            return "-";
-        }
-
-        if (zeile1.isBlank()) {
-            return zeile2;
-        }
-
-        if (zeile2.isBlank()) {
-            return zeile1;
-        }
-
-        return zeile1 + ", " + zeile2;
-    }
-
-    private String formatAdresseKurz(Adresse adresse) {
-        if (adresse == null) {
-            return "Keine Adresse";
-        }
-
-        String stadt = textOderLeer(adresse.getStadt()).trim();
-        String plz = textOderLeer(adresse.getPlz()).trim();
-
-        String kurz = (plz + " " + stadt).trim();
-        return kurz.isBlank() ? "Keine Adresse" : kurz;
-    }
-
-    private String formatMietobjekt(Mietvertrag mietvertrag) {
-        if (mietvertrag.getMieteinheit() == null) {
-            return "-";
-        }
-
-        if (mietvertrag.getMieteinheit().getImmobilie() == null) {
-            return mietvertrag.getMieteinheit().getBezeichnung();
-        }
-
-        return mietvertrag.getMieteinheit().getImmobilie().getBezeichnung()
-                + " / "
-                + mietvertrag.getMieteinheit().getBezeichnung();
-    }
-
-    private String formatLaufzeit(Mietvertrag mietvertrag) {
-        String start = mietvertrag.getStartdatum() == null
-                ? "-"
-                : mietvertrag.getStartdatum().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
-
-        String ende = mietvertrag.getEnddatum() == null
-                ? "unbefristet"
-                : mietvertrag.getEnddatum().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
-
-        return start + " - " + ende;
-    }
-
-    private String formatWarmmiete(Mietvertrag mietvertrag) {
-        return formatiereBetrag(berechneWarmmiete(mietvertrag));
-    }
-
     private double berechneWarmmiete(Mietvertrag mietvertrag) {
+        if (mietvertrag == null) {
+            return 0;
+        }
+
         double kaltmiete = mietvertrag.getKaltmiete() == null ? 0 : mietvertrag.getKaltmiete();
         double nebenkosten = mietvertrag.getNebenkosten() == null ? 0 : mietvertrag.getNebenkosten();
+
         return kaltmiete + nebenkosten;
-    }
-
-    private String formatiereBetrag(double betrag) {
-        NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.GERMANY);
-        return formatter.format(betrag);
-    }
-
-    private String formatStatus(Mietvertrag mietvertrag) {
-        if (mietvertrag.getStatus() == null) {
-            return "-";
-        }
-
-        return mietvertrag.getStatus().getLabel();
-    }
-
-    private String maskiereIban(String iban) {
-        if (iban == null || iban.isBlank()) {
-            return "-";
-        }
-
-        String cleaned = iban.replace(" ", "");
-
-        if (cleaned.length() <= 8) {
-            return iban;
-        }
-
-        return cleaned.substring(0, 4) + " •••• •••• " + cleaned.substring(cleaned.length() - 4);
-    }
-
-    private String textOderLeer(String text) {
-        return text == null ? "" : text;
-    }
-
-    private String textOderStrich(String text) {
-        return text == null || text.isBlank() ? "-" : text;
     }
 
     @Override

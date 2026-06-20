@@ -15,9 +15,8 @@ import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import jakarta.annotation.security.PermitAll;
-
+import de.hsbi.immobilienverwaltung.ui.UiFormatUtils;
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -182,7 +181,7 @@ public class DashboardView extends Div implements HasPageHeader {
         grid.add(
                 kpiCard(
                         "Gesamteinnahmen",
-                        formatEuro(gesamteinnahmen),
+                        UiFormatUtils.formatiereBetrag(gesamteinnahmen),
                         "Portfolio",
                         "Summe aller Zahlungseingänge",
                         VaadinIcon.LINE_CHART,
@@ -201,7 +200,7 @@ public class DashboardView extends Div implements HasPageHeader {
                 ),
                 kpiCard(
                         "Offene Zahlungen",
-                        formatEuro(offeneAusgaben),
+                        UiFormatUtils.formatiereBetrag(offeneAusgaben),
                         anzahlOffeneAusgaben + " offen",
                         formatAnzahlOffeneAusgaben(anzahlOffeneAusgaben),
                         VaadinIcon.WARNING,
@@ -298,42 +297,15 @@ public class DashboardView extends Div implements HasPageHeader {
                 // Das Dashboard zeigt nur eine kompakte Vorschau der wichtigsten offenen Posten.
                 .limit(5)
                 .forEach(zahlung -> list.add(openItem(
-                        ermittleMieterName(zahlung),
+                        UiFormatUtils.formatiereMieterName(zahlung.getMietvertrag()),
                         ermittleBeschreibung(zahlung),
-                        formatEuro(zahlung.getBetrag()),
+                        UiFormatUtils.formatiereBetrag(zahlung.getBetrag()),
                         ermittleUeberfaelligkeit(zahlung)
                 )));
 
         card.add(list);
 
         return card;
-    }
-
-    private String ermittleMieterName(Zahlungseingang zahlung) {
-        if (zahlung.getMietvertrag() == null ||
-                zahlung.getMietvertrag().getMieter() == null) {
-            return "-";
-        }
-
-        String vorname = zahlung.getMietvertrag()
-                .getMieter()
-                .getVorname();
-
-        String nachname = zahlung.getMietvertrag()
-                .getMieter()
-                .getNachname();
-
-        if (vorname == null) {
-            vorname = "";
-        }
-
-        if (nachname == null) {
-            nachname = "";
-        }
-
-        String name = (vorname + " " + nachname).trim();
-
-        return name.isBlank() ? "-" : name;
     }
 
     private String ermittleBeschreibung(Zahlungseingang zahlung) {
@@ -763,16 +735,6 @@ public class DashboardView extends Div implements HasPageHeader {
         }
 
         return monate;
-    }
-
-    private String formatEuro(BigDecimal betrag) {
-        if (betrag == null) {
-            betrag = BigDecimal.ZERO;
-        }
-
-        return NumberFormat
-                .getCurrencyInstance(Locale.GERMANY)
-                .format(betrag);
     }
 
     private String formatAnzahlOffeneAusgaben(long anzahl) {

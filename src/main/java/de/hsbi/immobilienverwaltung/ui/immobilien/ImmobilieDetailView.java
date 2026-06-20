@@ -13,10 +13,8 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
-import de.hsbi.immobilienverwaltung.domain.Adresse;
 import de.hsbi.immobilienverwaltung.domain.Immobilie;
 import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
-import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
 import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
 import de.hsbi.immobilienverwaltung.service.interfaces.ImmobilieService;
 import de.hsbi.immobilienverwaltung.service.interfaces.MieteinheitService;
@@ -26,9 +24,9 @@ import de.hsbi.immobilienverwaltung.ui.components.StatusBadge;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import jakarta.annotation.security.PermitAll;
+import de.hsbi.immobilienverwaltung.ui.UiFormatUtils;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.util.Locale;
 
 @Route(value = "immobilien/:immobilieId", layout = MainLayout.class)
@@ -174,7 +172,7 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
 
         Div visualOverlay = new Div();
         visualOverlay.addClassName("property-detail-visual-overlay");
-        visualOverlay.add(VaadinIcon.BUILDING.create(), new Span(formatiereImmobilientyp(immobilie.getTyp())));
+        visualOverlay.add(VaadinIcon.BUILDING.create(), new Span(new Span(UiFormatUtils.formatiereImmobilientyp(immobilie.getTyp()))));
 
         visual.add(visualOverlay);
 
@@ -184,16 +182,16 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         Span eyebrow = new Span("Immobilien-Exposé");
         eyebrow.addClassName("hero-eyebrow");
 
-        H2 title = new H2(wertOderStrich(immobilie.getBezeichnung()));
+        H2 title = new H2(UiFormatUtils.wertOderStrich(immobilie.getBezeichnung()));
         title.addClassName("property-detail-title");
 
-        Paragraph address = new Paragraph(formatiereAdresse(immobilie));
+        Paragraph address = new Paragraph(UiFormatUtils.formatiereAdresse(immobilie));
         address.addClassName("property-detail-address");
 
         Div badges = new Div();
         badges.addClassName("property-detail-badges");
         badges.add(
-                StatusBadge.primary(formatiereImmobilientyp(immobilie.getTyp())),
+                StatusBadge.primary(UiFormatUtils.formatiereImmobilientyp(immobilie.getTyp())),
                 ermittleDetailStatusBadge()
         );
 
@@ -208,7 +206,7 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                 erstelleHeroStat("Einheiten", String.valueOf(einheitenGesamt), VaadinIcon.BUILDING),
                 erstelleHeroStat("Vermietet", String.valueOf(vermietet), VaadinIcon.HOME),
                 erstelleHeroStat("Frei/Renovierung", String.valueOf(frei + inRenovierung), VaadinIcon.WARNING),
-                erstelleHeroStat("Fläche", formatiereFlaeche(immobilie.getFlaeche()), VaadinIcon.HOME)
+                erstelleHeroStat("Fläche", UiFormatUtils.formatiereFlaeche(immobilie.getFlaeche()), VaadinIcon.HOME)
         );
 
         content.add(eyebrow, title, address, badges, quickFacts);
@@ -292,7 +290,7 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                 ),
                 erstelleKennzahlenKarte(
                         "Offene Zahlungen",
-                        formatiereBetrag(offeneZahlungenSumme),
+                        UiFormatUtils.formatiereBetrag(offeneZahlungenSumme),
                         offeneZahlungenAnzahl + " offene Buchung(en)",
                         "danger",
                         VaadinIcon.WARNING
@@ -345,11 +343,11 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
 
         karte.add(
                 titel,
-                erstelleInfoEintrag("Bezeichnung", wertOderStrich(immobilie.getBezeichnung())),
-                erstelleInfoEintrag("Typ", formatiereImmobilientyp(immobilie.getTyp())),
-                erstelleInfoEintrag("Baujahr", wertOderStrich(immobilie.getBaujahr())),
-                erstelleInfoEintrag("Fläche", formatiereFlaeche(immobilie.getFlaeche())),
-                erstelleInfoEintrag("Adresse", formatiereAdresse(immobilie))
+                erstelleInfoEintrag("Bezeichnung", UiFormatUtils.wertOderStrich(immobilie.getBezeichnung())),
+                erstelleInfoEintrag("Typ", UiFormatUtils.formatiereImmobilientyp(immobilie.getTyp(), "-")),
+                erstelleInfoEintrag("Baujahr", UiFormatUtils.wertOderStrich(immobilie.getBaujahr())),
+                erstelleInfoEintrag("Fläche", UiFormatUtils.formatiereFlaeche(immobilie.getFlaeche())),
+                erstelleInfoEintrag("Adresse", UiFormatUtils.formatiereAdresse(immobilie))
         );
 
         return karte;
@@ -404,7 +402,7 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         mieteinheitenTabelle.addClassName("mieteinheiten-grid");
         mieteinheitenTabelle.setAllRowsVisible(true);
 
-        mieteinheitenTabelle.addColumn(mieteinheit -> wertOderStrich(mieteinheit.getBezeichnung()))
+        mieteinheitenTabelle.addColumn(mieteinheit -> UiFormatUtils.wertOderStrich(mieteinheit.getBezeichnung()))
                 .setHeader("Bezeichnung")
                 .setAutoWidth(true);
 
@@ -415,16 +413,16 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                 .setAutoWidth(true);
 
         mieteinheitenTabelle.addColumn(mieteinheit ->
-                        formatiereFlaeche(mieteinheit.getGroesse())
+                        UiFormatUtils.formatiereFlaeche(mieteinheit.getGroesse())
                 )
                 .setHeader("Größe")
                 .setAutoWidth(true);
 
-        mieteinheitenTabelle.addColumn(mieteinheit -> wertOderStrich(mieteinheit.getStockwerk()))
+        mieteinheitenTabelle.addColumn(mieteinheit -> UiFormatUtils.wertOderStrich(mieteinheit.getStockwerk()))
                 .setHeader("Stockwerk")
                 .setAutoWidth(true);
 
-        mieteinheitenTabelle.addColumn(mieteinheit -> wertOderStrich(mieteinheit.getZimmerzahl()))
+        mieteinheitenTabelle.addColumn(mieteinheit -> UiFormatUtils.wertOderStrich(mieteinheit.getZimmerzahl()))
                 .setHeader("Zimmer")
                 .setAutoWidth(true);
 
@@ -556,72 +554,6 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
 
         return karte;
     }
-
-    // Formatierungsmethoden für eine bessere Darstellung
-    // TODO eventuell noch auslagern
-    private String formatiereImmobilientyp(Immobilientyp typ) {
-        return typ == null ? "-" : typ.getLabel();
-    }
-
-    private String formatiereAdresse(Immobilie immobilie) {
-        Adresse adresse = immobilie.getAdresse();
-
-        if (adresse == null) {
-            return "-";
-        }
-
-        String strasseUndHausnummer = (
-                wertOderLeer(adresse.getStrasse()) + " " + wertOderLeer(adresse.getHausnummer())
-        ).trim();
-
-        String plzUndStadt = (
-                wertOderLeer(adresse.getPlz()) + " " + wertOderLeer(adresse.getStadt())
-        ).trim();
-
-        if (strasseUndHausnummer.isBlank() && plzUndStadt.isBlank()) {
-            return "-";
-        }
-
-        if (strasseUndHausnummer.isBlank()) {
-            return plzUndStadt;
-        }
-
-        if (plzUndStadt.isBlank()) {
-            return strasseUndHausnummer;
-        }
-
-        return strasseUndHausnummer + ", " + plzUndStadt;
-    }
-
-    private String formatiereFlaeche(Integer flaeche) {
-        return flaeche == null ? "-" : flaeche + " m²";
-    }
-
-    private String formatiereBetrag(BigDecimal betrag) {
-        if (betrag == null) {
-            return "0,00 €";
-        }
-
-        NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.GERMANY);
-        return formatter.format(betrag);
-    }
-
-    private String wertOderStrich(Object wert) {
-        if (wert == null) {
-            return "-";
-        }
-
-        if (wert instanceof String text && text.isBlank()) {
-            return "-";
-        }
-
-        return wert.toString();
-    }
-
-    private String wertOderLeer(String wert) {
-        return wert == null ? "" : wert;
-    }
-
 
     private String ermittleTypCssKlasse(Immobilie immobilie) {
         if (immobilie.getTyp() == null) {

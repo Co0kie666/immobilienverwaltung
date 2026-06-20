@@ -13,15 +13,13 @@ import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.domain.Mietvertrag;
 import de.hsbi.immobilienverwaltung.domain.enums.Vertragsstatus;
 import de.hsbi.immobilienverwaltung.service.interfaces.MietvertragService;
+import de.hsbi.immobilienverwaltung.ui.UiFormatUtils;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import jakarta.annotation.security.PermitAll;
 
-import java.text.NumberFormat;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.Locale;
 
 @Route(value = "mieter-vertraege/mietvertrag-details", layout = MainLayout.class)
 @PermitAll
@@ -137,9 +135,9 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         Div meta = new Div();
         meta.addClassName("contract-detail-meta");
         meta.add(
-                createMetaPill(VaadinIcon.USER, formatMieterName()),
-                createMetaPill(VaadinIcon.BUILDING, formatImmobilie()),
-                createMetaPill(VaadinIcon.HOME, formatMieteinheitKurz())
+                createMetaPill(VaadinIcon.USER, UiFormatUtils.formatiereMieterName(aktuellerMietvertrag.getMieter(), "-")),
+                createMetaPill(VaadinIcon.BUILDING, UiFormatUtils.formatiereImmobilienBezeichnung(aktuellerMietvertrag, "-")),
+                createMetaPill(VaadinIcon.HOME, UiFormatUtils.formatiereMieteinheitBezeichnung(aktuellerMietvertrag, "-"))
         );
 
         titleBox.add(eyebrow, title, meta);
@@ -148,7 +146,7 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         Div actions = new Div();
         actions.addClassName("contract-detail-hero-actions");
 
-        Span statusBadge = new Span(formatStatus());
+        Span statusBadge = new Span(UiFormatUtils.formatiereVertragsstatus(aktuellerMietvertrag));
         statusBadge.addClassNames("status-badge", getStatusStyle(), "contract-detail-status");
         actions.add(statusBadge);
 
@@ -198,7 +196,7 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
     private Component createMetaPill(VaadinIcon icon, String text) {
         Div pill = new Div();
         pill.addClassName("contract-detail-meta-pill");
-        pill.add(icon.create(), new Span(textOderStrich(text)));
+        pill.add(icon.create(), new Span(UiFormatUtils.wertOderStrich(text)));
         return pill;
     }
 
@@ -209,7 +207,7 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         grid.add(
                 createStatCard(
                         "Warmmiete",
-                        formatWarmmiete(),
+                        UiFormatUtils.formatiereWarmmiete(aktuellerMietvertrag),
                         "Kaltmiete + Nebenkosten",
                         VaadinIcon.EURO,
                         "success"
@@ -223,14 +221,14 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
                 ),
                 createStatCard(
                         "Kaution",
-                        formatEuro(aktuellerMietvertrag.getKaution()),
+                        UiFormatUtils.formatiereEuroOderStrich(aktuellerMietvertrag.getKaution()),
                         "Hinterlegte Sicherheit",
                         VaadinIcon.LOCK,
                         "warning"
                 ),
                 createStatCard(
                         "Status",
-                        formatStatus(),
+                        UiFormatUtils.formatiereVertragsstatus(aktuellerMietvertrag),
                         "Aktueller Vertragsstand",
                         VaadinIcon.CLIPBOARD,
                         getStatusStyle()
@@ -294,9 +292,9 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         grid.addClassName("contract-detail-info-grid");
 
         grid.add(
-                createHighlightInfoBlock("Hauptmieter", formatMieter(), VaadinIcon.USER),
-                createHighlightInfoBlock("Immobilie", formatImmobilie(), VaadinIcon.BUILDING),
-                createHighlightInfoBlock("Mieteinheit", formatMieteinheitDetails(), VaadinIcon.HOME)
+                createHighlightInfoBlock("Hauptmieter", UiFormatUtils.formatiereMieterMitEmail(aktuellerMietvertrag.getMieter()), VaadinIcon.USER),
+                createHighlightInfoBlock("Immobilie", UiFormatUtils.formatiereImmobilienBezeichnung(aktuellerMietvertrag, "-"), VaadinIcon.BUILDING),
+                createHighlightInfoBlock("Mieteinheit", UiFormatUtils.formatiereMieteinheitDetails(aktuellerMietvertrag), VaadinIcon.HOME)
         );
 
         card.add(grid);
@@ -320,7 +318,7 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
             Div timeline = new Div();
             timeline.addClassName("contract-detail-timeline");
             timeline.add(
-                    createTimelineItem("Vertragsbeginn", formatDatum(aktuellerMietvertrag.getStartdatum()), VaadinIcon.PLAY),
+                    createTimelineItem("Vertragsbeginn", UiFormatUtils.formatiereDatum(aktuellerMietvertrag.getStartdatum()), VaadinIcon.PLAY),
                     createTimelineItem("Vertragsende", formatDatumOderUnbefristet(), VaadinIcon.FLAG),
                     createTimelineItem("Kündigungsfrist", formatKuendigungsfrist(), VaadinIcon.CLOCK)
             );
@@ -360,10 +358,10 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
             Div moneyGrid = new Div();
             moneyGrid.addClassName("contract-detail-money-grid");
             moneyGrid.add(
-                    createMoneyBox("Kaltmiete", formatEuro(aktuellerMietvertrag.getKaltmiete())),
-                    createMoneyBox("Nebenkosten", formatEuro(aktuellerMietvertrag.getNebenkosten())),
-                    createMoneyBox("Warmmiete", formatWarmmiete()),
-                    createMoneyBox("Kaution", formatEuro(aktuellerMietvertrag.getKaution()))
+                    createMoneyBox("Kaltmiete", UiFormatUtils.formatiereEuroOderStrich(aktuellerMietvertrag.getKaltmiete())),
+                    createMoneyBox("Nebenkosten", UiFormatUtils.formatiereEuroOderStrich(aktuellerMietvertrag.getNebenkosten())),
+                    createMoneyBox("Warmmiete", UiFormatUtils.formatiereWarmmiete(aktuellerMietvertrag)),
+                    createMoneyBox("Kaution", UiFormatUtils.formatiereEuroOderStrich(aktuellerMietvertrag.getKaution()))
             );
 
             card.add(moneyGrid);
@@ -426,7 +424,7 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         Span label = new Span(labelText);
         label.addClassName("contract-detail-info-label");
 
-        Span value = new Span(textOderStrich(valueText));
+        Span value = new Span(UiFormatUtils.wertOderStrich(valueText));
         value.addClassName("contract-detail-info-value");
 
         text.add(label, value);
@@ -448,7 +446,7 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         Span label = new Span(labelText);
         label.addClassName("contract-detail-info-label");
 
-        Span value = new Span(textOderStrich(valueText));
+        Span value = new Span(UiFormatUtils.wertOderStrich(valueText));
         value.addClassName("contract-detail-info-value");
 
         text.add(label, value);
@@ -464,7 +462,7 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         Span label = new Span(labelText);
         label.addClassName("contract-detail-money-box-label");
 
-        Span value = new Span(textOderStrich(valueText));
+        Span value = new Span(UiFormatUtils.wertOderStrich(valueText));
         value.addClassName("contract-detail-money-box-value");
 
         box.add(label, value);
@@ -580,7 +578,7 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         double kaltmiete = kaltmieteField.getValue() == null ? 0 : kaltmieteField.getValue();
         double nebenkosten = nebenkostenField.getValue() == null ? 0 : nebenkostenField.getValue();
 
-        editWarmmieteValue.setText(formatEuro(kaltmiete + nebenkosten));
+        editWarmmieteValue.setText(UiFormatUtils.formatiereEuro(kaltmiete + nebenkosten));
     }
 
     private Component createNotFoundCard() {
@@ -598,78 +596,12 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         return card;
     }
 
-    private String formatMieter() {
-        if (aktuellerMietvertrag.getMieter() == null) {
-            return "-";
-        }
-
-        String name = formatMieterName();
-        String email = textOderLeer(aktuellerMietvertrag.getMieter().getEmail());
-
-        return email.isBlank() ? name : name + " • " + email;
-    }
-
-    private String formatMieterName() {
-        if (aktuellerMietvertrag.getMieter() == null) {
-            return "-";
-        }
-
-        String name = (textOderLeer(aktuellerMietvertrag.getMieter().getVorname()) + " "
-                + textOderLeer(aktuellerMietvertrag.getMieter().getNachname())).trim();
-
-        return name.isBlank() ? "-" : name;
-    }
-
-    private String formatImmobilie() {
-        if (aktuellerMietvertrag.getMieteinheit() == null
-                || aktuellerMietvertrag.getMieteinheit().getImmobilie() == null) {
-            return "-";
-        }
-
-        return textOderStrich(aktuellerMietvertrag.getMieteinheit().getImmobilie().getBezeichnung());
-    }
-
-    private String formatMieteinheitDetails() {
-        if (aktuellerMietvertrag.getMieteinheit() == null) {
-            return "-";
-        }
-
-        String details = textOderLeer(aktuellerMietvertrag.getMieteinheit().getBezeichnung());
-
-        if (details.isBlank()) {
-            details = "-";
-        }
-
-        if (aktuellerMietvertrag.getMieteinheit().getGroesse() != null) {
-            details += " • " + aktuellerMietvertrag.getMieteinheit().getGroesse() + " m²";
-        }
-
-        if (aktuellerMietvertrag.getMieteinheit().getZimmerzahl() != null) {
-            details += " • " + aktuellerMietvertrag.getMieteinheit().getZimmerzahl() + " Zimmer";
-        }
-
-        if (aktuellerMietvertrag.getMieteinheit().getStockwerk() != null
-                && !aktuellerMietvertrag.getMieteinheit().getStockwerk().isBlank()) {
-            details += " • " + aktuellerMietvertrag.getMieteinheit().getStockwerk();
-        }
-
-        return details;
-    }
-
-    private String formatDatum(LocalDate datum) {
-        if (datum == null) {
-            return "-";
-        }
-
-        return datum.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
-    }
-
     private String formatDatumOderUnbefristet() {
         if (aktuellerMietvertrag.getEnddatum() == null) {
             return "unbefristet";
         }
 
-        return formatDatum(aktuellerMietvertrag.getEnddatum());
+        return UiFormatUtils.formatiereDatum(aktuellerMietvertrag.getEnddatum());
     }
 
     private String formatKuendigungsfrist() {
@@ -748,43 +680,6 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
         return "noch " + tage + " Tage";
     }
 
-    private String formatEuro(Double betrag) {
-        if (betrag == null) {
-            return "-";
-        }
-
-        NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.GERMANY);
-        return formatter.format(betrag);
-    }
-
-    private String formatEuro(double betrag) {
-        NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.GERMANY);
-        return formatter.format(betrag);
-    }
-
-    private String formatWarmmiete() {
-        double kaltmiete = aktuellerMietvertrag.getKaltmiete() == null ? 0 : aktuellerMietvertrag.getKaltmiete();
-        double nebenkosten = aktuellerMietvertrag.getNebenkosten() == null ? 0 : aktuellerMietvertrag.getNebenkosten();
-
-        return formatEuro(kaltmiete + nebenkosten);
-    }
-
-    private String formatStatus() {
-        if (aktuellerMietvertrag.getStatus() == null) {
-            return "-";
-        }
-
-        return aktuellerMietvertrag.getStatus().getLabel();
-    }
-
-    private String formatMieteinheitKurz() {
-        if (aktuellerMietvertrag.getMieteinheit() == null) {
-            return "-";
-        }
-
-        return textOderStrich(aktuellerMietvertrag.getMieteinheit().getBezeichnung());
-    }
-
     private String getStatusStyle() {
         if (aktuellerMietvertrag.getStatus() == null) {
             return "neutral";
@@ -794,14 +689,6 @@ public class MietvertragListView extends Div implements HasPageHeader, HasUrlPar
             case AKTIV -> "success";
             case GEKUENDIGT, BEENDET -> "warning";
         };
-    }
-
-    private String textOderLeer(String text) {
-        return text == null ? "" : text;
-    }
-
-    private String textOderStrich(String text) {
-        return text == null || text.isBlank() ? "-" : text;
     }
 
     @Override
