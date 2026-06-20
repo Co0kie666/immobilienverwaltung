@@ -510,32 +510,10 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         glowCard.add(cardLabel, cardValue, cardMeta, sparkline);
 
-        Div stats = new Div();
-        stats.addClassName("finance-hero-stats");
-        stats.add(
-                financeHeroStat("Einnahmen", formatEuro(summeEinnahmen), "success"),
-                financeHeroStat("Ausgaben", formatEuro(summeAusgaben), "danger"),
-                financeHeroStat("Rückstände", formatEuro(rueckstaende), "warning")
-        );
-
-        visual.add(glowCard, stats);
-        hero.add(content, visual);
+        visual.add(glowCard);
+        hero.add(content);
 
         return hero;
-    }
-
-    private Component financeHeroStat(String label, String value, String type) {
-        Div stat = new Div();
-        stat.addClassNames("finance-hero-stat", type);
-
-        Span labelText = new Span(label);
-        labelText.addClassName("finance-hero-stat-label");
-
-        Span valueText = new Span(value);
-        valueText.addClassName("finance-hero-stat-value");
-
-        stat.add(labelText, valueText);
-        return stat;
     }
 
     private Component createFilterBar() {
@@ -750,21 +728,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 mieterFilter
         );
 
-        Button addBooking = new Button("Buchung anlegen", new Icon(VaadinIcon.PLUS));
-        Button showBookings = new Button("Alle Buchungen anzeigen", new Icon(VaadinIcon.LIST));
-
-        addBooking.addClickListener(e ->
-                UI.getCurrent().navigate("finanzen/buchung-neu")
-        );
-
-        showBookings.addClickListener(e ->
-                UI.getCurrent().navigate("finanzen/buchungen")
-        );
-
-        addBooking.addClassName("primary-button");
-        showBookings.addClassName("secondary-button");
-
-        HorizontalLayout bookingButtons = new HorizontalLayout(addBooking, showBookings);
+        HorizontalLayout bookingButtons = new HorizontalLayout();
         bookingButtons.setSpacing(true);
 
         filterBar.setWidthFull();

@@ -98,11 +98,7 @@ public class ImmobilienListView extends Div implements HasPageHeader {
 
         content.add(eyebrow, title, subtitle, newButton);
 
-        Div visual = new Div();
-        visual.addClassName("property-list-hero-visual");
-        visual.add(new Icon(VaadinIcon.BUILDING), new Span("ImmoPro"));
-
-        hero.add(content, visual);
+        hero.add(content);
         return hero;
     }
 

@@ -127,48 +127,8 @@ public class BuchungListView extends Div implements HasPageHeader {
         actions.add(neueBuchungButton, dashboardButton);
         content.add(eyebrow, title, subtitle, actions);
 
-        Div visual = new Div();
-        visual.addClassName("booking-list-hero-visual");
-
-        Div panel = new Div();
-        panel.addClassName("booking-list-hero-panel");
-
-        Span panelLabel = new Span("Aktueller Bestand");
-        panelLabel.addClassName("booking-list-panel-label");
-
-        H2 total = new H2(String.valueOf(alleBuchungen.size()));
-        total.addClassName("booking-list-panel-value");
-
-        Span panelMeta = new Span("Buchungen im System");
-        panelMeta.addClassName("booking-list-panel-meta");
-
-        Div miniStats = new Div();
-        miniStats.addClassName("booking-list-mini-stats");
-        miniStats.add(
-                createMiniStat("Einnahmen", zaehleTyp("Einnahme"), "income"),
-                createMiniStat("Ausgaben", zaehleTyp("Ausgabe"), "expense"),
-                createMiniStat("Offen", zaehleOffeneBuchungen(), "open")
-        );
-
-        panel.add(panelLabel, total, panelMeta, miniStats);
-        visual.add(panel);
-
-        hero.add(content, visual);
+        hero.add(content);
         return hero;
-    }
-
-    private Component createMiniStat(String label, int value, String style) {
-        Div stat = new Div();
-        stat.addClassNames("booking-list-mini-stat", style);
-
-        Span valueText = new Span(String.valueOf(value));
-        valueText.addClassName("booking-list-mini-value");
-
-        Span labelText = new Span(label);
-        labelText.addClassName("booking-list-mini-label");
-
-        stat.add(valueText, labelText);
-        return stat;
     }
 
     private Component createKpiGrid() {
@@ -449,7 +409,7 @@ public class BuchungListView extends Div implements HasPageHeader {
                 .setAutoWidth(true)
                 .setFlexGrow(2);
 
-        grid.addComponentColumn(buchung -> createAmountText(buchung))
+        grid.addComponentColumn(this::createAmountText)
                 .setHeader("Betrag")
                 .setAutoWidth(true);
 
@@ -759,7 +719,7 @@ public class BuchungListView extends Div implements HasPageHeader {
             }
         }
 
-        return vertraege.get(0);
+        return vertraege.getFirst();
     }
 
     private String formatiereImmobilie(Immobilie immobilie) {
