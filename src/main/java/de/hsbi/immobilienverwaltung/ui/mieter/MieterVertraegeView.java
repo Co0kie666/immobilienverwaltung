@@ -6,8 +6,6 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
@@ -109,32 +107,8 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
         actions.add(createTenant, createContract);
         content.add(eyebrow, title, subtitle, actions);
 
-        Div visual = new Div();
-        visual.addClassName("tenant-hero-visual");
-        visual.add(
-                heroMetric("Aktive Verträge", String.valueOf(zaehleAktiveVertraege()), VaadinIcon.CHECK_CIRCLE, "success"),
-                heroMetric("Läuft aus", String.valueOf(zaehleAuslaufendeVertraege()), VaadinIcon.CLOCK, "warning")
-        );
-
-        hero.add(content, visual);
+        hero.add(content);
         return hero;
-    }
-
-    private Component heroMetric(String label, String value, VaadinIcon icon, String color) {
-        Div card = new Div();
-        card.addClassNames("tenant-hero-metric", color);
-
-        Div iconBox = new Div(new Icon(icon));
-        iconBox.addClassNames("tenant-hero-metric-icon", color);
-
-        Span valueText = new Span(value);
-        valueText.addClassName("tenant-hero-metric-value");
-
-        Span labelText = new Span(label);
-        labelText.addClassName("tenant-hero-metric-label");
-
-        card.add(iconBox, valueText, labelText);
-        return card;
     }
 
     private Component createOverviewCards() {
@@ -394,20 +368,9 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
         statusFilter.addClassName("tenant-status-filter");
         statusFilter.addValueChangeListener(event -> aktualisiereTabellen());
 
-        addButton = new Button("Anlegen", VaadinIcon.PLUS.create());
-        addButton.addClassName("primary-button");
-
-        addButton.addClickListener(event -> {
-            if (aktiverModus == TabellenModus.MIETER) {
-                getUI().ifPresent(ui -> ui.navigate(MieterFormView.class));
-            } else if (aktiverModus == TabellenModus.VERTRAEGE) {
-                getUI().ifPresent(ui -> ui.navigate(MietvertragFormView.class));
-            }
-        });
-
         Div controls = new Div();
         controls.addClassName("tenant-table-controls");
-        controls.add(archivTabs, searchField, statusFilter, addButton);
+        controls.add(archivTabs, searchField, statusFilter);
 
         Div top = new Div();
         top.addClassName("tenant-table-top");
@@ -624,20 +587,6 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
                 );
     }
 
-    private long zaehleAktiveVertraege() {
-        return mietvertragService.findeAlleMietvertraege()
-                .stream()
-                .filter(this::istAktiverVertrag)
-                .count();
-    }
-
-    private long zaehleAuslaufendeVertraege() {
-        return mietvertragService.findeAlleMietvertraege()
-                .stream()
-                .filter(this::istAuslaufenderVertrag)
-                .count();
-    }
-
     private String formatMieterName(Mieter mieter) {
         if (mieter == null) {
             return "-";
@@ -759,7 +708,7 @@ public class MieterVertraegeView extends Div implements HasPageHeader, AfterNavi
                 .getQueryParameters()
                 .getParameters()
                 .getOrDefault("tab", java.util.List.of("mieter"))
-                .get(0);
+                .getFirst();
 
         if ("vertraege".equalsIgnoreCase(tab)) {
             setAktiverModus(TabellenModus.VERTRAEGE);

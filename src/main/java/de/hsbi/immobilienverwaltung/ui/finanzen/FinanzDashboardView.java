@@ -7,7 +7,6 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.domain.*;
@@ -126,20 +125,15 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 "https://cdn.jsdelivr.net/npm/chart.js"
         );
 
-        addClassNames("finance-page", "finance-page-modern");
+        addClassNames("page-content", "dashboard-page", "finance-page", "finance-page-modern");
 
-        // Lädt initial die Finanzdaten ohne gesetzte Objekt-, Einheiten- oder Mieterfilter.
         ladeFinanzdaten(null, null, null);
-
-        // Baut die View mit Filterleiste, KPIs, Diagrammen und Tabellen auf.
         baueSeiteNeu();
     }
 
     private void addJavaScriptIfUiAvailable(String url) {
         UI ui = UI.getCurrent();
 
-        // In Unit-Tests gibt es oft keine vollständig initialisierte Vaadin-Session.
-        // Deshalb wird JavaScript nur geladen, wenn eine UI mit Session vorhanden ist.
         if (ui == null || ui.getSession() == null) {
             return;
         }
@@ -150,7 +144,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
     private void executeJsIfUiAvailable(String script, Object... arguments) {
         UI ui = UI.getCurrent();
 
-        // Verhindert NullPointerExceptions in Tests ohne echte Browser-Session.
         if (ui == null || ui.getSession() == null) {
             return;
         }
@@ -161,14 +154,13 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
     private void baueSeiteNeu() {
         removeAll();
 
-        // Bei jeder Filteränderung werden die Finanzdaten neu aus dem Backend geladen.
         ladeFinanzdaten(
                 ausgewaehlteImmobilieId,
                 ausgewaehlteMieteinheitId,
                 ausgewaehlterMieterId
         );
 
-        add(createFinanceHero());
+        add(createHeroSection());
         add(createFilterBar());
         add(createKpiGrid());
         add(createDashboardGrid());
@@ -183,8 +175,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         LocalDate startDatum = ermittleStartDatum();
         LocalDate endDatum = LocalDate.now();
 
-        // Einnahmen, Ausgaben und Rückstände werden passend zum Zeitraum
-        // und zu den aktuell gesetzten Filtern berechnet.
         this.summeEinnahmen =
                 zahlungsEingangService.berechneBezahlteZahlungseingaengeImZeitraum(
                         startDatum,
@@ -213,7 +203,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         this.cashflow =
                 this.summeEinnahmen.subtract(this.summeAusgaben);
 
-        // Die Diagrammdaten verwenden denselben Zeitraum und dieselben Filter wie die KPIs.
         this.chartEinnahmen =
                 berechneEinnahmenChartDaten(
                         startDatum,
@@ -233,8 +222,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         this.chartMonate =
                 berechneChartMonate(startDatum, endDatum);
 
-        // Die Tabellenzeilen enthalten zusätzlich ID und Buchungstyp,
-        // damit ein Klick direkt zur richtigen Detailansicht navigieren kann.
         this.letzteEinnahmenRows =
                 berechneLetzteEinnahmenTabellenZeilen(
                         startDatum,
@@ -278,11 +265,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         return zahlungseingaenge.stream()
                 .filter(z -> z.getZahlungsdatum() != null)
-
-                // Neueste Einnahmen werden zuerst angezeigt.
                 .sorted((z1, z2) -> z2.getZahlungsdatum().compareTo(z1.getZahlungsdatum()))
-
-                // Das Dashboard zeigt nur eine kompakte Vorschau.
                 .limit(5)
                 .map(zahlung -> new BuchungTabellenZeile(
                         zahlung.getId(),
@@ -338,11 +321,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         return ausgaben.stream()
                 .filter(a -> a.getDatum() != null)
-
-                // Neueste Ausgaben werden zuerst angezeigt.
                 .sorted((a1, a2) -> a2.getDatum().compareTo(a1.getDatum()))
-
-                // Das Dashboard zeigt nur eine kompakte Vorschau.
                 .limit(5)
                 .map(ausgabe -> new BuchungTabellenZeile(
                         ausgabe.getId(),
@@ -385,7 +364,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
     private LocalDate ermittleStartDatum() {
         LocalDate heute = LocalDate.now();
 
-        // Der aktive Zeitraum bestimmt, ab welchem Datum die Finanzdaten geladen werden.
         return switch (aktuellerFilter) {
             case EIN_MONAT -> heute.withDayOfMonth(1);
             case DREI_MONATE -> heute.minusMonths(2).withDayOfMonth(1);
@@ -399,7 +377,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         BigDecimal offen = rueckstaende == null ? BigDecimal.ZERO : rueckstaende;
         BigDecimal gesamt = bezahlt.add(offen);
 
-        // Wenn keine Zahlungen vorhanden sind, wird ein leerer Zahlungsstatus angezeigt.
         if (gesamt.compareTo(BigDecimal.ZERO) == 0) {
             this.zahlungsstatusBezahlt = 0;
             this.zahlungsstatusOffen = 0;
@@ -429,7 +406,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                         immobilieId
                 );
 
-        // Chart.js erwartet Labels und Werte getrennt voneinander.
         this.kostenverteilungLabels =
                 kostenverteilung.keySet().toArray(new String[0]);
 
@@ -454,93 +430,48 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         return summe > 0;
     }
 
-    private Component createFinanceHero() {
+    private Component createHeroSection() {
         Div hero = new Div();
         hero.addClassName("finance-hero");
 
         Div content = new Div();
         content.addClassName("finance-hero-content");
 
-        Span eyebrow = new Span("Finance Cockpit");
+        Span eyebrow = new Span("Finance Control Center");
         eyebrow.addClassName("finance-eyebrow");
 
-        H2 title = new H2("Cashflow, Kosten und Rückstände im Blick");
+        H2 title = new H2("Finanzen klar im Blick");
         title.addClassName("finance-hero-title");
 
         Paragraph subtitle = new Paragraph(
-                "Filtere nach Zeitraum, Immobilie, Einheit oder Mieter und erkenne sofort, wie sich dein Portfolio finanziell entwickelt."
+                "Analysiere Einnahmen, Ausgaben, Rückstände und Cashflow für dein Portfolio."
         );
         subtitle.addClassName("finance-hero-subtitle");
 
         Div actions = new Div();
         actions.addClassName("finance-hero-actions");
 
-        Button addBooking = new Button("Buchung anlegen", new Icon(VaadinIcon.PLUS));
-        addBooking.addClassName("primary-button");
+        Button addBooking = primaryButton("Neue Buchung", VaadinIcon.EURO);
         addBooking.addClickListener(e ->
-                UI.getCurrent().navigate("finanzen/buchung-neu")
+                getUI().ifPresent(ui -> ui.navigate("finanzen/buchung-neu"))
         );
 
-        Button showBookings = new Button("Alle Buchungen", new Icon(VaadinIcon.LIST));
-        showBookings.addClassName("secondary-button");
+        Button showBookings = secondaryButton("Alle Buchungen anzeigen", VaadinIcon.LIST);
         showBookings.addClickListener(e ->
-                UI.getCurrent().navigate("finanzen/buchungen")
+                getUI().ifPresent(ui -> ui.navigate("finanzen/buchungen"))
         );
 
         actions.add(addBooking, showBookings);
         content.add(eyebrow, title, subtitle, actions);
 
-        Div visual = new Div();
-        visual.addClassName("finance-hero-visual");
-
-        Div glowCard = new Div();
-        glowCard.addClassName("finance-hero-card");
-
-        Span cardLabel = new Span("Cashflow");
-        cardLabel.addClassName("finance-hero-card-label");
-
-        H2 cardValue = new H2(formatEuro(cashflow));
-        cardValue.addClassName("finance-hero-card-value");
-
-        Span cardMeta = new Span(getZeitraumText());
-        cardMeta.addClassName("finance-hero-card-meta");
-
-        Div sparkline = new Div();
-        sparkline.addClassName("finance-sparkline");
-
-        glowCard.add(cardLabel, cardValue, cardMeta, sparkline);
-
-        Div stats = new Div();
-        stats.addClassName("finance-hero-stats");
-        stats.add(
-                financeHeroStat("Einnahmen", formatEuro(summeEinnahmen), "success"),
-                financeHeroStat("Ausgaben", formatEuro(summeAusgaben), "danger"),
-                financeHeroStat("Rückstände", formatEuro(rueckstaende), "warning")
-        );
-
-        visual.add(glowCard, stats);
-        hero.add(content, visual);
+        hero.add(content);
 
         return hero;
     }
 
-    private Component financeHeroStat(String label, String value, String type) {
-        Div stat = new Div();
-        stat.addClassNames("finance-hero-stat", type);
-
-        Span labelText = new Span(label);
-        labelText.addClassName("finance-hero-stat-label");
-
-        Span valueText = new Span(value);
-        valueText.addClassName("finance-hero-stat-value");
-
-        stat.add(labelText, valueText);
-        return stat;
-    }
-
     private Component createFilterBar() {
         Div filterBar = new Div();
-        filterBar.addClassNames("finance-filter-bar", "finance-glass-card");
+        filterBar.addClassName("finance-filter-bar");
 
         Div left = new Div();
         left.addClassName("finance-filter-left");
@@ -592,8 +523,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         mieteinheitService.findeAlleMieteinheiten()
                 .stream()
-
-                // Wenn eine Immobilie gewählt wurde, werden nur ihre Mieteinheiten angezeigt.
                 .filter(mieteinheit ->
                         ausgewaehlteImmobilieId == null
                                 || (
@@ -626,14 +555,12 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 .filter(mietvertrag -> {
                     Mieteinheit mieteinheit = mietvertrag.getMieteinheit();
 
-                    // Wenn eine Mieteinheit gewählt wurde, werden nur Mieter dieser Einheit angezeigt.
                     if (ausgewaehlteMieteinheitId != null) {
                         return ausgewaehlteMieteinheitId.equals(
                                 mieteinheit.getId()
                         );
                     }
 
-                    // Wenn nur eine Immobilie gewählt wurde, werden alle Mieter dieser Immobilie angezeigt.
                     if (ausgewaehlteImmobilieId != null) {
                         return mieteinheit.getImmobilie() != null
                                 && ausgewaehlteImmobilieId.equals(
@@ -699,7 +626,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                             ? null
                             : option.id();
 
-            // Bei Immobilienwechsel werden abhängige Filter zurückgesetzt.
             ausgewaehlteMieteinheitId = null;
             ausgewaehlterMieterId = null;
 
@@ -717,7 +643,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
                 ausgewaehlteMieteinheitId = mieteinheit.getId();
 
-                // Wird eine Einheit gewählt, wird die zugehörige Immobilie automatisch mitgesetzt.
                 if (mieteinheit.getImmobilie() != null) {
                     ausgewaehlteImmobilieId =
                             mieteinheit.getImmobilie().getId();
@@ -750,27 +675,38 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 mieterFilter
         );
 
-        Button addBooking = new Button("Buchung anlegen", new Icon(VaadinIcon.PLUS));
-        Button showBookings = new Button("Alle Buchungen anzeigen", new Icon(VaadinIcon.LIST));
-
-        addBooking.addClickListener(e ->
-                UI.getCurrent().navigate("finanzen/buchung-neu")
-        );
-
-        showBookings.addClickListener(e ->
-                UI.getCurrent().navigate("finanzen/buchungen")
-        );
-
-        addBooking.addClassName("primary-button");
-        showBookings.addClassName("secondary-button");
-
-        HorizontalLayout bookingButtons = new HorizontalLayout(addBooking, showBookings);
-        bookingButtons.setSpacing(true);
-
         filterBar.setWidthFull();
-        filterBar.add(left, bookingButtons);
+        filterBar.add(left);
 
         return filterBar;
+    }
+
+    private Button primaryButton(
+            String text,
+            VaadinIcon icon
+    ) {
+        Button button = new Button(
+                text,
+                new Icon(icon)
+        );
+
+        button.addClassName("primary-button");
+
+        return button;
+    }
+
+    private Button secondaryButton(
+            String text,
+            VaadinIcon icon
+    ) {
+        Button button = new Button(
+                text,
+                new Icon(icon)
+        );
+
+        button.addClassName("secondary-button");
+
+        return button;
     }
 
     private <T> FilterOption<T> findeOptionNachId(
@@ -806,12 +742,13 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
     private Component createKpiGrid() {
         Div grid = new Div();
-        grid.addClassName("finance-kpi-grid");
+        grid.addClassName("dashboard-kpi-grid");
 
         grid.add(
                 kpiCard(
                         "Summe Einnahmen",
                         formatEuro(summeEinnahmen),
+                        "bezahlt",
                         getZeitraumText(),
                         VaadinIcon.TRENDING_UP,
                         "success"
@@ -819,6 +756,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 kpiCard(
                         "Summe Ausgaben",
                         formatEuro(summeAusgaben),
+                        "bezahlt",
                         getZeitraumText(),
                         VaadinIcon.TRENDING_DOWN,
                         "danger"
@@ -826,6 +764,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 kpiCard(
                         "Rückstände",
                         formatEuro(rueckstaende),
+                        "offen",
                         "Offene Zahlungseingänge",
                         VaadinIcon.REFRESH,
                         "warning"
@@ -833,6 +772,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 kpiCard(
                         "Cashflow",
                         formatEuro(cashflow),
+                        cashflow.signum() >= 0 ? "positiv" : "negativ",
                         "Einnahmen minus Ausgaben",
                         VaadinIcon.WALLET,
                         cashflow.signum() >= 0 ? "primary" : "danger"
@@ -841,6 +781,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         return grid;
     }
+
 
     private String getZeitraumText() {
         return switch (aktuellerFilter) {
@@ -851,67 +792,76 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         };
     }
 
-    private Component kpiCard(
+    private Div kpiCard(
             String title,
             String value,
-            String trend,
+            String badge,
+            String subtitle,
             VaadinIcon icon,
             String color
     ) {
         Div card = new Div();
-        card.addClassNames("finance-kpi-card", color);
+        card.addClassNames("kpi-card", "dashboard-kpi-card", color);
 
-        Div top = new Div();
-        top.addClassName("finance-kpi-top");
-
-        Div text = new Div();
-        text.addClassName("finance-kpi-text");
-
-        Span titleSpan = new Span(title);
-        titleSpan.addClassName("finance-kpi-title");
-
-        H2 valueText = new H2(value);
-        valueText.addClassName("finance-kpi-value");
-
-        Span trendText = new Span(trend);
-        trendText.addClassNames("finance-kpi-trend", color);
-
-        text.add(titleSpan, valueText, trendText);
+        Div header = new Div();
+        header.addClassName("kpi-card-header");
 
         Div iconBox = new Div(new Icon(icon));
-        iconBox.addClassNames("finance-kpi-icon", color);
+        iconBox.addClassNames("kpi-icon-box", color);
 
-        top.add(text, iconBox);
-        card.add(top);
+        Span badgeSpan = new Span(badge);
+
+        if (!badge.isBlank()) {
+            badgeSpan.addClassNames("status-badge", color);
+        }
+
+        header.add(iconBox, badgeSpan);
+
+        Paragraph titleText = new Paragraph(title);
+        titleText.addClassName("kpi-title");
+
+        H2 valueText = new H2(value);
+        valueText.addClassName("kpi-value");
+
+        Div subtitleText = new Div();
+        subtitleText.setText(subtitle);
+        subtitleText.addClassName("kpi-subtitle");
+
+        card.add(
+                header,
+                titleText,
+                valueText,
+                subtitleText
+        );
 
         return card;
     }
+
+
+
 
     private Component createDashboardGrid() {
         Div grid = new Div();
         grid.addClassName("finance-dashboard-grid");
 
         Div chartCard = new Div();
-        chartCard.addClassNames("card", "finance-main-chart-card", "finance-split-main-chart-card");
+        chartCard.addClassNames("card", "finance-split-main-chart-card");
 
         Div header = new Div();
         header.addClassName("finance-card-header");
 
         Div titleBox = new Div();
 
-        H3 chartTitle = new H3("Einnahmen & Ausgaben");
+        H3 chartTitle = new H3("Einnahmen und Ausgaben");
         chartTitle.addClassName("card-title");
 
-        Paragraph subtitle = new Paragraph(getZeitraumText() + " · getrennte Entwicklung");
+        Paragraph subtitle = new Paragraph(getZeitraumText());
         subtitle.addClassName("card-subtitle");
 
         titleBox.add(chartTitle, subtitle);
+        header.add(titleBox);
 
-        Span badge = new Span(chartMonate.length + " Monate");
-        badge.addClassNames("status-badge", "primary");
-
-        header.add(titleBox, badge);
-        chartCard.add(header, createSplitFinanceCharts());
+        chartCard.add(header, createSplitChartStack());
 
         Div side = new Div();
         side.addClassName("finance-side-column");
@@ -929,53 +879,50 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         return grid;
     }
 
-    private Component createSplitFinanceCharts() {
+    private Component createSplitChartStack() {
         Div stack = new Div();
         stack.addClassName("finance-split-chart-stack");
 
         stack.add(
-                createSingleFinanceChart(
-                        "Einnahmen",
-                        "Bezahlte Zahlungseingänge im gewählten Zeitraum",
-                        formatEuro(summeEinnahmen),
+                createSplitChartBlock(
                         "financeIncomeChart",
-                        "financeIncomeChartInstance",
+                        "Einnahmen",
+                        "Bezahlte Zahlungseingänge im Zeitraum",
+                        formatEuro(summeEinnahmen),
                         chartEinnahmen,
-                        "--color-success",
-                        "success"
+                        "success",
+                        "Einnahmen"
                 ),
-                createSingleFinanceChart(
-                        "Ausgaben",
-                        "Bezahlte Ausgaben im gewählten Zeitraum",
-                        formatEuro(summeAusgaben),
+                createSplitChartBlock(
                         "financeExpenseChart",
-                        "financeExpenseChartInstance",
+                        "Ausgaben",
+                        "Bezahlte Ausgaben im Zeitraum",
+                        formatEuro(summeAusgaben),
                         chartAusgaben,
-                        "--color-danger",
-                        "danger"
+                        "danger",
+                        "Ausgaben"
                 )
         );
 
         return stack;
     }
 
-    private Component createSingleFinanceChart(
+    private Component createSplitChartBlock(
+            String chartId,
             String title,
             String subtitle,
             String value,
-            String canvasId,
-            String instanceName,
             double[] data,
-            String colorToken,
-            String type
+            String colorClass,
+            String datasetLabel
     ) {
         Div block = new Div();
-        block.addClassNames("finance-split-chart-block", type);
+        block.addClassNames("finance-split-chart-block", colorClass);
 
         Div header = new Div();
         header.addClassName("finance-split-chart-header");
 
-        Div titleBox = new Div();
+        Div textBox = new Div();
 
         Span titleText = new Span(title);
         titleText.addClassName("finance-split-chart-title");
@@ -983,24 +930,23 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         Span subtitleText = new Span(subtitle);
         subtitleText.addClassName("finance-split-chart-subtitle");
 
-        titleBox.add(titleText, subtitleText);
+        textBox.add(titleText, subtitleText);
 
         Span valueText = new Span(value);
         valueText.addClassName("finance-split-chart-value");
 
-        header.add(titleBox, valueText);
+        header.add(textBox, valueText);
 
-        Div chartArea = new Div();
-        chartArea.addClassName("finance-split-chart-canvas");
+        Div canvasWrapper = new Div();
+        canvasWrapper.addClassName("finance-split-chart-canvas");
 
         Element canvas = new Element("canvas");
-        canvas.setAttribute("id", canvasId);
+        canvas.setAttribute("id", chartId);
 
-        chartArea.getElement().appendChild(canvas);
-        block.add(header, chartArea);
+        canvasWrapper.getElement().appendChild(canvas);
 
-        // Chart.js rendert das Liniendiagramm im Browser.
-        // Die Java-Daten werden als Parameter an das JavaScript übergeben.
+        block.add(header, canvasWrapper);
+
         executeJsIfUiAvailable("""
             setTimeout(() => {
                 const ctx = document.getElementById($0);
@@ -1008,29 +954,44 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                 if (!ctx || !window.Chart) return;
 
                 const styles = getComputedStyle(document.documentElement);
-                const chartColor = styles.getPropertyValue($4).trim() || '#2563eb';
-                const gridColor = styles.getPropertyValue('--color-border').trim() || '#e5e7eb';
-                const textColor = styles.getPropertyValue('--color-text-muted').trim() || '#6b7280';
+                const chartColor = styles
+                    .getPropertyValue($1 === 'success'
+                        ? '--color-success'
+                        : '--color-danger')
+                    .trim();
 
-                if (window[$5]) {
-                    window[$5].destroy();
+                const fillColor = styles
+                    .getPropertyValue($1 === 'success'
+                        ? '--color-success-light'
+                        : '--color-danger-light')
+                    .trim();
+
+                const gridColor =
+                    styles.getPropertyValue('--color-border').trim() || '#e5e7eb';
+
+                const instanceName = $0 + 'Instance';
+
+                if (window[instanceName]) {
+                    window[instanceName].destroy();
                 }
 
-                window[$5] = new Chart(ctx, {
+                window[instanceName] = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: $1,
+                        labels: $2,
                         datasets: [
                             {
                                 label: $3,
-                                data: $2,
+                                data: $4,
                                 borderColor: chartColor,
-                                backgroundColor: chartColor + '22',
-                                tension: 0.42,
-                                fill: true,
-                                pointRadius: 3,
-                                pointHoverRadius: 7,
-                                borderWidth: 3
+                                backgroundColor: fillColor,
+                                pointBackgroundColor: chartColor,
+                                pointBorderColor: chartColor,
+                                pointRadius: 4,
+                                pointHoverRadius: 6,
+                                borderWidth: 3,
+                                tension: 0.4,
+                                fill: true
                             }
                         ]
                     },
@@ -1040,39 +1001,16 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                         plugins: {
                             legend: {
                                 display: false
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const value = context.raw || 0;
-                                        return $3 + ': ' + new Intl.NumberFormat('de-DE', {
-                                            style: 'currency',
-                                            currency: 'EUR'
-                                        }).format(value);
-                                    }
-                                }
                             }
                         },
                         scales: {
                             x: {
-                                ticks: {
-                                    color: textColor
-                                },
                                 grid: {
                                     display: false
                                 }
                             },
                             y: {
                                 beginAtZero: true,
-                                ticks: {
-                                    color: textColor,
-                                    callback: function(value) {
-                                        return new Intl.NumberFormat('de-DE', {
-                                            notation: 'compact',
-                                            maximumFractionDigits: 1
-                                        }).format(value) + ' €';
-                                    }
-                                },
                                 grid: {
                                     color: gridColor
                                 }
@@ -1081,14 +1019,17 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                     }
                 });
             }, 300);
-        """, canvasId, chartMonate, data, title, colorToken, instanceName);
+        """, chartId, colorClass, chartMonate, datasetLabel, data);
 
         return block;
     }
 
+
+
+
     private Component createPaymentStatusCard() {
         Div card = new Div();
-        card.addClassNames("card", "finance-insight-card", "payment");
+        card.addClassName("card");
 
         Div header = new Div();
         header.addClassName("finance-card-header");
@@ -1096,36 +1037,26 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         H3 title = new H3("Zahlungsstatus");
         title.addClassName("card-title");
 
-        Span badge = new Span(String.format(Locale.GERMANY, "%.0f %% bezahlt", zahlungsstatusBezahlt));
-        badge.addClassNames("status-badge", zahlungsstatusOffen > 0 ? "warning" : "success");
-
-        header.add(title, badge);
+        header.add(title);
 
         Div chartWrapper = new Div();
-        chartWrapper.addClassName("finance-donut-wrapper");
+        chartWrapper.getStyle().set("height", "220px");
 
         Element canvas = new Element("canvas");
         canvas.setAttribute("id", "paymentStatusChart");
+        canvas.getStyle().set("width", "100%");
+        canvas.getStyle().set("height", "220px");
 
         chartWrapper.getElement().appendChild(canvas);
 
-        // Zeigt das Verhältnis zwischen bezahlten und offenen Zahlungseingängen.
         executeJsIfUiAvailable("""
             setTimeout(() => {
                 const ctx = document.getElementById('paymentStatusChart');
 
-                if (!ctx || !window.Chart) return;
+                if (!ctx) return;
 
-                const styles = getComputedStyle(document.documentElement);
-                const success = styles.getPropertyValue('--color-success').trim() || '#10b981';
-                const warning = styles.getPropertyValue('--color-warning').trim() || '#f59e0b';
-
-                if (window.paymentStatusChartInstance) {
-                    window.paymentStatusChartInstance.destroy();
-                }
-
-                window.paymentStatusChartInstance = new Chart(ctx, {
-                    type: 'doughnut',
+                new Chart(ctx, {
+                    type: 'pie',
                     data: {
                         labels: [
                             'Bezahlt',
@@ -1133,23 +1064,15 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                         ],
                         datasets: [{
                             data: [$0, $1],
-                            backgroundColor: [success, warning],
-                            borderWidth: 0,
-                            hoverOffset: 8
+                            borderWidth: 0
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        cutout: '70%',
                         plugins: {
                             legend: {
-                                position: 'bottom',
-                                labels: {
-                                    usePointStyle: true,
-                                    boxWidth: 8,
-                                    boxHeight: 8
-                                }
+                                position: 'bottom'
                             }
                         }
                     }
@@ -1169,59 +1092,39 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
     }
 
     private Component createCostDistributionCard() {
-        // Ohne Daten wird die Kostenverteilung nicht angezeigt.
         if (!hatKostenverteilungDaten()) {
             return null;
         }
 
         Div card = new Div();
-        card.addClassNames("card", "finance-insight-card", "cost");
-
-        Div header = new Div();
-        header.addClassName("finance-card-header");
+        card.addClassName("card");
 
         H3 title = new H3("Kostenverteilung");
         title.addClassName("card-title");
 
-        Span badge = new Span(kostenverteilungLabels.length + " Kategorien");
-        badge.addClassNames("status-badge", "primary");
-
-        header.add(title, badge);
-
         Div wrapper = new Div();
-        wrapper.addClassName("finance-donut-wrapper");
+        wrapper.getStyle().set("height", "260px");
 
         Element canvas = new Element("canvas");
         canvas.setAttribute("id", "costDistributionChart");
+        canvas.getStyle().set("width", "100%");
+        canvas.getStyle().set("height", "260px");
 
         wrapper.getElement().appendChild(canvas);
 
-        // Zeigt die Ausgaben gruppiert nach Kategorie.
         executeJsIfUiAvailable("""
             setTimeout(() => {
                 const ctx = document.getElementById('costDistributionChart');
 
-                if (!ctx || !window.Chart) return;
+                if (!ctx) return;
 
-                const styles = getComputedStyle(document.documentElement);
-                const primary = styles.getPropertyValue('--color-primary').trim() || '#2563eb';
-                const success = styles.getPropertyValue('--color-success').trim() || '#10b981';
-                const warning = styles.getPropertyValue('--color-warning').trim() || '#f59e0b';
-                const danger = styles.getPropertyValue('--color-danger').trim() || '#ef4444';
-
-                if (window.costDistributionChartInstance) {
-                    window.costDistributionChartInstance.destroy();
-                }
-
-                window.costDistributionChartInstance = new Chart(ctx, {
+                new Chart(ctx, {
                     type: 'doughnut',
                     data: {
                         labels: $0,
                         datasets: [{
                             data: $1,
-                            backgroundColor: [primary, success, warning, danger, '#6366f1', '#14b8a6'],
-                            borderWidth: 0,
-                            hoverOffset: 8
+                            borderWidth: 0
                         }]
                     },
                     options: {
@@ -1229,12 +1132,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                         maintainAspectRatio: false,
                         plugins: {
                             legend: {
-                                position: 'bottom',
-                                labels: {
-                                    usePointStyle: true,
-                                    boxWidth: 8,
-                                    boxHeight: 8
-                                }
+                                position: 'bottom'
                             }
                         },
                         cutout: '68%'
@@ -1243,7 +1141,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
             }, 300);
         """, kostenverteilungLabels, kostenverteilungDaten);
 
-        card.add(header, wrapper);
+        card.add(title, wrapper);
 
         return card;
     }
@@ -1288,7 +1186,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
             List<BuchungTabellenZeile> rows
     ) {
         Div card = new Div();
-        card.addClassNames("table-card", "finance-transaction-card");
+        card.addClassNames("card", "finance-transaction-card");
 
         Div titleBox = new Div();
         titleBox.addClassName("finance-table-title-box");
@@ -1335,15 +1233,15 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
     private Component emptyTableRow() {
         Div row = new Div();
-        row.addClassNames("finance-table-row", "finance-table-empty");
+        row.addClassName("finance-table-row");
 
-        Span status = new Span("Keine Daten");
-        status.addClassNames("status-badge", "neutral");
+        Span status = new Span("-");
+        status.addClassNames("status-badge", "warning");
 
         row.add(
                 new Span(getZeitraumText()),
                 new Span("-"),
-                new Span("Keine Buchungen vorhanden"),
+                new Span("Keine Daten"),
                 status,
                 new Span(formatEuro(BigDecimal.ZERO))
         );
@@ -1363,18 +1261,21 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
                         : "warning"
         );
 
-        Span amount = new Span(data.betrag());
-        amount.addClassName(data.typ() == BuchungTyp.EINNAHME ? "amount-positive" : "amount-negative");
+        Span betrag = new Span(data.betrag());
+        betrag.addClassName(
+                data.typ() == BuchungTyp.EINNAHME
+                        ? "amount-positive"
+                        : "amount-negative"
+        );
 
         row.add(
                 new Span(data.datum()),
                 new Span(data.objekt()),
                 new Span(data.kategorie()),
                 status,
-                amount
+                betrag
         );
 
-        // Leitet zur vorhandenen Detailansicht der jeweiligen Buchung weiter.
         row.addClickListener(event ->
                 getUI().ifPresent(ui ->
                         ui.navigate(
@@ -1399,7 +1300,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         List<YearMonth> monate = ermittleMonateImZeitraum(startDatum, endDatum);
         double[] daten = new double[monate.size()];
 
-        // Berechnet pro Monat die bezahlten Einnahmen für den aktiven Filter.
         for (int i = 0; i < monate.size(); i++) {
             YearMonth monat = monate.get(i);
 
@@ -1426,7 +1326,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         List<YearMonth> monate = ermittleMonateImZeitraum(startDatum, endDatum);
         double[] daten = new double[monate.size()];
 
-        // Berechnet pro Monat die bezahlten Ausgaben für den aktiven Immobilienfilter.
         for (int i = 0; i < monate.size(); i++) {
             YearMonth monat = monate.get(i);
 
@@ -1472,7 +1371,6 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
         YearMonth aktuell = start;
 
-        // Ermittelt alle Monate zwischen Start- und Enddatum inklusive.
         while (!aktuell.isAfter(ende)) {
             monate.add(aktuell);
             aktuell = aktuell.plusMonths(1);

@@ -90,7 +90,7 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         Paragraph subtitle = new Paragraph("Filtern, prüfen und direkt in die Detailansicht springen – mit kompakten Kennzahlen pro Immobilie.");
         subtitle.addClassName("property-list-hero-subtitle");
 
-        Button newButton = new Button("Neue Immobilie", VaadinIcon.PLUS.create());
+        Button newButton = new Button("Neue Immobilie", VaadinIcon.BUILDING.create());
         newButton.addClassName("primary-button");
         newButton.addClickListener(event ->
                 getUI().ifPresent(ui -> ui.navigate(ImmobilieFormView.class))
@@ -98,11 +98,7 @@ public class ImmobilienListView extends Div implements HasPageHeader {
 
         content.add(eyebrow, title, subtitle, newButton);
 
-        Div visual = new Div();
-        visual.addClassName("property-list-hero-visual");
-        visual.add(new Icon(VaadinIcon.BUILDING), new Span("ImmoPro"));
-
-        hero.add(content, visual);
+        hero.add(content);
         return hero;
     }
 

@@ -112,7 +112,7 @@ public class BuchungListView extends Div implements HasPageHeader {
         Div actions = new Div();
         actions.addClassName("booking-list-hero-actions");
 
-        Button neueBuchungButton = new Button("Neue Buchung", VaadinIcon.PLUS.create());
+        Button neueBuchungButton = new Button("Neue Buchung", VaadinIcon.EURO.create());
         neueBuchungButton.addClassName("primary-button");
         neueBuchungButton.addClickListener(event ->
                 getUI().ifPresent(ui -> ui.navigate(BuchungFormView.class))
@@ -127,58 +127,19 @@ public class BuchungListView extends Div implements HasPageHeader {
         actions.add(neueBuchungButton, dashboardButton);
         content.add(eyebrow, title, subtitle, actions);
 
-        Div visual = new Div();
-        visual.addClassName("booking-list-hero-visual");
-
-        Div panel = new Div();
-        panel.addClassName("booking-list-hero-panel");
-
-        Span panelLabel = new Span("Aktueller Bestand");
-        panelLabel.addClassName("booking-list-panel-label");
-
-        H2 total = new H2(String.valueOf(alleBuchungen.size()));
-        total.addClassName("booking-list-panel-value");
-
-        Span panelMeta = new Span("Buchungen im System");
-        panelMeta.addClassName("booking-list-panel-meta");
-
-        Div miniStats = new Div();
-        miniStats.addClassName("booking-list-mini-stats");
-        miniStats.add(
-                createMiniStat("Einnahmen", zaehleTyp("Einnahme"), "income"),
-                createMiniStat("Ausgaben", zaehleTyp("Ausgabe"), "expense"),
-                createMiniStat("Offen", zaehleOffeneBuchungen(), "open")
-        );
-
-        panel.add(panelLabel, total, panelMeta, miniStats);
-        visual.add(panel);
-
-        hero.add(content, visual);
+        hero.add(content);
         return hero;
-    }
-
-    private Component createMiniStat(String label, int value, String style) {
-        Div stat = new Div();
-        stat.addClassNames("booking-list-mini-stat", style);
-
-        Span valueText = new Span(String.valueOf(value));
-        valueText.addClassName("booking-list-mini-value");
-
-        Span labelText = new Span(label);
-        labelText.addClassName("booking-list-mini-label");
-
-        stat.add(valueText, labelText);
-        return stat;
     }
 
     private Component createKpiGrid() {
         Div grid = new Div();
-        grid.addClassName("booking-list-kpi-grid");
+        grid.addClassNames("booking-list-kpi-grid", "dashboard-kpi-grid");
 
         grid.add(
                 createKpiCard(
                         "Alle Buchungen",
                         String.valueOf(alleBuchungen.size()),
+                        "gesamt",
                         "Einnahmen und Ausgaben",
                         VaadinIcon.ARCHIVE,
                         "primary"
@@ -186,6 +147,7 @@ public class BuchungListView extends Div implements HasPageHeader {
                 createKpiCard(
                         "Einnahmen",
                         String.valueOf(zaehleTyp("Einnahme")),
+                        "bezahlt",
                         "Zahlungseingänge",
                         VaadinIcon.ARROW_DOWN,
                         "success"
@@ -193,6 +155,7 @@ public class BuchungListView extends Div implements HasPageHeader {
                 createKpiCard(
                         "Ausgaben",
                         String.valueOf(zaehleTyp("Ausgabe")),
+                        "erfasst",
                         "Zahlungsausgänge",
                         VaadinIcon.ARROW_UP,
                         "danger"
@@ -200,6 +163,7 @@ public class BuchungListView extends Div implements HasPageHeader {
                 createKpiCard(
                         "Offene Buchungen",
                         String.valueOf(zaehleOffeneBuchungen()),
+                        "offen",
                         "Noch ausstehend",
                         VaadinIcon.CLOCK,
                         "warning"
@@ -209,36 +173,52 @@ public class BuchungListView extends Div implements HasPageHeader {
         return grid;
     }
 
+
     private Component createKpiCard(
-            String label,
+            String title,
             String value,
+            String badge,
             String subtitle,
             VaadinIcon icon,
-            String style
+            String color
     ) {
         Div card = new Div();
-        card.addClassNames("booking-list-kpi-card", style);
+        card.addClassNames("kpi-card", "dashboard-kpi-card", color);
 
-        Div text = new Div();
-        text.addClassName("booking-list-kpi-text");
-
-        Span labelText = new Span(label);
-        labelText.addClassName("booking-list-kpi-label");
-
-        H3 valueText = new H3(value);
-        valueText.addClassName("booking-list-kpi-value");
-
-        Span subtitleText = new Span(subtitle);
-        subtitleText.addClassName("booking-list-kpi-subtitle");
-
-        text.add(labelText, valueText, subtitleText);
+        Div header = new Div();
+        header.addClassName("kpi-card-header");
 
         Div iconBox = new Div(icon.create());
-        iconBox.addClassNames("booking-list-kpi-icon", style);
+        iconBox.addClassNames("kpi-icon-box", color);
 
-        card.add(text, iconBox);
+        Span badgeSpan = new Span(badge);
+
+        if (!badge.isBlank()) {
+            badgeSpan.addClassNames("status-badge", color);
+        }
+
+        header.add(iconBox, badgeSpan);
+
+        Paragraph titleText = new Paragraph(title);
+        titleText.addClassName("kpi-title");
+
+        H2 valueText = new H2(value);
+        valueText.addClassName("kpi-value");
+
+        Div subtitleText = new Div();
+        subtitleText.setText(subtitle);
+        subtitleText.addClassName("kpi-subtitle");
+
+        card.add(
+                header,
+                titleText,
+                valueText,
+                subtitleText
+        );
+
         return card;
     }
+
 
     private Div createFilterCard() {
         Div filterCard = new Div();
@@ -449,7 +429,7 @@ public class BuchungListView extends Div implements HasPageHeader {
                 .setAutoWidth(true)
                 .setFlexGrow(2);
 
-        grid.addComponentColumn(buchung -> createAmountText(buchung))
+        grid.addComponentColumn(this::createAmountText)
                 .setHeader("Betrag")
                 .setAutoWidth(true);
 
@@ -759,7 +739,7 @@ public class BuchungListView extends Div implements HasPageHeader {
             }
         }
 
-        return vertraege.get(0);
+        return vertraege.getFirst();
     }
 
     private String formatiereImmobilie(Immobilie immobilie) {

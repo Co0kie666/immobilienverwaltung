@@ -6,8 +6,6 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.router.Route;
 import de.hsbi.immobilienverwaltung.domain.Zahlungseingang;
@@ -146,7 +144,7 @@ public class DashboardView extends Div implements HasPageHeader {
         Div actions = new Div();
         actions.addClassName("dashboard-hero-actions");
 
-        Button neueImmobilie = primaryButton("Neue Immobilie", VaadinIcon.PLUS);
+        Button neueImmobilie = primaryButton("Neue Immobilie", VaadinIcon.BUILDING);
         neueImmobilie.addClickListener(e ->
                 getUI().ifPresent(ui -> ui.navigate("immobilien/neu"))
         );
@@ -156,46 +154,25 @@ public class DashboardView extends Div implements HasPageHeader {
                 getUI().ifPresent(ui -> ui.navigate("mieter-anlegen"))
         );
 
-        Button neueZahlung = secondaryButton("Neue Zahlung", VaadinIcon.EURO);
-        neueZahlung.addClickListener(e ->
+        Button neuerVertrag = secondaryButton("Neuer Vertrag", VaadinIcon.FILE_TEXT);
+        neuerVertrag.addClickListener(e ->
+                getUI().ifPresent(ui -> ui.navigate("mietvertrag-anlegen"))
+        );
+
+        Button neueBuchung = secondaryButton("Neue Buchung", VaadinIcon.EURO);
+        neueBuchung.addClickListener(e ->
                 getUI().ifPresent(ui -> ui.navigate("finanzen/buchung-neu"))
         );
 
-        actions.add(neueImmobilie, neuerMieter, neueZahlung);
+        actions.add(neueImmobilie, neuerMieter, neuerVertrag, neueBuchung);
         content.add(eyebrow, title, subtitle, actions);
 
         Div visual = new Div();
         visual.addClassName("dashboard-hero-visual");
 
-        Div illustration = new Div();
-        illustration.addClassName("dashboard-building-illustration");
-
-        Div stats = new Div();
-        stats.addClassName("dashboard-hero-stats");
-        stats.add(
-                heroStat("Vermietet", String.valueOf(vermieteteMieteinheiten)),
-                heroStat("Leerstand", String.valueOf(leerstehendeMieteinheiten)),
-                heroStat("Verträge", String.valueOf(aktiveVertraege))
-        );
-
-        visual.add(illustration, stats);
         hero.add(content, visual);
 
         return hero;
-    }
-
-    private Component heroStat(String label, String value) {
-        Div stat = new Div();
-        stat.addClassName("dashboard-hero-stat");
-
-        Span valueText = new Span(value);
-        valueText.addClassName("dashboard-hero-stat-value");
-
-        Span labelText = new Span(label);
-        labelText.addClassName("dashboard-hero-stat-label");
-
-        stat.add(valueText, labelText);
-        return stat;
     }
 
     private Component createKpiSection() {
