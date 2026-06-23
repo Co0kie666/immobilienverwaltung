@@ -150,6 +150,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         ui.getPage().executeJs(script, arguments);
     }
 
+    // Lädt die Daten neu und baut die Ansicht mit den aktuellen Filtern auf.
     private void baueSeiteNeu() {
         removeAll();
 
@@ -166,6 +167,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         add(createTableGrid());
     }
 
+    // Berechnet Kennzahlen, Diagrammdaten und Tabellenzeilen für den gewählten Zeitraum.
     private void ladeFinanzdaten(
             Long immobilieId,
             Long mieteinheitId,
@@ -458,6 +460,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         return hero;
     }
 
+    // Erstellt Zeitraum-, Immobilien-, Einheiten- und Mieterfilter.
     private Component createFilterBar() {
         Div filterBar = new Div();
         filterBar.addClassName("finance-filter-bar");
@@ -729,6 +732,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         }
     }
 
+    // Erstellt die KPI-Karten mit den wichtigsten Finanzkennzahlen.
     private Component createKpiGrid() {
         Div grid = new Div();
         grid.addClassName("dashboard-kpi-grid");
@@ -829,6 +833,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
 
 
 
+    // Baut den Diagrammbereich mit Einnahmen, Ausgaben und Zahlungsstatus auf.
     private Component createDashboardGrid() {
         Div grid = new Div();
         grid.addClassName("finance-dashboard-grid");
@@ -1238,6 +1243,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         return row;
     }
 
+    // Erstellt eine klickbare Tabellenzeile und verlinkt zur passenden Buchungsdetailseite.
     private Component tableRow(BuchungTabellenZeile data) {
         Div row = new Div();
         row.addClassNames("finance-table-row", "clickable-table-row");
@@ -1349,6 +1355,7 @@ public class FinanzDashboardView extends Div implements HasPageHeader {
         return labels;
     }
 
+    // Ermittelt alle Monate, die im ausgewählten Zeitraum angezeigt werden sollen.
     private List<YearMonth> ermittleMonateImZeitraum(
             LocalDate startDatum,
             LocalDate endDatum
