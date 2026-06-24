@@ -119,24 +119,45 @@
    Filterkarte Immobilienübersicht
    ========================================================= */
 
-.filter-card {
-    background: var(--color-surface);
+.immobilien-list-view .filter-card {
+    display: block;
+    width: 100%;
+    padding: 0;
+    overflow: hidden;
     border: 1px solid var(--color-border);
-    border-radius: 18px;
-    padding: 18px;
+    border-radius: 26px;
+    background: rgba(255, 255, 255, 0.92);
     box-shadow: var(--shadow-soft);
-
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr;
-    gap: 16px;
-    align-items: end;
+    backdrop-filter: blur(14px);
 }
 
-.filter-card-modern {
-    border-radius: 22px;
-    background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.90)),
-            radial-gradient(circle at 18% 0%, rgba(37, 99, 235, 0.08), transparent 36%);
+.property-list-filter-fields {
+    display: grid;
+    grid-template-columns: minmax(280px, 1.65fr) repeat(3, minmax(150px, 1fr));
+    gap: 16px;
+    align-items: end;
+    padding: 20px 24px 24px 24px;
+}
+
+.immobilien-list-view .filter-card vaadin-text-field,
+.immobilien-list-view .filter-card vaadin-select {
+    width: 100%;
+    min-width: 0;
+}
+
+.immobilien-list-view vaadin-text-field::part(input-field),
+.immobilien-list-view vaadin-select::part(input-field) {
+    border-radius: 16px;
+    background: #f8fafc;
+    border: 1px solid transparent;
+    box-shadow: none;
+}
+
+.immobilien-list-view vaadin-text-field:focus-within::part(input-field),
+.immobilien-list-view vaadin-select:focus-within::part(input-field) {
+    background: #ffffff;
+    border-color: rgba(37, 99, 235, 0.35);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
 }
 
 /* =========================================================
