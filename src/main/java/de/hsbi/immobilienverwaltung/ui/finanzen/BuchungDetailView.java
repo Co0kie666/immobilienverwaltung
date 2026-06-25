@@ -811,7 +811,7 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
             }
         }
 
-        return vertraege.get(0);
+        return vertraege.getFirst();
     }
 
     private Mieter ermittleMieter() {
