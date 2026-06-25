@@ -103,11 +103,28 @@ public class ImmobilienListView extends Div implements HasPageHeader {
     private Div erstelleFilterKarten() {
         Div filterCard = new Div();
         filterCard.addClassName("filter-card");
-        filterCard.addClassName("filter-card-modern");
 
-        locationField.setLabel("Ort / PLZ");
-        locationField.setPlaceholder("z. B. Bielefeld");
-        locationField.setPrefixComponent(VaadinIcon.MAP_MARKER.create());
+        Div header = new Div();
+        header.addClassName("booking-list-filter-header");
+
+        Div titleBox = new Div();
+
+        H3 title = new H3("Immobilien filtern");
+        title.addClassName("card-title");
+
+        Paragraph subtitle = new Paragraph("Suche nach Ort, PLZ, Immobilientyp, Anzahl der Einheiten oder Leerstand.");
+        subtitle.addClassName("card-subtitle");
+
+        titleBox.add(title, subtitle);
+
+        header.add(titleBox);
+
+        Div fields = new Div();
+        fields.addClassName("property-list-filter-fields");
+
+        locationField.setLabel("Suche");
+        locationField.setPlaceholder("Ort oder PLZ suchen...");
+        locationField.setPrefixComponent(VaadinIcon.SEARCH.create());
         locationField.setClearButtonVisible(true);
         locationField.setValueChangeMode(ValueChangeMode.LAZY);
 
@@ -130,7 +147,14 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         vacancySelect.addValueChangeListener(event -> wendeFilterAn());
         locationField.addValueChangeListener(event -> wendeFilterAn());
 
-        filterCard.add(locationField, typSelect, unitsSelect, vacancySelect);
+        fields.add(
+                locationField,
+                typSelect,
+                unitsSelect,
+                vacancySelect
+        );
+
+        filterCard.add(header, fields);
 
         return filterCard;
     }

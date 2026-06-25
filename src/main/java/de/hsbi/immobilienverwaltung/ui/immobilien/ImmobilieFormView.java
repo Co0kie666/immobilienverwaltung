@@ -60,10 +60,7 @@ public class ImmobilieFormView extends Div implements HasPageHeader {
     private final Binder<Immobilie> immobilieFormularBinder = new Binder<>(Immobilie.class);
     private final Binder<Adresse> adresseFormularBinder = new Binder<>(Adresse.class);
 
-    public ImmobilieFormView(
-            ImmobilieService immobilieService,
-            MieteinheitService mieteinheitService
-    ) {
+    public ImmobilieFormView(ImmobilieService immobilieService, MieteinheitService mieteinheitService) {
         this.immobilieService = immobilieService;
         this.mieteinheitService = mieteinheitService;
 

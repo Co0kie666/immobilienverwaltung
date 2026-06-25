@@ -261,6 +261,30 @@
     width: 190px;
 }
 
+.finance-filter-bar .dashboard-filter-combo {
+    width: 190px;
+    min-width: 190px;
+}
+
+.finance-filter-bar .dashboard-filter-combo::part(input-field) {
+    border-radius: 16px;
+    background: #f8fafc;
+    border: 1px solid transparent;
+    box-shadow: none;
+    min-height: 42px;
+}
+
+.finance-filter-bar .dashboard-filter-combo:focus-within::part(input-field) {
+    background: #ffffff;
+    border-color: rgba(37, 99, 235, 0.35);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
+}
+
+.finance-filter-bar .dashboard-filter-combo::part(toggle-button),
+.finance-filter-bar .dashboard-filter-combo::part(clear-button) {
+    color: var(--color-text-muted);
+}
+
 /* =========================================================
    KPI-Cards
    Unterstützt beide Varianten:
