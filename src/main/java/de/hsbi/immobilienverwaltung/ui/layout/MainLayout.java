@@ -35,9 +35,12 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
         this.authService = authService;
         addClassName("main-layout");
 
-        setPrimarySection(Section.DRAWER); // Sidebar geht von oben bis unten
+        // Sidebar geht von oben bis unten
+        setPrimarySection(Section.DRAWER);
 
+        // Sidebar
         addToDrawer(createSidebar());
+        // obere Navigationsleiste
         addToNavbar(createHeader());
     }
 
@@ -65,11 +68,9 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
         logoArea.add(logoBox, logoText);
 
-        // Menu Label
         Span menuLabel = new Span("Menu");
         menuLabel.addClassName("menu-label");
 
-        // navigation
         VerticalLayout navigation = new VerticalLayout();
         navigation.addClassName("navigation");
         navigation.setPadding(false);
@@ -83,7 +84,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
                 createNavLink("Finanzen", VaadinIcon.CHART, FinanzDashboardView.class)
         );
 
-        // Abstandshalter, damit General nach unten geschoben wird
+        // Abstandshalter, damit Logout nach unten geschoben wird
         Div spacer = new Div();
         spacer.addClassName("sidebar-spacer");
 
@@ -218,17 +219,21 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
         return userProfile;
     }
 
-    /* Aktualisiert den Titel im Header passend zur aktuellen Seite
-    Wird nach jeder Navigation automatisch aufgerufen */
+    /*
+    * Aktualisiert den Titel im Header passend zur aktuellen Seite
+    * Wird nach jeder Navigation automatisch aufgerufen
+    */
     @Override
     public void afterNavigation(AfterNavigationEvent event) {
         Component content = getContent(); // holt sich aktuelle View
 
-        if (content instanceof HasPageHeader page) { // prüft ob die View das Interface HasPageTitle implementiert
+        // prüft ob die View das Interface HasPageTitle implementiert
+        if (content instanceof HasPageHeader page) {
             pageTitle.setText(page.getPageTitle());
 
             String subtitle = page.getPageSubtitle();
             pageSubtitle.setText(subtitle);
+            // Zeige pageSubtitle nur wenn subtitle nicht null und nicht leer ist
             pageSubtitle.setVisible(subtitle != null && !subtitle.isBlank());
         } else {
             pageTitle.setText("");

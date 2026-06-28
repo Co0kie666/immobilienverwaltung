@@ -58,7 +58,7 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         konfiguriereMieteinheitenSuchfeld();
 
         // Die Tabelle wird nur einmal konfiguriert. Beim Laden der Seite werden später
-        // nur noch die angezeigten Daten über setItems(...) aktualisiert.
+        // nur noch die angezeigten Daten über setItems(...) aktualisiert
         konfiguriereMieteinheitenTabelle();
     }
 
@@ -74,7 +74,7 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         ladeImmobilie();
 
         // Vor dem Neuaufbau wird die View geleert, damit bei erneutem Aufruf
-        // keine alten Komponenten aus einer vorherigen Anzeige bestehen bleiben.
+        // keine alten Komponenten aus einer vorherigen Anzeige bestehen bleiben
         removeAll();
 
         add(
@@ -84,8 +84,7 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                 erstelleUebersichtsBereich(),
                 erstelleMieteinheitenKarte()
         );
-
-        ladeMieteinheiten();
+        wendeMieteinheitenSucheAn();
     }
 
     private void ladeImmobilie() {
@@ -93,9 +92,6 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
                 .orElseThrow(() -> new IllegalArgumentException("Immobilie wurde nicht gefunden."));
     }
 
-    private void ladeMieteinheiten() {
-        wendeMieteinheitenSucheAn();
-    }
 
     private void wendeMieteinheitenSucheAn() {
         if (immobilieId == null) {
@@ -161,7 +157,6 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
 
         dialog.open();
     }
-
 
     private Component erstelleHeroBereich() {
         Div hero = new Div();
@@ -474,7 +469,12 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
 
         karte.add(titel, canvas);
 
-        // charts js
+        /*
+        * Rendert die Leerstandsquote als Doughnut Diagramm mit Chart.js
+        * Die Werte für vermietete und leerstehende Einheiten werden in Java berechnet
+        * und an das JavaScript übergeben. Vor dem Zeichnen wird eine vorhandene
+        * Chart-Instanz entfernt, damit das Diagramm beim erneuten Laden korrekt aktualisiert wird
+        */
         karte.getElement().executeJs("""
                 const vermietet = Number($0);
                 const leerstand = Number($1);
@@ -555,6 +555,7 @@ public class ImmobilieDetailView extends Div implements HasPageHeader, BeforeEnt
         return karte;
     }
 
+    // Ermittelt anhand des Immobilientyps eine passende CSS-Klasse
     private String ermittleTypCssKlasse(Immobilie immobilie) {
         if (immobilie.getTyp() == null) {
             return "typ-default";
