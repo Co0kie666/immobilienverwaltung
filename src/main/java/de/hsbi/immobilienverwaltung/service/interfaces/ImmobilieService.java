@@ -7,8 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Service Schnittstelle für die fachliche Verwaltung von Immobilien.
- * Die Implementierung enthält Validierungen und Geschäftsregeln
+ * Service Schnittstelle für die fachliche Verwaltung von Immobilien
  */
 public interface ImmobilieService {
 

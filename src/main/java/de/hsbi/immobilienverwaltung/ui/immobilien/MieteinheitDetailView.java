@@ -25,7 +25,6 @@ import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import de.hsbi.immobilienverwaltung.ui.mieter.MietvertragListView;
 import jakarta.annotation.security.PermitAll;
 import de.hsbi.immobilienverwaltung.ui.UiFormatUtils;
-import java.time.LocalDate;
 import java.util.List;
 
 @Route(value = "immobilien/:immobilieId/einheiten/:mieteinheitId/details", layout = MainLayout.class)
@@ -39,6 +38,7 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
     private Long mieteinheitId;
 
     private Mieteinheit mieteinheit;
+
     private List<Mietvertrag> mietvertraege = List.of();
 
     public MieteinheitDetailView(
@@ -54,6 +54,9 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        // Die IDs werden aus der Route gelesen.
+        // Beispiel: /immobilien/1/einheiten/5/details
+        // immobilieId = 1, mieteinheitId = 5
         this.immobilieId = event.getRouteParameters()
                 .get("immobilieId")
                 .map(Long::valueOf)
@@ -304,6 +307,7 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
     }
 
     private Mietvertrag findeAktuellenMietvertrag() {
+        // Aus allen Verträgen der Mieteinheit wird der erste laufende Vertrag gesucht
         return mietvertraege.stream()
                 .filter(this::istLaufenderVertrag)
                 .findFirst()
@@ -405,10 +409,10 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         header.add(titleBox, counter);
         karte.add(header);
 
-        List<Mietvertrag> historischeVertraege = mietvertraege.stream()
-                .filter(this::istHistorischerVertrag)
-                .sorted(this::vergleicheNachEnddatumAbsteigend)
-                .toList();
+        // Für die Historie werden nur beendete oder bereits ausgelaufene Verträge angezeigt
+        // sortiert nach dem Enddatum
+        List<Mietvertrag> historischeVertraege =
+                mietvertragService.findeHistorischeMietvertraegeNachMieteinheit(mieteinheitId);
 
         if (historischeVertraege.isEmpty()) {
             karte.add(erstelleLeerenHistorieHinweis());
@@ -503,52 +507,12 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
         dialog.open();
     }
 
+    private int zaehleHistorischeVertraege() {
+        return mietvertragService.findeHistorischeMietvertraegeNachMieteinheit(mieteinheitId).size();
+    }
+
     private boolean istLaufenderVertrag(Mietvertrag mietvertrag) {
-        if (mietvertrag == null || mietvertrag.getStatus() == null) {
-            return false;
-        }
-
-        if (mietvertrag.getStatus() == Vertragsstatus.AKTIV) {
-            return true;
-        }
-
-        return mietvertrag.getStatus() == Vertragsstatus.GEKUENDIGT
-                && (
-                mietvertrag.getEnddatum() == null
-                        || !mietvertrag.getEnddatum().isBefore(LocalDate.now())
-        );
-    }
-
-    private boolean istHistorischerVertrag(Mietvertrag mietvertrag) {
-        if (mietvertrag == null || mietvertrag.getStatus() == null) {
-            return false;
-        }
-
-        return mietvertrag.getStatus() == Vertragsstatus.BEENDET
-                || (
-                mietvertrag.getStatus() == Vertragsstatus.GEKUENDIGT
-                        && mietvertrag.getEnddatum() != null
-                        && mietvertrag.getEnddatum().isBefore(LocalDate.now())
-        );
-    }
-
-    private int vergleicheNachEnddatumAbsteigend(Mietvertrag ersterVertrag, Mietvertrag zweiterVertrag) {
-        LocalDate erstesEnddatum = ersterVertrag.getEnddatum();
-        LocalDate zweitesEnddatum = zweiterVertrag.getEnddatum();
-
-        if (erstesEnddatum == null && zweitesEnddatum == null) {
-            return 0;
-        }
-
-        if (erstesEnddatum == null) {
-            return 1;
-        }
-
-        if (zweitesEnddatum == null) {
-            return -1;
-        }
-
-        return zweitesEnddatum.compareTo(erstesEnddatum);
+        return mietvertragService.istLaufenderVertrag(mietvertrag);
     }
 
     private Component erstelleInfoEintrag(String beschriftung, String wert) {
@@ -621,12 +585,6 @@ public class MieteinheitDetailView extends Div implements HasPageHeader, BeforeE
             case IN_RENOVIERUNG -> "warning";
             case VERMIETET -> "primary";
         };
-    }
-
-    private int zaehleHistorischeVertraege() {
-        return (int) mietvertraege.stream()
-                .filter(this::istHistorischerVertrag)
-                .count();
     }
 
     private String formatiereAktuelleWarmmiete() {

@@ -19,5 +19,11 @@ public interface MietvertragService {
 
     void kuendigeMietvertrag(Long id);
 
+    boolean istLaufenderVertrag(Mietvertrag mietvertrag);
+
+    boolean istHistorischerVertrag(Mietvertrag mietvertrag);
+
+    List<Mietvertrag> findeHistorischeMietvertraegeNachMieteinheit(Long mieteinheitId);
+
     void loescheMietvertrag(Long id);
 }

@@ -37,8 +37,8 @@ public class ImmobilienListView extends Div implements HasPageHeader {
     private final ZahlungsEingangService zahlungsEingangService;
 
     private final Select<Immobilientyp> typSelect = new Select<>();
-    private final Select<String> unitsSelect = new Select<>();
-    private final Select<String> vacancySelect = new Select<>();
+    private final Select<String> einheitenSelect = new Select<>();
+    private final Select<String> leerstandSelect = new Select<>();
     private final TextField locationField = new TextField();
 
     private static final int IMMOBILIEN_PRO_SEITE = 12;
@@ -134,24 +134,24 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         typSelect.setEmptySelectionAllowed(true);
         typSelect.setEmptySelectionCaption("Alle Typen");
 
-        unitsSelect.setLabel("Einheiten");
-        unitsSelect.setItems("Alle Größen", "1-5 Einheiten", "6-20 Einheiten", "20+ Einheiten");
-        unitsSelect.setValue("Alle Größen");
+        einheitenSelect.setLabel("Einheiten");
+        einheitenSelect.setItems("Alle Größen", "1-5 Einheiten", "6-20 Einheiten", "20+ Einheiten");
+        einheitenSelect.setValue("Alle Größen");
 
-        vacancySelect.setLabel("Leerstand");
-        vacancySelect.setItems("Alle anzeigen", "Mit Leerstand", "Ohne Leerstand");
-        vacancySelect.setValue("Alle anzeigen");
+        leerstandSelect.setLabel("Leerstand");
+        leerstandSelect.setItems("Alle anzeigen", "Mit Leerstand", "Ohne Leerstand");
+        leerstandSelect.setValue("Alle anzeigen");
 
         typSelect.addValueChangeListener(event -> wendeFilterAn());
-        unitsSelect.addValueChangeListener(event -> wendeFilterAn());
-        vacancySelect.addValueChangeListener(event -> wendeFilterAn());
+        einheitenSelect.addValueChangeListener(event -> wendeFilterAn());
+        leerstandSelect.addValueChangeListener(event -> wendeFilterAn());
         locationField.addValueChangeListener(event -> wendeFilterAn());
 
         fields.add(
                 locationField,
                 typSelect,
-                unitsSelect,
-                vacancySelect
+                einheitenSelect,
+                leerstandSelect
         );
 
         filterCard.add(header, fields);
@@ -163,10 +163,10 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         gefilterteImmobilien = immobilieService.findeGefilterteImmobilien(
                 locationField.getValue(),
                 typSelect.getValue(),
-                unitsSelect.getValue(),
-                vacancySelect.getValue()
+                einheitenSelect.getValue(),
+                leerstandSelect.getValue()
         );
-
+        // Springe nach jedem Filter auf die erste Seite
         aktuelleSeite = 0;
         aktualisiereKartenSeite();
     }
@@ -232,6 +232,8 @@ public class ImmobilienListView extends Div implements HasPageHeader {
     private void aktualisiereKartenSeite() {
         cardGrid.removeAll();
 
+        // Wenn durch die Filterung keine Immobilien vorhanden sind,
+        // wird statt der Karten ein Empty-State angezeigt
         if (gefilterteImmobilien.isEmpty()) {
             emptyState.setVisible(true);
             seitenInfo.setText("Keine Immobilien gefunden");
@@ -244,6 +246,11 @@ public class ImmobilienListView extends Div implements HasPageHeader {
 
         int gesamtSeiten = berechneGesamtSeiten();
 
+        /*
+        * Wenn die aktuelle Seite (z.B. Seite 2)
+        * nach dem Filtern größer ist als Gesamtseitenanzahl,
+        * wird zur letzten vorhandenen Seite gewechselt
+        */
         if (aktuelleSeite >= gesamtSeiten) {
             aktuelleSeite = gesamtSeiten - 1;
         }
@@ -258,11 +265,13 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         seitenInfo.setText("Seite " + (aktuelleSeite + 1) + " von " + gesamtSeiten
                 + " · " + gefilterteImmobilien.size() + " Objekt(e)");
 
+        // Navigationsbuttons nur aktivieren, wenn es eine vorherige bzw. nächste Seite gibt
         vorherigeSeiteButton.setEnabled(aktuelleSeite > 0);
         naechsteSeiteButton.setEnabled(aktuelleSeite < gesamtSeiten - 1);
     }
 
     private int berechneGesamtSeiten() {
+        // Aufrunden damit auch eine nicht vollständig gefüllte letzte Seite mitgezählt wird
         return (int) Math.ceil((double) gefilterteImmobilien.size() / IMMOBILIEN_PRO_SEITE);
     }
 
@@ -367,6 +376,7 @@ public class ImmobilienListView extends Div implements HasPageHeader {
         return leerstand + " · " + String.format(Locale.GERMANY, "%.1f %%", leerstandsquote);
     }
 
+    // Ermittelt anhand des Immobilientyps eine passende CSS-Klasse
     private String ermittleTypCssKlasse(Immobilie immobilie) {
         if (immobilie.getTyp() == null) {
             return "typ-default";

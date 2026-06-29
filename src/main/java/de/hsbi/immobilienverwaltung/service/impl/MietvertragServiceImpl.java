@@ -226,7 +226,8 @@ public class MietvertragServiceImpl implements MietvertragService {
         }
     }
 
-    private boolean istLaufenderVertrag(Mietvertrag mietvertrag) {
+    @Override
+    public boolean istLaufenderVertrag(Mietvertrag mietvertrag) {
         if (mietvertrag == null || mietvertrag.getStatus() == null) {
             return false;
         }
@@ -240,6 +241,48 @@ public class MietvertragServiceImpl implements MietvertragService {
                 mietvertrag.getEnddatum() == null
                         || !mietvertrag.getEnddatum().isBefore(LocalDate.now())
         );
+    }
+
+    @Override
+    public boolean istHistorischerVertrag(Mietvertrag mietvertrag) {
+        if (mietvertrag == null || mietvertrag.getStatus() == null) {
+            return false;
+        }
+
+        return mietvertrag.getStatus() == Vertragsstatus.BEENDET
+                || (
+                mietvertrag.getStatus() == Vertragsstatus.GEKUENDIGT
+                        && mietvertrag.getEnddatum() != null
+                        && mietvertrag.getEnddatum().isBefore(LocalDate.now())
+        );
+    }
+
+    @Override
+    @Transactional
+    public List<Mietvertrag> findeHistorischeMietvertraegeNachMieteinheit(Long mieteinheitId) {
+        return findeMietvertraegeNachMieteinheit(mieteinheitId).stream()
+                .filter(this::istHistorischerVertrag)
+                .sorted(this::vergleicheNachEnddatumAbsteigend)
+                .toList();
+    }
+
+    private int vergleicheNachEnddatumAbsteigend(Mietvertrag ersterVertrag, Mietvertrag zweiterVertrag) {
+        LocalDate erstesEnddatum = ersterVertrag.getEnddatum();
+        LocalDate zweitesEnddatum = zweiterVertrag.getEnddatum();
+
+        if (erstesEnddatum == null && zweitesEnddatum == null) {
+            return 0;
+        }
+
+        if (erstesEnddatum == null) {
+            return 1;
+        }
+
+        if (zweitesEnddatum == null) {
+            return -1;
+        }
+
+        return zweitesEnddatum.compareTo(erstesEnddatum);
     }
 
     private void aktualisiereMieteinheitStatus(Mietvertrag mietvertrag) {

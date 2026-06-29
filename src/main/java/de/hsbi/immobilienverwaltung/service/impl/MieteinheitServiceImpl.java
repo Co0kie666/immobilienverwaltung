@@ -23,7 +23,8 @@ public class MieteinheitServiceImpl implements MieteinheitService {
     private final ImmobilieRepository immobilieRepository;
     private final MietvertragRepository mietvertragRepository;
 
-    public MieteinheitServiceImpl(MieteinheitRepository mieteinheitRepository, ImmobilieRepository immobilieRepository, MietvertragRepository mietvertragRepository) {
+    public MieteinheitServiceImpl(MieteinheitRepository mieteinheitRepository, ImmobilieRepository immobilieRepository,
+                                  MietvertragRepository mietvertragRepository) {
         this.mieteinheitRepository = mieteinheitRepository;
         this.immobilieRepository = immobilieRepository;
         this.mietvertragRepository = mietvertragRepository;
@@ -70,7 +71,7 @@ public class MieteinheitServiceImpl implements MieteinheitService {
 
     // Prüfen, ob für diese Immobilie bereits Mieteinheiten existieren.
     private void pruefeGesamtobjektRegel(Long immobilieId, Mieteinheit mieteinheit) {
-        List<Mieteinheit> vorhandeneEinheiten = mieteinheitRepository.findByImmobilieId(immobilieId);
+        List<Mieteinheit> vorhandeneEinheiten = findeMieteinheitenNachImmobilie(immobilieId);
 
         for (Mieteinheit e : vorhandeneEinheiten) {
 
@@ -149,10 +150,10 @@ public class MieteinheitServiceImpl implements MieteinheitService {
         return mieteinheitRepository.countByImmobilieIdAndStatus(immobilieId, Mieteinheitstatus.IN_RENOVIERUNG);
     }
 
+    // Suchleiste, um Mieteinheiten zu filtern
     @Override
     public List<Mieteinheit> sucheMieteinheitenDerImmobilie(Long immobilieId, String suchtext) {
-        List<Mieteinheit> mieteinheiten =
-                mieteinheitRepository.findByImmobilieId(immobilieId);
+        List<Mieteinheit> mieteinheiten = findeMieteinheitenNachImmobilie(immobilieId);
 
         if (suchtext == null || suchtext.isBlank()) {
             return mieteinheiten;

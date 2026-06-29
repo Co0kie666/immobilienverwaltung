@@ -404,7 +404,7 @@ public class ImmobilieFormView extends Div implements HasPageHeader {
         );
         previewEinheit.setText(
                 Boolean.TRUE.equals(gesamtobjektErstellenCheckbox.getValue())
-                        ? "Gesamtobjekt wird angelegt"
+                        ? "Gesamtobjekt"
                         : "später anlegen"
         );
     }

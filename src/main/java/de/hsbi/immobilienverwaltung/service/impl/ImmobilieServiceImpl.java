@@ -5,7 +5,6 @@ import de.hsbi.immobilienverwaltung.domain.Immobilie;
 import de.hsbi.immobilienverwaltung.domain.Mieteinheit;
 import de.hsbi.immobilienverwaltung.domain.enums.Immobilientyp;
 import de.hsbi.immobilienverwaltung.domain.enums.Mieteinheitstatus;
-import de.hsbi.immobilienverwaltung.domain.enums.Vertragsstatus;
 import de.hsbi.immobilienverwaltung.repository.ImmobilieRepository;
 import de.hsbi.immobilienverwaltung.repository.MieteinheitRepository;
 import de.hsbi.immobilienverwaltung.repository.MietvertragRepository;
@@ -100,7 +99,7 @@ public class ImmobilieServiceImpl implements ImmobilieService {
     @Transactional
     public void loescheImmobilie(Long id) {
         // Eine Immobilie darf nicht gelöscht werden, wenn mindestens eine ihrer
-        // Mieteinheiten noch durch einen aktiven Mietvertrag belegt ist.
+        // Mieteinheiten noch durch einen aktiven Mietvertrag belegt ist
         boolean hatMietvertraege = mietvertragRepository.existsByMieteinheit_Immobilie_Id(id);
 
         if (hatMietvertraege) {
@@ -123,7 +122,7 @@ public class ImmobilieServiceImpl implements ImmobilieService {
         List<Immobilie> gefilterteImmobilien = new ArrayList<>();
 
         // Die Filter werden nacheinander geprüft. Sobald eine Immobilie ein Kriterium
-        // nicht erfüllt, wird sie übersprungen.
+        // nicht erfüllt, wird sie übersprungen
         for (Immobilie immobilie : alleImmobilien) {
 
             if (!passtOrtOderPlzFilter(immobilie, ortOderPlz)) {
@@ -151,6 +150,7 @@ public class ImmobilieServiceImpl implements ImmobilieService {
     }
 
     private boolean passtOrtOderPlzFilter(Immobilie immobilie, String ortOderPlz) {
+        // Wenn kein Suchtext eingegeben wurde ist der Ort/PLZ-Filter nicht aktiv
         if (ortOderPlz == null || ortOderPlz.isBlank()) {
             return true;
         }
@@ -159,6 +159,7 @@ public class ImmobilieServiceImpl implements ImmobilieService {
             return false;
         }
 
+        // trim() entfernt alle Leerzeichen am Anfang und Ende
         String suchtext = ortOderPlz.trim().toLowerCase();
 
         String stadt = immobilie.getAdresse().getStadt();
@@ -180,6 +181,7 @@ public class ImmobilieServiceImpl implements ImmobilieService {
     }
 
     private boolean passtEinheitenFilter(int anzahlEinheiten, String einheitenFilter) {
+        // Wenn kein einheitenFilter ausgewählt wurde, werden alle Immobilien angezeigt
         if (einheitenFilter == null || einheitenFilter.equals("Alle Größen")) {
             return true;
         }
@@ -200,6 +202,7 @@ public class ImmobilieServiceImpl implements ImmobilieService {
     }
 
     private boolean passtLeerstandFilter(List<Mieteinheit> mieteinheiten, String leerstandFilter) {
+        // Wenn kein leerStandFilter ausgewählt wurde, werden alle Immobilien angezeigt
         if (leerstandFilter == null || leerstandFilter.equals("Alle anzeigen")) {
             return true;
         }

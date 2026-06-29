@@ -258,7 +258,7 @@ public class MieteinheitFormView extends Div implements HasPageHeader, BeforeEnt
         Span title = new Span("Gut zu wissen");
         title.addClassName("mieteinheit-info-title");
 
-        Paragraph body = new Paragraph("Nach dem Speichern kannst du in der Detailansicht einen Mietvertrag für diese Einheit anlegen. Backend, Verträge und Buchungen werden hier nicht verändert.");
+        Paragraph body = new Paragraph("Nach dem Speichern kannst du in der Detailansicht einen Mietvertrag für diese Einheit anlegen.");
         body.addClassName("mieteinheit-info-body");
 
         text.add(title, body);
