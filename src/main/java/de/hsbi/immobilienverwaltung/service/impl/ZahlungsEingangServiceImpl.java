@@ -13,15 +13,35 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Service-Implementierung für die Verwaltung von Zahlungseingängen.
+ *
+ * Diese Klasse enthält die Geschäftslogik zum Speichern, Suchen,
+ * Löschen und Auswerten von Zahlungseingängen.
+ */
 @Service
 public class ZahlungsEingangServiceImpl implements ZahlungsEingangService {
 
     private final ZahlungsEingangRepository zahlungsEingangRepository;
 
+    /**
+     * Konstruktor zur Übergabe des Repositories.
+     * Das Repository wird für den Datenbankzugriff auf Zahlungseingänge verwendet.
+     */
     public ZahlungsEingangServiceImpl(ZahlungsEingangRepository zahlungsEingangRepository) {
         this.zahlungsEingangRepository = zahlungsEingangRepository;
     }
 
+    /**
+     * Speichert einen Zahlungseingang nach vorheriger Validierung.
+     *
+     * Es wird geprüft, ob alle Pflichtfelder vorhanden sind:
+     * - Zahlungseingang darf nicht null sein
+     * - Zahlungstyp muss gesetzt sein
+     * - Betrag muss größer als 0 sein
+     * - Zahlungsdatum muss vorhanden sein
+     * - Mietvertrag muss zugeordnet sein
+     */
     @Override
     @Transactional
     public Zahlungseingang speichereZahlungseingang(Zahlungseingang zahlungseingang) {
@@ -50,21 +70,36 @@ public class ZahlungsEingangServiceImpl implements ZahlungsEingangService {
         return zahlungsEingangRepository.save(zahlungseingang);
     }
 
+    /**
+     * Gibt alle gespeicherten Zahlungseingänge zurück.
+     */
     @Override
     public List<Zahlungseingang> findeAlleZahlungseingaenge() {
         return zahlungsEingangRepository.findAll();
     }
 
+    /**
+     * Sucht einen Zahlungseingang anhand seiner ID.
+     *
+     * Optional wird verwendet, da nicht garantiert ist,
+     * dass zu jeder ID ein Zahlungseingang existiert.
+     */
     @Override
     public Optional<Zahlungseingang> findeZahlungseingangNachId(Long id) {
         return zahlungsEingangRepository.findById(id);
     }
 
+    /**
+     * Gibt alle Zahlungseingänge zurück, die zu einem bestimmten Mietvertrag gehören.
+     */
     @Override
     public List<Zahlungseingang> findeZahlungseingaengeNachMietvertrag(Mietvertrag mietvertrag) {
         return zahlungsEingangRepository.findByMietvertrag(mietvertrag);
     }
 
+    /**
+     * Gibt alle Zahlungseingänge eines Mietvertrags innerhalb eines bestimmten Zeitraums zurück.
+     */
     @Override
     public List<Zahlungseingang> findeZahlungseingaengeNachMietvertragUndZeitraum(
             Mietvertrag mietvertrag,
@@ -78,6 +113,12 @@ public class ZahlungsEingangServiceImpl implements ZahlungsEingangService {
         );
     }
 
+    /**
+     * Berechnet die Summe aller Zahlungseingänge für einen Mietvertrag
+     * innerhalb eines bestimmten Zeitraums.
+     *
+     * Null-Beträge werden ignoriert, damit keine Fehler bei der Berechnung entstehen.
+     */
     @Override
     public BigDecimal berechneSummeZahlungseingaengeFuerMietvertrag(
             Mietvertrag mietvertrag,
@@ -102,6 +143,10 @@ public class ZahlungsEingangServiceImpl implements ZahlungsEingangService {
         return summe;
     }
 
+    /**
+     * Prüft, ob für einen Mietvertrag innerhalb eines bestimmten Zeitraums
+     * mindestens ein Zahlungseingang vorhanden ist.
+     */
     @Override
     public boolean hatZahlungImZeitraum(
             Mietvertrag mietvertrag,
@@ -115,12 +160,23 @@ public class ZahlungsEingangServiceImpl implements ZahlungsEingangService {
         );
     }
 
+    /**
+     * Löscht einen Zahlungseingang anhand seiner ID.
+     *
+     * Die Methode ist transaktional, da eine Änderung an der Datenbank erfolgt.
+     */
     @Override
     @Transactional
     public void loescheZahlungseingang(Long id) {
         zahlungsEingangRepository.deleteById(id);
     }
 
+    /**
+     * Berechnet die Summe aller offenen Zahlungseingänge für eine bestimmte Immobilie.
+     *
+     * Es werden nur Zahlungseingänge berücksichtigt,
+     * deren Status "Offen / Ausstehend" ist.
+     */
     @Override
     public BigDecimal berechneOffeneZahlungenFuerImmobilie(Long immobilieId) {
         List<Zahlungseingang> offeneZahlungen =
@@ -140,6 +196,11 @@ public class ZahlungsEingangServiceImpl implements ZahlungsEingangService {
         return summe;
     }
 
+    /**
+     * Zählt alle offenen Zahlungseingänge für eine bestimmte Immobilie.
+     *
+     * Diese Methode eignet sich beispielsweise für Dashboards oder Übersichten.
+     */
     @Override
     public long zaehleOffeneZahlungenFuerImmobilie(Long immobilieId) {
         return zahlungsEingangRepository.countByMietvertrag_Mieteinheit_Immobilie_IdAndStatus(
@@ -148,6 +209,11 @@ public class ZahlungsEingangServiceImpl implements ZahlungsEingangService {
         );
     }
 
+    /**
+     * Berechnet die Gesamtsumme aller bezahlten Zahlungseingänge.
+     *
+     * Es werden nur Zahlungen mit dem Status "Bezahlt / Erledigt" berücksichtigt.
+     */
     @Override
     public BigDecimal berechneGesamteBezahlteZahlungseingaenge() {
         return zahlungsEingangRepository.findByStatus("Bezahlt / Erledigt")
@@ -157,6 +223,11 @@ public class ZahlungsEingangServiceImpl implements ZahlungsEingangService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
+    /**
+     * Berechnet die Gesamtsumme aller offenen Zahlungseingänge.
+     *
+     * Es werden nur Zahlungen mit dem Status "Offen / Ausstehend" berücksichtigt.
+     */
     @Override
     public BigDecimal berechneOffeneZahlungseingaenge() {
         return zahlungsEingangRepository.findByStatus("Offen / Ausstehend")
@@ -166,6 +237,12 @@ public class ZahlungsEingangServiceImpl implements ZahlungsEingangService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
+    /**
+     * Berechnet bezahlte Zahlungseingänge innerhalb eines Zeitraums.
+     *
+     * Zusätzlich kann nach Immobilie, Mieteinheit und Mieter gefiltert werden.
+     * Wird einer dieser Filter als null übergeben, wird er ignoriert.
+     */
     @Override
     public BigDecimal berechneBezahlteZahlungseingaengeImZeitraum(
             LocalDate startDatum,
@@ -198,6 +275,15 @@ public class ZahlungsEingangServiceImpl implements ZahlungsEingangService {
                 .map(Zahlungseingang::getBetrag)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
+
+    /**
+     * Berechnet offene Zahlungseingänge innerhalb eines Zeitraums.
+     *
+     * Es werden alle Zahlungen berücksichtigt, die nicht den Status
+     * "Bezahlt / Erledigt" haben.
+     *
+     * Zusätzlich kann nach Immobilie, Mieteinheit und Mieter gefiltert werden.
+     */
     @Override
     public BigDecimal berechneOffeneZahlungseingaengeImZeitraum(
             LocalDate startDatum,
@@ -230,11 +316,25 @@ public class ZahlungsEingangServiceImpl implements ZahlungsEingangService {
                 .map(Zahlungseingang::getBetrag)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
+
+    /**
+     * Gibt alle Zahlungseingänge zurück, die aktuell offen oder ausstehend sind.
+     */
     @Override
     public List<Zahlungseingang> findeOffeneZahlungseingaenge() {
         return zahlungsEingangRepository.findByStatus("Offen / Ausstehend");
     }
 
+    /**
+     * Sucht Zahlungseingänge innerhalb eines bestimmten Zeitraums.
+     *
+     * Optional kann zusätzlich nach Immobilie, Mieteinheit und Mieter gefiltert werden.
+     * Wenn ein Filterwert null ist, wird dieser Filter nicht angewendet.
+     *
+     * Im Gegensatz zu einigen anderen Methoden werden hier mehrere Null-Prüfungen
+     * durchgeführt, damit keine NullPointerException entsteht, falls bestimmte
+     * Beziehungen nicht gesetzt sind.
+     */
     @Override
     public List<Zahlungseingang> findeZahlungseingaengeImZeitraum(
             LocalDate startDatum,

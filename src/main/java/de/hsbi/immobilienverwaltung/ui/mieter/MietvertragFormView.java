@@ -65,6 +65,7 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
 
     private Long immobilieId;
     private Long mieteinheitId;
+    private Long mieterId;
 
     public MietvertragFormView(
             MieterService mieterService,
@@ -81,33 +82,37 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
 
         Div pageWrapper = new Div();
         pageWrapper.addClassName("contract-form-wrapper");
-        pageWrapper.add(createFormContent());
+        pageWrapper.add(erstelleSeitenInhalt());
 
         add(pageWrapper);
     }
 
-    private Component createFormContent() {
+    // Die Seite besteht aus Kopfbereich, Auswahl der Vertragsparteien,
+    // Vertragsdaten, Finanzdaten und dem Speicherbereich unten.
+    private Component erstelleSeitenInhalt() {
         Div content = new Div();
         content.addClassName("contract-form-content");
 
         Div topCards = new Div();
         topCards.addClassName("contract-form-grid");
         topCards.add(
-                createMietobjektMieterCard(),
-                createVertragsdatenCard()
+                erstelleMieterUndMietobjektKarte(),
+                erstelleVertragsdatenKarte()
         );
 
         content.add(
-                createHeroSection(),
+                erstelleKopfbereich(),
                 topCards,
-                createFinanzielleDetailsCard(),
-                createBottomActions()
+                erstelleFinanzKarte(),
+                erstelleSpeicherBereich()
         );
 
         return content;
     }
 
-    private Component createHeroSection() {
+    // Oben sieht man die wichtigsten Aktionen und rechts eine kurze Vorschau.
+    // So kann man beim Ausfüllen direkt prüfen, ob der Vertrag grob passt.
+    private Component erstelleKopfbereich() {
         Div hero = new Div();
         hero.addClassName("contract-form-hero");
 
@@ -154,9 +159,9 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         Div facts = new Div();
         facts.addClassName("contract-preview-facts");
         facts.add(
-                createPreviewFact(VaadinIcon.CALENDAR, "Laufzeit", previewZeitraum),
-                createPreviewFact(VaadinIcon.EURO, "Warmmiete", previewWarmmiete),
-                createPreviewFact(VaadinIcon.CLOCK, "Kündigungsfrist", previewKuendigungsfrist)
+                erstelleVorschauHinweis(VaadinIcon.CALENDAR, "Laufzeit", previewZeitraum),
+                erstelleVorschauHinweis(VaadinIcon.EURO, "Warmmiete", previewWarmmiete),
+                erstelleVorschauHinweis(VaadinIcon.CLOCK, "Kündigungsfrist", previewKuendigungsfrist)
         );
 
         preview.add(previewLabel, previewIcon, previewMieter, previewObjekt, facts);
@@ -165,7 +170,7 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         return hero;
     }
 
-    private Component createPreviewFact(VaadinIcon icon, String labelText, Span valueSpan) {
+    private Component erstelleVorschauHinweis(VaadinIcon icon, String labelText, Span valueSpan) {
         Div fact = new Div();
         fact.addClassName("contract-preview-fact");
 
@@ -186,14 +191,16 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         return fact;
     }
 
-    private Component createMietobjektMieterCard() {
+    // Erst wird die Immobilie gewählt. Danach werden nur die passenden
+    // Mieteinheiten dieser Immobilie in der nächsten Auswahl angezeigt.
+    private Component erstelleMieterUndMietobjektKarte() {
         mieterSelect.setLabel("Mieter auswählen");
         mieterSelect.setItems(mieterService.findeAlleMieter());
         mieterSelect.setItemLabelGenerator(mieter -> UiFormatUtils.formatiereMieterName(mieter, ""));
         mieterSelect.setPlaceholder("Bitte wählen...");
         mieterSelect.setRequiredIndicatorVisible(true);
         mieterSelect.setWidthFull();
-        mieterSelect.addValueChangeListener(event -> updatePreview());
+        mieterSelect.addValueChangeListener(event -> aktualisiereVorschau());
 
         immobilieSelect.setLabel("Immobilie");
         immobilieSelect.setItems(immobilieService.findeAlleImmobilien());
@@ -208,18 +215,18 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         mieteinheitSelect.setRequiredIndicatorVisible(true);
         mieteinheitSelect.setWidthFull();
         mieteinheitSelect.setEnabled(false);
-        mieteinheitSelect.addValueChangeListener(event -> updatePreview());
+        mieteinheitSelect.addValueChangeListener(event -> aktualisiereVorschau());
 
         immobilieSelect.addValueChangeListener(event -> {
             aktualisiereMieteinheiten(event.getValue());
-            updatePreview();
+            aktualisiereVorschau();
         });
 
-        FormLayout form = createTwoColumnFormLayout();
+        FormLayout form = erstelleZweispaltigesFormular();
         form.add(mieterSelect, immobilieSelect, mieteinheitSelect);
         form.setColspan(mieterSelect, 2);
 
-        return createFormCard(
+        return erstelleFormularKarte(
                 "Mietobjekt & Mieter",
                 "Verknüpft den Vertrag mit einem bestehenden Mieter und einer freien bzw. passenden Einheit.",
                 VaadinIcon.USERS,
@@ -227,6 +234,8 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         );
     }
 
+    // Renovierte Einheiten werden nicht angeboten,
+    // weil daraus kein neuer aktiver Mietvertrag erstellt werden soll.
     private void aktualisiereMieteinheiten(Immobilie immobilie) {
         mieteinheitSelect.clear();
 
@@ -251,15 +260,15 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         );
     }
 
-    private Component createVertragsdatenCard() {
+    private Component erstelleVertragsdatenKarte() {
         vertragsbeginnPicker.setPlaceholder("tt.mm.jjjj");
         vertragsbeginnPicker.setRequiredIndicatorVisible(true);
         vertragsbeginnPicker.setWidthFull();
-        vertragsbeginnPicker.addValueChangeListener(event -> updatePreview());
+        vertragsbeginnPicker.addValueChangeListener(event -> aktualisiereVorschau());
 
         vertragsendePicker.setPlaceholder("tt.mm.jjjj");
         vertragsendePicker.setWidthFull();
-        vertragsendePicker.addValueChangeListener(event -> updatePreview());
+        vertragsendePicker.addValueChangeListener(event -> aktualisiereVorschau());
 
         kuendigungsfristSelect.setLabel("Kündigungsfrist");
         kuendigungsfristSelect.setItems(
@@ -270,7 +279,7 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         );
         kuendigungsfristSelect.setValue("Gesetzlich (3 Monate)");
         kuendigungsfristSelect.setWidthFull();
-        kuendigungsfristSelect.addValueChangeListener(event -> updatePreview());
+        kuendigungsfristSelect.addValueChangeListener(event -> aktualisiereVorschau());
 
         zahlungsintervallSelect.setLabel("Zahlungsintervall");
         zahlungsintervallSelect.setItems(
@@ -281,7 +290,7 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         zahlungsintervallSelect.setValue("Monatlich");
         zahlungsintervallSelect.setWidthFull();
 
-        FormLayout form = createTwoColumnFormLayout();
+        FormLayout form = erstelleZweispaltigesFormular();
         form.add(
                 vertragsbeginnPicker,
                 vertragsendePicker,
@@ -289,7 +298,7 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
                 zahlungsintervallSelect
         );
 
-        return createFormCard(
+        return erstelleFormularKarte(
                 "Vertragsdaten",
                 "Beginn, optionales Ende und Kündigungslogik des Mietverhältnisses.",
                 VaadinIcon.CALENDAR_CLOCK,
@@ -297,7 +306,9 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         );
     }
 
-    private Component createFinanzielleDetailsCard() {
+    // Kaltmiete und Nebenkosten werden direkt zusammengerechnet,
+    // damit die Warmmiete vor dem Speichern sichtbar ist.
+    private Component erstelleFinanzKarte() {
         kaltmieteField.setPlaceholder("0.00");
         kaltmieteField.setRequiredIndicatorVisible(true);
         kaltmieteField.setSuffixComponent(new Span("€"));
@@ -335,13 +346,13 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         warmmieteText.add(warmmieteLabel, warmmieteValue, warmmieteHint);
         warmmieteBox.add(warmmieteIcon, warmmieteText);
 
-        configureWarmmieteCalculation(kaltmieteField, nebenkostenField, warmmieteValue);
+        richteWarmmieteBerechnungEin(kaltmieteField, nebenkostenField, warmmieteValue);
 
-        FormLayout form = createTwoColumnFormLayout();
+        FormLayout form = erstelleZweispaltigesFormular();
         form.add(kaltmieteField, nebenkostenField, warmmieteBox);
         form.setColspan(warmmieteBox, 2);
 
-        return createFormCard(
+        return erstelleFormularKarte(
                 "Finanzielle Details",
                 "Monatliche Beträge werden direkt zur Warmmiete zusammengerechnet.",
                 VaadinIcon.EURO,
@@ -353,6 +364,8 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         try {
             pruefePflichtfelder();
 
+            // Aus den Formularwerten wird der neue Mietvertrag gebaut.
+            // Mieter und Mieteinheit werden danach über ihre IDs verknüpft.
             Mietvertrag mietvertrag = new Mietvertrag();
             mietvertrag.setStartdatum(vertragsbeginnPicker.getValue());
             mietvertrag.setEnddatum(vertragsendePicker.getValue());
@@ -377,6 +390,8 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         }
     }
 
+    // Hier werden nur die Eingaben geprüft, die direkt in diesem Formular sichtbar sind.
+    // Fachliche Regeln prüft der Service beim Speichern nochmal.
     private void pruefePflichtfelder() {
         boolean fehler = false;
 
@@ -421,6 +436,8 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         return leer;
     }
 
+    // Die Auswahl wird als Datum gespeichert, weil der Vertrag später daraus
+    // ein konkretes Kündigungsdatum anzeigen kann.
     private LocalDate berechneKuendigungsfrist() {
         if (vertragsbeginnPicker.getValue() == null) {
             return null;
@@ -471,23 +488,23 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         return field.getValue();
     }
 
-    private void configureWarmmieteCalculation(
+    private void richteWarmmieteBerechnungEin(
             NumberField kaltmieteField,
             NumberField nebenkostenField,
             Span warmmieteValue
     ) {
         kaltmieteField.addValueChangeListener(event ->
-                updateWarmmiete(kaltmieteField, nebenkostenField, warmmieteValue)
+                aktualisiereWarmmiete(kaltmieteField, nebenkostenField, warmmieteValue)
         );
 
         nebenkostenField.addValueChangeListener(event ->
-                updateWarmmiete(kaltmieteField, nebenkostenField, warmmieteValue)
+                aktualisiereWarmmiete(kaltmieteField, nebenkostenField, warmmieteValue)
         );
 
-        updateWarmmiete(kaltmieteField, nebenkostenField, warmmieteValue);
+        aktualisiereWarmmiete(kaltmieteField, nebenkostenField, warmmieteValue);
     }
 
-    private void updateWarmmiete(
+    private void aktualisiereWarmmiete(
             NumberField kaltmieteField,
             NumberField nebenkostenField,
             Span warmmieteValue
@@ -500,7 +517,7 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         previewWarmmiete.setText(UiFormatUtils.formatiereEuro(warmmiete));
     }
 
-    private Component createBottomActions() {
+    private Component erstelleSpeicherBereich() {
         Div actions = new Div();
         actions.addClassName("contract-form-actions");
 
@@ -535,7 +552,9 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         return actions;
     }
 
-    private Div createFormCard(String titleText, String subtitleText, VaadinIcon icon, Component content) {
+    // Einheitliche Karte für die einzelnen Formularbereiche.
+    // Dadurch sehen Auswahl, Vertragsdaten und Finanzdaten gleich aufgebaut aus.
+    private Div erstelleFormularKarte(String titleText, String subtitleText, VaadinIcon icon, Component content) {
         Div card = new Div();
         card.addClassName("contract-form-card");
         card.setWidthFull();
@@ -572,7 +591,9 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         return card;
     }
 
-    private FormLayout createTwoColumnFormLayout() {
+    // Auf breiten Bildschirmen stehen die Felder nebeneinander.
+    // Auf kleinen Bildschirmen rutschen sie untereinander.
+    private FormLayout erstelleZweispaltigesFormular() {
         FormLayout form = new FormLayout();
         form.addClassName("contract-form-layout");
 
@@ -584,7 +605,9 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         return form;
     }
 
-    private void updatePreview() {
+    // Die Vorschau zeigt nur die wichtigsten Daten:
+    // Mieter, Mietobjekt, Zeitraum, Warmmiete und Kündigungsfrist.
+    private void aktualisiereVorschau() {
         Mieter mieter = mieterSelect.getValue();
         Immobilie immobilie = immobilieSelect.getValue();
         Mieteinheit mieteinheit = mieteinheitSelect.getValue();
@@ -617,7 +640,7 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         } else if (ende == null) {
             previewZeitraum.setText("ab " + UiFormatUtils.formatiereDatum(start) + " · unbefristet");
         } else {
-            previewZeitraum.setText(UiFormatUtils.formatiereDatum(start) + " – " + UiFormatUtils.formatiereDatum(ende));
+            previewZeitraum.setText(UiFormatUtils.formatiereDatum(start) + " bis " + UiFormatUtils.formatiereDatum(ende));
         }
 
         previewKuendigungsfrist.setText(formatiereKuendigungsfrist());
@@ -643,17 +666,21 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
         return "Neuen Mietvertrag erfassen";
     }
 
-    // Falls Mietvertrag über MieteinheitDetailView angelegt wird -> übernehme Immobilie und Mieteinheit automatisch
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        this.mieterId = leseLongQueryParameter(event, "mieterId");
         this.immobilieId = leseLongQueryParameter(event, "immobilieId");
         this.mieteinheitId = leseLongQueryParameter(event, "mieteinheitId");
+
+        if (mieterId != null) {
+            uebernehmeMieterAusUrl(mieterId);
+        }
 
         if (immobilieId != null && mieteinheitId != null) {
             uebernehmeMietobjektAusUrl(immobilieId, mieteinheitId);
         }
 
-        updatePreview();
+        aktualisiereVorschau();
     }
 
     private Long leseLongQueryParameter(BeforeEnterEvent event, String parameterName) {
@@ -664,6 +691,19 @@ public class MietvertragFormView extends Div implements HasPageHeader, BeforeEnt
                 .orElse(null);
     }
 
+    // Wenn man den Vertrag aus einer Mieteransicht anlegt,
+    // wird der Mieter direkt vorausgewählt.
+    private void uebernehmeMieterAusUrl(Long mieterId) {
+        Mieter mieter = mieterService.findeMieterNachId(mieterId)
+                .orElseThrow(() -> new IllegalArgumentException("Mieter wurde nicht gefunden."));
+
+        mieterSelect.setItems(mieter);
+        mieterSelect.setValue(mieter);
+        mieterSelect.setReadOnly(true);
+    }
+
+    // Wenn man den Vertrag aus einer Mieteinheit heraus anlegt,
+    // werden Immobilie und Mieteinheit direkt übernommen.
     private void uebernehmeMietobjektAusUrl(Long immobilieId, Long mieteinheitId) {
         Immobilie immobilie = immobilieService.findeImmobilieNachId(immobilieId)
                 .orElseThrow(() -> new IllegalArgumentException("Immobilie wurde nicht gefunden."));
