@@ -4,6 +4,10 @@ import jakarta.persistence.*;
 
 import java.time.LocalDate;
 
+/**
+ * Entity für einen Mieter.
+ * Hier werden die persönlichen Daten, Kontaktdaten und optional Bankdaten gespeichert.
+ */
 @Entity
 public class Mieter {
 
@@ -20,19 +24,35 @@ public class Mieter {
     private LocalDate geburtsdatum;
     private String beruf;
 
+    /**
+     * Die E-Mail muss eindeutig sein.
+     * Dadurch kann ein Mieter nicht versehentlich doppelt mit derselben E-Mail angelegt werden.
+     */
     @Column(nullable = false, unique = true)
     private String email;
 
     private String telefonnummer;
 
+    /**
+     * Die Adresse wird direkt beim Mieter gespeichert.
+     * Adresse ist hier kein eigener Datensatz, sondern ein eingebettetes Objekt.
+     */
     @Embedded
     private Adresse adresse;
 
+    /**
+     * Bankdaten sind optional.
+     * Erst wenn bankdatenAktiv true ist, werden Kontoinhaber und IBAN fachlich geprüft.
+     */
     private boolean bankdatenAktiv;
     private String kontoinhaber;
     private String iban;
     private String bic;
 
+    /**
+     * Archivierte Mieter werden nicht gelöscht,
+     * sondern nur aus der normalen Übersicht ausgeblendet.
+     */
     private boolean archiviert = false;
 
     public Mieter() {}

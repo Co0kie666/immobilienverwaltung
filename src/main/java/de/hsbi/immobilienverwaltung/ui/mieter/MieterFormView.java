@@ -63,14 +63,16 @@ public class MieterFormView extends Div implements HasPageHeader {
         Div pageWrapper = new Div();
         pageWrapper.addClassName("tenant-form-wrapper");
 
-        pageWrapper.add(createFormContent());
+        pageWrapper.add(erstelleSeitenInhalt());
 
         add(pageWrapper);
 
-        updatePreview();
+        aktualisiereVorschau();
     }
 
-    private Component createFormContent() {
+    // Hier wird die Seite grob aufgebaut:
+    // Kopfbereich, Formularbereiche und der Speicherbereich unten.
+    private Component erstelleSeitenInhalt() {
         Div content = new Div();
         content.addClassName("tenant-form-content");
 
@@ -78,21 +80,22 @@ public class MieterFormView extends Div implements HasPageHeader {
         formGrid.addClassName("tenant-form-grid");
 
         formGrid.add(
-                createPersonendatenCard(),
-                createKontaktAdresseCard()
+                erstellePersonendatenKarte(),
+                erstelleKontaktAdresseKarte()
         );
 
         content.add(
-                createHero(),
+                erstelleKopfbereich(),
                 formGrid,
-                createBankverbindungCard(),
-                createBottomActions()
+                erstelleBankdatenKarte(),
+                erstelleSpeicherBereich()
         );
 
         return content;
     }
 
-    private Component createHero() {
+    // Der Kopfbereich enthält den Titel, die kurze Erklärung und die Live-Vorschau.
+    private Component erstelleKopfbereich() {
         Div hero = new Div();
         hero.addClassName("tenant-form-hero");
 
@@ -128,14 +131,16 @@ public class MieterFormView extends Div implements HasPageHeader {
 
         content.add(eyebrow, title, subtitle, actions);
 
-        Div preview = createProfilePreview();
+        Div preview = erstelleProfilVorschau();
 
         hero.add(content, preview);
 
         return hero;
     }
 
-    private Div createProfilePreview() {
+    // Die Vorschau zeigt schon während der Eingabe,
+    // wie der Mieter später ungefähr in der Oberfläche wirkt.
+    private Div erstelleProfilVorschau() {
         Div preview = new Div();
         preview.addClassName("tenant-form-preview");
 
@@ -153,9 +158,9 @@ public class MieterFormView extends Div implements HasPageHeader {
         Div facts = new Div();
         facts.addClassName("tenant-form-preview-facts");
         facts.add(
-                createPreviewFact(VaadinIcon.CHECK, "Pflichtfelder klar markiert"),
-                createPreviewFact(VaadinIcon.ENVELOPE, "E-Mail wird geprüft"),
-                createPreviewFact(VaadinIcon.CREDIT_CARD, "Bankdaten optional")
+                erstelleVorschauHinweis(VaadinIcon.CHECK, "Pflichtfelder klar markiert"),
+                erstelleVorschauHinweis(VaadinIcon.ENVELOPE, "E-Mail wird geprüft"),
+                erstelleVorschauHinweis(VaadinIcon.CREDIT_CARD, "Bankdaten optional")
         );
 
         preview.add(label, avatar, previewName, previewMeta, facts);
@@ -163,7 +168,7 @@ public class MieterFormView extends Div implements HasPageHeader {
         return preview;
     }
 
-    private Component createPreviewFact(VaadinIcon icon, String text) {
+    private Component erstelleVorschauHinweis(VaadinIcon icon, String text) {
         Div item = new Div();
         item.addClassName("tenant-form-preview-fact");
 
@@ -177,7 +182,9 @@ public class MieterFormView extends Div implements HasPageHeader {
         return item;
     }
 
-    private Component createBottomActions() {
+    // Der Bereich ist nochmal unten, damit man nach dem Ausfüllen
+    // direkt speichern oder abbrechen kann.
+    private Component erstelleSpeicherBereich() {
         Div actionBar = new Div();
         actionBar.addClassName("tenant-form-actions");
 
@@ -213,28 +220,30 @@ public class MieterFormView extends Div implements HasPageHeader {
         return actionBar;
     }
 
-    private Component createPersonendatenCard() {
+    // In dieser Karte werden alle persönlichen Daten vorbereitet.
+    // Einige Felder aktualisieren zusätzlich die Vorschau.
+    private Component erstellePersonendatenKarte() {
         anredeSelect.setLabel("Anrede");
         anredeSelect.setItems("Herr", "Frau", "Divers");
         anredeSelect.setPlaceholder("Bitte wählen...");
         anredeSelect.setWidthFull();
         anredeSelect.addClassName("tenant-form-field");
-        anredeSelect.addValueChangeListener(event -> updatePreview());
+        anredeSelect.addValueChangeListener(event -> aktualisiereVorschau());
 
-        configureTextField(titelField, "z.B. Dr.", false, null);
-        configureTextField(vornameField, "Max", true, VaadinIcon.USER);
-        configureTextField(nachnameField, "Mustermann", true, VaadinIcon.USER);
-        configureTextField(berufField, "z.B. Softwareentwickler", false, null);
+        richteTextfeldEin(titelField, "z.B. Dr.", false, null);
+        richteTextfeldEin(vornameField, "Max", true, VaadinIcon.USER);
+        richteTextfeldEin(nachnameField, "Mustermann", true, VaadinIcon.USER);
+        richteTextfeldEin(berufField, "z.B. Softwareentwickler", false, null);
 
-        vornameField.addValueChangeListener(event -> updatePreview());
-        nachnameField.addValueChangeListener(event -> updatePreview());
+        vornameField.addValueChangeListener(event -> aktualisiereVorschau());
+        nachnameField.addValueChangeListener(event -> aktualisiereVorschau());
 
         geburtsdatumPicker.setPlaceholder("tt.mm.jjjj");
         geburtsdatumPicker.setWidthFull();
         geburtsdatumPicker.setLocale(Locale.GERMANY);
         geburtsdatumPicker.addClassName("tenant-form-field");
 
-        FormLayout form = createTwoColumnFormLayout();
+        FormLayout form = erstelleZweispaltigesFormular();
 
         form.add(
                 anredeSelect,
@@ -245,7 +254,7 @@ public class MieterFormView extends Div implements HasPageHeader {
                 berufField
         );
 
-        return createFormCard(
+        return erstelleFormularKarte(
                 "Personendaten",
                 "Grunddaten für die eindeutige Zuordnung des Mieters.",
                 VaadinIcon.USER,
@@ -254,20 +263,22 @@ public class MieterFormView extends Div implements HasPageHeader {
         );
     }
 
-    private Component createKontaktAdresseCard() {
-        configureTextField(emailField, "max@beispiel.de", true, VaadinIcon.ENVELOPE);
-        configureTextField(telefonField, "+491511234567", false, VaadinIcon.PHONE);
-        configureTextField(strasseField, "Musterstraße", false, VaadinIcon.HOME);
-        configureTextField(hausnummerField, "123", false, VaadinIcon.HOME);
-        configureTextField(plzField, "10115", false, VaadinIcon.MAP_MARKER);
-        configureTextField(ortField, "Berlin", false, VaadinIcon.MAP_MARKER);
+    // Kontakt und Adresse stehen zusammen, weil man diese Daten
+    // später meistens gemeinsam braucht.
+    private Component erstelleKontaktAdresseKarte() {
+        richteTextfeldEin(emailField, "max@beispiel.de", true, VaadinIcon.ENVELOPE);
+        richteTextfeldEin(telefonField, "+491511234567", false, VaadinIcon.PHONE);
+        richteTextfeldEin(strasseField, "Musterstraße", false, VaadinIcon.HOME);
+        richteTextfeldEin(hausnummerField, "123", false, VaadinIcon.HOME);
+        richteTextfeldEin(plzField, "10115", false, VaadinIcon.MAP_MARKER);
+        richteTextfeldEin(ortField, "Berlin", false, VaadinIcon.MAP_MARKER);
 
         telefonField.setAllowedCharPattern("[0-9+ ]");
 
-        emailField.addValueChangeListener(event -> updatePreview());
-        ortField.addValueChangeListener(event -> updatePreview());
+        emailField.addValueChangeListener(event -> aktualisiereVorschau());
+        ortField.addValueChangeListener(event -> aktualisiereVorschau());
 
-        FormLayout form = createTwoColumnFormLayout();
+        FormLayout form = erstelleZweispaltigesFormular();
 
         form.add(
                 emailField,
@@ -278,7 +289,7 @@ public class MieterFormView extends Div implements HasPageHeader {
                 ortField
         );
 
-        return createFormCard(
+        return erstelleFormularKarte(
                 "Kontakt & Adresse",
                 "So bleibt der Mieter schnell erreichbar und sauber dokumentiert.",
                 VaadinIcon.ENVELOPE,
@@ -287,22 +298,24 @@ public class MieterFormView extends Div implements HasPageHeader {
         );
     }
 
-    private Component createBankverbindungCard() {
-        configureTextField(kontoinhaberField, "Max Mustermann", false, VaadinIcon.USER);
-        configureTextField(ibanField, "DE12 3456 7890 1234 5678 90", false, VaadinIcon.CREDIT_CARD);
-        configureTextField(bicField, "Musterbank eG", false, VaadinIcon.BUILDING);
+    // Die Bankdaten sind optional. Deshalb sind die Felder am Anfang deaktiviert
+    // und werden erst durch die Checkbox freigegeben.
+    private Component erstelleBankdatenKarte() {
+        richteTextfeldEin(kontoinhaberField, "Max Mustermann", false, VaadinIcon.USER);
+        richteTextfeldEin(ibanField, "DE12 3456 7890 1234 5678 90", false, VaadinIcon.CREDIT_CARD);
+        richteTextfeldEin(bicField, "Musterbank eG", false, VaadinIcon.BUILDING);
 
         List<TextField> bankFields = List.of(kontoinhaberField, ibanField, bicField);
         bankFields.forEach(field -> field.setEnabled(false));
 
         bankdatenAktiv.addClassName("tenant-bank-toggle");
 
-        FormLayout form = createTwoColumnFormLayout();
+        FormLayout form = erstelleZweispaltigesFormular();
 
         form.add(kontoinhaberField, ibanField, bicField);
         form.setColspan(kontoinhaberField, 2);
 
-        Div card = createFormCard(
+        Div card = erstelleFormularKarte(
                 "Bankverbindung",
                 "Optional für Lastschrift, Rückzahlungen oder interne Dokumentation.",
                 VaadinIcon.CREDIT_CARD,
@@ -326,7 +339,9 @@ public class MieterFormView extends Div implements HasPageHeader {
         return card;
     }
 
-    private void configureTextField(
+    // Gleiche Grundeinstellungen für normale Textfelder,
+    // damit die Formularfelder optisch zusammenpassen.
+    private void richteTextfeldEin(
             TextField field,
             String placeholder,
             boolean required,
@@ -347,6 +362,8 @@ public class MieterFormView extends Div implements HasPageHeader {
         try {
             pruefePflichtfelder();
 
+            // Aus den Formularwerten werden jetzt die Objekte gebaut,
+            // die der Service speichern kann.
             Adresse adresse = new Adresse(
                     strasseField.getValue(),
                     hausnummerField.getValue(),
@@ -390,6 +407,8 @@ public class MieterFormView extends Div implements HasPageHeader {
         }
     }
 
+    // Die Pflichtfelder werden direkt im Formular markiert.
+    // So sieht man sofort, was beim Speichern noch fehlt.
     private void pruefePflichtfelder() {
         boolean fehler = false;
 
@@ -430,7 +449,9 @@ public class MieterFormView extends Div implements HasPageHeader {
         return leer;
     }
 
-    private Div createFormCard(
+    // Diese Methode baut eine einheitliche Formular-Karte.
+    // Dadurch sehen Personendaten, Kontakt und Bankdaten gleich aufgebaut aus.
+    private Div erstelleFormularKarte(
             String titleText,
             String subtitleText,
             VaadinIcon icon,
@@ -480,7 +501,9 @@ public class MieterFormView extends Div implements HasPageHeader {
         return card;
     }
 
-    private FormLayout createTwoColumnFormLayout() {
+    // Dieses Layout macht aus den Feldern ein zweispaltiges Formular.
+    // Auf kleinen Bildschirmen wird daraus automatisch eine Spalte.
+    private FormLayout erstelleZweispaltigesFormular() {
         FormLayout form = new FormLayout();
         form.setWidthFull();
 
@@ -495,7 +518,9 @@ public class MieterFormView extends Div implements HasPageHeader {
         return form;
     }
 
-    private void updatePreview() {
+    // Die Vorschau nimmt nur die wichtigsten sichtbaren Daten:
+    // Name, Initialen, E-Mail und optional den Ort.
+    private void aktualisiereVorschau() {
         String vorname = UiFormatUtils.wertOderLeer(vornameField.getValue()).trim();
         String nachname = UiFormatUtils.wertOderLeer(nachnameField.getValue()).trim();
         String email = UiFormatUtils.wertOderLeer(emailField.getValue()).trim();

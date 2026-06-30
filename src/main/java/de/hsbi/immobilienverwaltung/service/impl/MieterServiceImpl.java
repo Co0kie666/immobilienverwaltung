@@ -1,16 +1,15 @@
 package de.hsbi.immobilienverwaltung.service.impl;
 
 import de.hsbi.immobilienverwaltung.domain.Mieter;
+import de.hsbi.immobilienverwaltung.domain.Mietvertrag;
+import de.hsbi.immobilienverwaltung.domain.enums.Vertragsstatus;
 import de.hsbi.immobilienverwaltung.repository.MieterRepository;
+import de.hsbi.immobilienverwaltung.repository.MietvertragRepository;
 import de.hsbi.immobilienverwaltung.service.interfaces.MieterService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import de.hsbi.immobilienverwaltung.domain.Mietvertrag;
-import de.hsbi.immobilienverwaltung.domain.enums.Vertragsstatus;
-import de.hsbi.immobilienverwaltung.repository.MietvertragRepository;
 
 import java.time.LocalDate;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -31,6 +30,20 @@ public class MieterServiceImpl implements MieterService {
     @Override
     @Transactional
     public Mieter speichereMieter(Mieter mieter) {
+        // Die wichtigsten Regeln werden hier nochmal geprüft,
+        // damit nicht nur die Oberfläche entscheidet, was gespeichert werden darf.
+        pruefeGrunddaten(mieter);
+        pruefeTelefonnummer(mieter);
+        pruefeEmailIstFrei(mieter);
+        pruefeBankdaten(mieter);
+
+        return mieterRepository.save(mieter);
+    }
+
+    private void pruefeGrunddaten(Mieter mieter) {
+        if (mieter == null) {
+            throw new IllegalArgumentException("Mieter darf nicht leer sein.");
+        }
 
         if (mieter.getVorname() == null || mieter.getVorname().isBlank()) {
             throw new IllegalArgumentException("Vorname darf nicht leer sein.");
@@ -47,34 +60,46 @@ public class MieterServiceImpl implements MieterService {
         if (!mieter.getEmail().contains("@")) {
             throw new IllegalArgumentException("E-Mail ist ungültig.");
         }
+    }
 
-        if (mieter.getTelefonnummer() != null
-                && !mieter.getTelefonnummer().isBlank()
-                && !mieter.getTelefonnummer().matches("\\+?[0-9 ]*")) {
+    private void pruefeTelefonnummer(Mieter mieter) {
+        String telefonnummer = mieter.getTelefonnummer();
+
+        if (telefonnummer != null
+                && !telefonnummer.isBlank()
+                && !telefonnummer.matches("\\+?[0-9 ]*")) {
             throw new IllegalArgumentException("Telefonnummer darf nur Zahlen und optional ein + am Anfang enthalten.");
         }
+    }
 
+    private void pruefeEmailIstFrei(Mieter mieter) {
         Optional<Mieter> vorhandenerMieter = mieterRepository.findByEmailIgnoreCase(mieter.getEmail());
 
-        if (vorhandenerMieter.isPresent()) {
-            Mieter andererMieter = vorhandenerMieter.get();
-
-            if (mieter.getId() == null || !mieter.getId().equals(andererMieter.getId())) {
-                throw new IllegalArgumentException("Diese E-Mail wird bereits verwendet.");
-            }
+        if (vorhandenerMieter.isEmpty()) {
+            return;
         }
 
-        if (mieter.isBankdatenAktiv()) {
-            if (mieter.getKontoinhaber() == null || mieter.getKontoinhaber().isBlank()) {
-                throw new IllegalArgumentException("Kontoinhaber darf nicht leer sein.");
-            }
+        Mieter andererMieter = vorhandenerMieter.get();
 
-            if (mieter.getIban() == null || mieter.getIban().isBlank()) {
-                throw new IllegalArgumentException("IBAN darf nicht leer sein.");
-            }
+        // Beim Bearbeiten darf der Mieter seine eigene E-Mail behalten.
+        // Blockiert wird nur, wenn die E-Mail zu einem anderen Mieter gehört.
+        if (mieter.getId() == null || !mieter.getId().equals(andererMieter.getId())) {
+            throw new IllegalArgumentException("Diese E-Mail wird bereits verwendet.");
+        }
+    }
+
+    private void pruefeBankdaten(Mieter mieter) {
+        if (!mieter.isBankdatenAktiv()) {
+            return;
         }
 
-        return mieterRepository.save(mieter);
+        if (mieter.getKontoinhaber() == null || mieter.getKontoinhaber().isBlank()) {
+            throw new IllegalArgumentException("Kontoinhaber darf nicht leer sein.");
+        }
+
+        if (mieter.getIban() == null || mieter.getIban().isBlank()) {
+            throw new IllegalArgumentException("IBAN darf nicht leer sein.");
+        }
     }
 
     @Override
@@ -93,9 +118,11 @@ public class MieterServiceImpl implements MieterService {
             return findeAlleMieter();
         }
 
+        String suchtext = suchbegriff.trim();
+
         return mieterRepository.findByVornameContainingIgnoreCaseOrNachnameContainingIgnoreCase(
-                        suchbegriff,
-                        suchbegriff
+                        suchtext,
+                        suchtext
                 )
                 .stream()
                 .filter(mieter -> !mieter.isArchiviert())
@@ -113,7 +140,8 @@ public class MieterServiceImpl implements MieterService {
         Mieter mieter = mieterRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Mieter wurde nicht gefunden."));
 
-        if (hatLaufendenMietvertrag(id)) {
+        // Archivieren ist nur erlaubt, wenn der Mieter wirklich keinen laufenden Vertrag mehr hat.
+        if (hatAktivenOderAuslaufendenMietvertrag(id)) {
             throw new IllegalStateException(
                     "Mieter kann nicht archiviert werden, da noch ein aktiver oder auslaufender Mietvertrag besteht."
             );
@@ -123,13 +151,13 @@ public class MieterServiceImpl implements MieterService {
         mieterRepository.save(mieter);
     }
 
-    private boolean hatLaufendenMietvertrag(Long mieterId) {
+    private boolean hatAktivenOderAuslaufendenMietvertrag(Long mieterId) {
         return mietvertragRepository.findByMieterId(mieterId)
                 .stream()
-                .anyMatch(this::istLaufenderMietvertrag);
+                .anyMatch(this::istAktivOderLaeuftNochAus);
     }
 
-    private boolean istLaufenderMietvertrag(Mietvertrag mietvertrag) {
+    private boolean istAktivOderLaeuftNochAus(Mietvertrag mietvertrag) {
         if (mietvertrag == null || mietvertrag.getStatus() == null) {
             return false;
         }
@@ -138,6 +166,8 @@ public class MieterServiceImpl implements MieterService {
             return true;
         }
 
+        // Ein gekündigter Vertrag zählt noch als laufend,
+        // solange das Enddatum noch nicht vorbei ist.
         return mietvertrag.getStatus() == Vertragsstatus.GEKUENDIGT
                 && (
                 mietvertrag.getEnddatum() == null
