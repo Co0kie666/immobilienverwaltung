@@ -18,7 +18,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String email)
+    public UserDetails loadUserByUsername(String email) //Laedt einen Nutzer anhand seiner E-Mail-Adresse.
             throws UsernameNotFoundException {
 
         String normalizedEmail = email.trim().toLowerCase();
