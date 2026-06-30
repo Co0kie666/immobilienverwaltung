@@ -55,7 +55,7 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Passwörter stimmen nicht überein.");
         }
 
-        String normalizedEmail = email.trim().toLowerCase();
+        String normalizedEmail = email.trim().toLowerCase(); //normalisiert eingabe des nutzers (sauberer daten)
 
         if (nutzerRepository.existsByEmail(normalizedEmail)) {
             throw new IllegalArgumentException("Diese E-Mail ist bereits registriert.");
@@ -71,6 +71,8 @@ public class AuthServiceImpl implements AuthService {
         return nutzerRepository.save(nutzer);
     }
 
+
+    //prueft ob nutzer angemeldet ist, ob email hat und gibt email des aktuellen user zuruek
     @Override
     public Optional<Nutzer> getCurrentUser() {
         Authentication authentication =
@@ -89,7 +91,7 @@ public class AuthServiceImpl implements AuthService {
         return nutzerRepository.findByEmail(email);
     }
 
-    private void validateEmail(String email) {
+    private void validateEmail(String email) {  //prueft email format
         EmailCheck emailCheck = new EmailCheck(email);
 
         Set<ConstraintViolation<EmailCheck>> violations =
