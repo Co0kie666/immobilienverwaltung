@@ -78,6 +78,8 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         createFields();
     }
 
+    // Wird aufgerufen, bevor die Detailseite geöffnet wird.
+    // Liest den Buchungstyp und die ID aus der URL und lädt die passende Buchung.
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         typ = event.getRouteParameters().get("typ").orElse("").toLowerCase();
@@ -109,6 +111,8 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         renderView();
     }
 
+    // Lädt eine Ausgabe anhand der ID aus der Datenbank.
+    // Gibt false zurück, wenn keine passende Ausgabe gefunden wurde.
     private boolean ladeAusgabe(BeforeEnterEvent event) {
         aktuelleAusgabe = ausgabeService.findeAusgabeNachId(id).orElse(null);
 
@@ -122,6 +126,8 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         return true;
     }
 
+    // Lädt einen Zahlungseingang anhand der ID aus der Datenbank.
+    // Gibt false zurück, wenn kein passender Zahlungseingang gefunden wurde.
     private boolean ladeZahlungseingang(BeforeEnterEvent event) {
         aktuellerZahlungseingang = zahlungsEingangService.findeZahlungseingangNachId(id).orElse(null);
 
@@ -135,6 +141,8 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         return true;
     }
 
+    // Baut die Seite neu auf.
+    // Das wird genutzt, um zwischen Ansicht und Bearbeitungsmodus zu wechseln.
     private void renderView() {
         removeAll();
 
@@ -145,6 +153,8 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         );
     }
 
+    // Erstellt die Eingabefelder für den Bearbeitungsmodus.
+    // Die Felder werden später je nach Buchungstyp mit Daten befüllt.
     private void createFields() {
         betragField = new BigDecimalField("Betrag (€)");
         betragField.setPrefixComponent(new Span("€"));
@@ -175,6 +185,7 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         beschreibungField.setHeight("150px");
     }
 
+    // Erstellt den oberen Bereich der Detailseite mit Titel, Status und Aktionsbuttons.
     private Component createHero() {
         Div hero = new Div();
         hero.addClassNames("buchung-detail-hero", istAusgabe() ? "expense" : "income");
@@ -260,6 +271,7 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         return loeschenButton;
     }
 
+    // Erstellt die Übersichtskarten mit den wichtigsten Informationen der Buchung.
     private Component createStatsGrid() {
         Div grid = new Div();
         grid.addClassName("buchung-detail-stats-grid");
@@ -329,6 +341,8 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         return card;
     }
 
+    // Erstellt den Hauptbereich der Seite.
+    // Je nach Modus wird entweder die Detailansicht oder das Bearbeitungsformular angezeigt.
     private Component createContentLayout() {
         Div contentGrid = new Div();
         contentGrid.addClassName("buchung-detail-content-grid");
@@ -396,7 +410,7 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         card.add(note);
         return card;
     }
-
+    // Erstellt das Formular zum Bearbeiten der Buchung.
     private Component createEditCard() {
         befuelleFelder();
 
@@ -475,6 +489,7 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         return card;
     }
 
+    // Befüllt die Eingabefelder mit den aktuellen Werten der geladenen Buchung.
     private void befuelleFelder() {
         betragField.setValue(getBetrag());
         datumField.setValue(getDatum());
@@ -496,6 +511,8 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         }
     }
 
+    // Speichert die geänderten Werte in der Datenbank.
+    // Je nach Buchungstyp wird entweder eine Ausgabe oder ein Zahlungseingang aktualisiert.
     private void speichereBuchung() {
         try {
             if (istAusgabe()) {
@@ -527,6 +544,7 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         }
     }
 
+    // Öffnet einen Bestätigungsdialog und löscht die Buchung erst nach Bestätigung.
     private void oeffneLoeschDialog() {
         ConfirmDeleteDialog dialog = new ConfirmDeleteDialog(
                 getBuchungTypLabel() + " löschen?",
@@ -551,6 +569,7 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         dialog.open();
     }
 
+    // Navigiert zur verknüpften Immobilie, falls eine Zuordnung vorhanden ist.
     private void navigiereZurImmobilie() {
         Immobilie immobilie = ermittleImmobilie();
 
@@ -562,6 +581,7 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         getUI().ifPresent(ui -> ui.navigate("immobilien/" + immobilie.getId()));
     }
 
+    // Navigiert zum verknüpften Mietvertrag, falls eine Zuordnung vorhanden ist.
     private void navigiereZumMietvertrag() {
         Mietvertrag mietvertrag = ermittleMietvertrag();
 
@@ -576,6 +596,7 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         ));
     }
 
+    // Navigiert zum verknüpften Mieter, falls eine Zuordnung vorhanden ist.
     private void navigiereZumMieter() {
         Mieter mieter = ermittleMieter();
 
@@ -687,6 +708,8 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         return istAusgabe() ? "Kategorie" : "Zahlungstyp";
     }
 
+    // Gibt die passende Kategorie-Bezeichnung zurück.
+    // Bei Ausgaben wird die Ausgabenkategorie verwendet, bei Einnahmen der Zahlungstyp.
     private String formatKategorie() {
         if (istAusgabe()) {
             return aktuelleAusgabe.getKategorie() == null ? "-" : aktuelleAusgabe.getKategorie().getLabel();
@@ -747,6 +770,8 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         return "neutral";
     }
 
+    // Ermittelt die zugehörige Immobilie.
+    // Bei Einnahmen wird sie über den Mietvertrag und die Mieteinheit gefunden.
     private Immobilie ermittleImmobilie() {
         if (istAusgabe()) {
             if (aktuelleAusgabe.getImmobilie() != null) {
@@ -786,6 +811,8 @@ public class BuchungDetailView extends VerticalLayout implements HasPageHeader, 
         return findeMietvertragFuerAusgabe();
     }
 
+    // Sucht zu einer Ausgabe den passenden Mietvertrag über die Mieteinheit.
+    // Bevorzugt wird ein aktiver Mietvertrag.
     private Mietvertrag findeMietvertragFuerAusgabe() {
         Mieteinheit mieteinheit = aktuelleAusgabe.getMieteinheit();
 

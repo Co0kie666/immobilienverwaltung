@@ -18,10 +18,11 @@ import de.hsbi.immobilienverwaltung.domain.enums.Zahlungseingangtyp;
 import de.hsbi.immobilienverwaltung.service.interfaces.AusgabeService;
 import de.hsbi.immobilienverwaltung.service.interfaces.MietvertragService;
 import de.hsbi.immobilienverwaltung.service.interfaces.ZahlungsEingangService;
+import de.hsbi.immobilienverwaltung.ui.UiFormatUtils;
 import de.hsbi.immobilienverwaltung.ui.layout.HasPageHeader;
 import de.hsbi.immobilienverwaltung.ui.layout.MainLayout;
 import jakarta.annotation.security.PermitAll;
-import de.hsbi.immobilienverwaltung.ui.UiFormatUtils;
+
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -31,12 +32,15 @@ import java.util.List;
 @PermitAll
 public class BuchungListView extends Div implements HasPageHeader {
 
+    // Feste Werte für Filter und Pagination.
+    // So werden gleiche Texte nicht mehrfach im Code verteilt.
     private static final String ALLE_KATEGORIEN = "Alle Kategorien";
     private static final String ALLE_IMMOBILIEN = "Alle Immobilien";
     private static final int BUCHUNGEN_PRO_SEITE = 20;
 
     private final Grid<BuchungRow> grid = new Grid<>(BuchungRow.class, false);
 
+    // UI-Komponenten für Suche, Filter und Seitensteuerung der Buchungsliste.
     private final TextField searchField = new TextField("Suche");
     private final Select<String> buchungTypSelect = new Select<>();
     private final Select<String> statusSelect = new Select<>();
@@ -46,13 +50,18 @@ public class BuchungListView extends Div implements HasPageHeader {
     private final Button naechsteSeiteButton = new Button("Weiter");
     private final Span seitenInfo = new Span();
 
+    // gefilterteBuchungen enthält nur die aktuell durch Suche und Filter passenden Einträge.
+    // aktuelleSeite bestimmt, welche Seite dieser gefilterten Liste angezeigt wird.
     private List<BuchungRow> gefilterteBuchungen = new ArrayList<>();
     private int aktuelleSeite = 0;
 
+    // Services liefern die Daten aus der Geschäftslogik.
+    // Ausgaben und Zahlungseingänge werden später zu einer gemeinsamen Tabellenliste zusammengeführt.
     private final AusgabeService ausgabeService;
     private final ZahlungsEingangService zahlungsEingangService;
     private final MietvertragService mietvertragService;
 
+    // alleBuchungen enthält alle geladenen Buchungen aus der Datenbank.
     private List<BuchungRow> alleBuchungen = new ArrayList<>();
 
     public BuchungListView(
@@ -126,6 +135,8 @@ public class BuchungListView extends Div implements HasPageHeader {
         return hero;
     }
 
+    // Erstellt die Kennzahlen-Karten oberhalb der Tabelle,
+    // z. B. Gesamtanzahl, Einnahmen, Ausgaben und offene Buchungen.
     private Component createKpiGrid() {
         Div grid = new Div();
         grid.addClassNames("booking-list-kpi-grid", "dashboard-kpi-grid");
@@ -167,7 +178,6 @@ public class BuchungListView extends Div implements HasPageHeader {
 
         return grid;
     }
-
 
     private Component createKpiCard(
             String title,
@@ -214,7 +224,8 @@ public class BuchungListView extends Div implements HasPageHeader {
         return card;
     }
 
-
+    // Erstellt die Such- und Filterleiste.
+    // Jede Änderung an einem Filter ruft filtereBuchungen() auf.
     private Div createFilterCard() {
         Div filterCard = new Div();
         filterCard.addClassName("filter-card");
@@ -259,10 +270,12 @@ public class BuchungListView extends Div implements HasPageHeader {
         aktualisiereImmobilienFilter();
 
         searchField.addValueChangeListener(event -> filtereBuchungen());
+
         buchungTypSelect.addValueChangeListener(event -> {
             aktualisiereKategorieFilter();
             filtereBuchungen();
         });
+
         statusSelect.addValueChangeListener(event -> filtereBuchungen());
         kategorieSelect.addValueChangeListener(event -> filtereBuchungen());
         immobilieSelect.addValueChangeListener(event -> filtereBuchungen());
@@ -309,6 +322,8 @@ public class BuchungListView extends Div implements HasPageHeader {
         return tableCard;
     }
 
+    // Erstellt die Seitensteuerung unter der Tabelle.
+    // Damit werden nur 20 Buchungen pro Seite angezeigt.
     private Div createPaginationBar() {
         Div paginationBar = new Div();
         paginationBar.addClassName("pagination-bar");
@@ -339,6 +354,8 @@ public class BuchungListView extends Div implements HasPageHeader {
         return paginationBar;
     }
 
+    // Berechnet anhand der aktuellen Seite,
+    // welche gefilterten Buchungen gerade in der Tabelle angezeigt werden.
     private void aktualisiereAngezeigteSeite() {
         int start = aktuelleSeite * BUCHUNGEN_PRO_SEITE;
         int ende = Math.min(start + BUCHUNGEN_PRO_SEITE, gefilterteBuchungen.size());
@@ -361,6 +378,8 @@ public class BuchungListView extends Div implements HasPageHeader {
         aktualisierePaginationAnzeige();
     }
 
+    // Aktualisiert den Text und die Buttons der Pagination,
+    // z. B. "Zeige 1 - 20 von 35 Buchungen".
     private void aktualisierePaginationAnzeige() {
         int gesamt = gefilterteBuchungen.size();
 
@@ -390,6 +409,8 @@ public class BuchungListView extends Div implements HasPageHeader {
         return (gefilterteBuchungen.size() - 1) / BUCHUNGEN_PRO_SEITE;
     }
 
+    // Konfiguriert die Spalten der Buchungstabelle
+    // und verbindet einen Klick auf eine Zeile mit der Detailansicht.
     private void configureGrid() {
         grid.addClassName("buchung-grid");
         grid.addClassName("clickable-booking-grid");
@@ -494,6 +515,8 @@ public class BuchungListView extends Div implements HasPageHeader {
         return badge;
     }
 
+    // Lädt Ausgaben und Zahlungseingänge aus der Datenbank
+    // und führt sie in einer gemeinsamen Liste von BuchungRow-Objekten zusammen.
     private void ladeBuchungen() {
         alleBuchungen = new ArrayList<>();
 
@@ -536,6 +559,8 @@ public class BuchungListView extends Div implements HasPageHeader {
         );
     }
 
+    // Wandelt das Datum einer Buchung in ein LocalDate um,
+    // damit die Liste nach Datum sortiert werden kann.
     private LocalDate ermittleSortDatum(BuchungRow buchung) {
         if (buchung == null || buchung.datum() == null || "-".equals(buchung.datum())) {
             return LocalDate.MIN;
@@ -548,6 +573,8 @@ public class BuchungListView extends Div implements HasPageHeader {
         }
     }
 
+    // Aktualisiert die auswählbaren Kategorien abhängig vom Buchungstyp.
+    // Bei Einnahmen werden Zahlungstypen angezeigt, bei Ausgaben Ausgabenkategorien.
     private void aktualisiereKategorieFilter() {
         String bisherigeKategorie = kategorieSelect.getValue();
         List<String> kategorien = new ArrayList<>();
@@ -571,24 +598,30 @@ public class BuchungListView extends Div implements HasPageHeader {
         }
     }
 
+    // Fügt die Labels der Zahlungseingangtypen zum Kategorie-Filter hinzu.
     private void fuegeZahlungseingangtypenHinzu(List<String> kategorien) {
         for (Zahlungseingangtyp typ : Zahlungseingangtyp.values()) {
             fuegeKategorieHinzu(kategorien, typ.getLabel());
         }
     }
 
+    // Fügt die Labels der Ausgabenkategorien zum Kategorie-Filter hinzu.
     private void fuegeAusgabenkategorienHinzu(List<String> kategorien) {
         for (Ausgabenkategorie kategorie : Ausgabenkategorie.values()) {
             fuegeKategorieHinzu(kategorien, kategorie.getLabel());
         }
     }
 
+    // Fügt eine Kategorie nur hinzu, wenn sie gültig ist
+    // und noch nicht in der Filterliste existiert.
     private void fuegeKategorieHinzu(List<String> kategorien, String label) {
         if (label != null && !label.isBlank() && !kategorien.contains(label)) {
             kategorien.add(label);
         }
     }
 
+    // Wendet Suche, Typ-, Status-, Kategorie- und Immobilienfilter an.
+    // Das Ergebnis wird danach seitenweise in der Tabelle angezeigt.
     private void filtereBuchungen() {
         String suchtext = searchField.getValue() != null
                 ? searchField.getValue().trim().toLowerCase()
@@ -640,6 +673,8 @@ public class BuchungListView extends Div implements HasPageHeader {
         aktualisiereAngezeigteSeite();
     }
 
+    // Baut den Immobilienfilter aus den tatsächlich vorhandenen Buchungen auf.
+    // Dadurch erscheinen nur Immobilien, die auch in der Liste vorkommen.
     private void aktualisiereImmobilienFilter() {
         String bisherigeImmobilie = immobilieSelect.getValue();
 
@@ -676,7 +711,8 @@ public class BuchungListView extends Div implements HasPageHeader {
                 .count();
     }
 
-
+    // Ermittelt die Immobilie einer Ausgabe.
+    // Falls die Ausgabe keine direkte Immobilie hat, wird sie über die Mieteinheit gesucht.
     private Immobilie ermittleImmobilie(Ausgabe ausgabe) {
         if (ausgabe == null) {
             return null;
@@ -691,6 +727,7 @@ public class BuchungListView extends Div implements HasPageHeader {
         return immobilie;
     }
 
+    // Ermittelt die Immobilie eines Zahlungseingangs über Mietvertrag und Mieteinheit.
     private Immobilie ermittleImmobilie(Mietvertrag mietvertrag) {
         if (mietvertrag == null
                 || mietvertrag.getMieteinheit() == null) {
@@ -700,6 +737,8 @@ public class BuchungListView extends Div implements HasPageHeader {
         return mietvertrag.getMieteinheit().getImmobilie();
     }
 
+    // Sucht zu einer Ausgabe den passenden Mietvertrag über die Mieteinheit.
+    // Aktive Mietverträge werden bevorzugt angezeigt.
     private Mietvertrag findeMietvertragFuerAusgabe(Ausgabe ausgabe) {
         if (ausgabe == null
                 || ausgabe.getMieteinheit() == null
@@ -729,6 +768,8 @@ public class BuchungListView extends Div implements HasPageHeader {
         return vertraege.getFirst();
     }
 
+    // Gemeinsames Anzeigeobjekt für Ausgaben und Zahlungseingänge.
+    // Dadurch kann die Tabelle beide Buchungstypen in einer Liste darstellen.
     private record BuchungRow(
             Long id,
             String datum,

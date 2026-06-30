@@ -40,6 +40,8 @@ import de.hsbi.immobilienverwaltung.ui.UiFormatUtils;
 @PermitAll
 public class BuchungFormView extends VerticalLayout implements HasPageHeader {
 
+    // Services verbinden die View mit der Geschäftslogik und der Datenbank.
+    // Je nach Buchungstyp wird später entweder eine Ausgabe oder ein Zahlungseingang gespeichert.
     private final AusgabeService ausgabeService;
     private final ImmobilieService immobilieService;
     private final MieteinheitService mieteinheitService;
@@ -53,6 +55,8 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
     private DatePicker buchungsdatumField;
     private DatePicker faelligkeitsdatumField;
 
+    // Es gibt zwei verschiedene Kategorie-Felder,
+    // weil Ausgaben und Einnahmen unterschiedliche Enums verwenden.
     private ComboBox<Ausgabenkategorie> kategorieField;
     private ComboBox<Zahlungseingangtyp> zahlungseingangTypField;
     private TextArea beschreibungField;
@@ -94,6 +98,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
         updatePreview();
     }
 
+    // Erstellt alle Eingabefelder und verbindet wichtige Wertänderungen mit der Live-Vorschau.
     private void createFields() {
         buchungstypGroup = new RadioButtonGroup<>();
         buchungstypGroup.setItems("Einnahme", "Ausgabe");
@@ -159,6 +164,8 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
         mieterVertragField.setAllowCustomValue(false);
         mieterVertragField.setWidthFull();
 
+        // Wenn eine Immobilie gewählt wird, werden die passenden Mieteinheiten geladen.
+        // Danach werden auch die möglichen Mietverträge aktualisiert.
         immobilieField.addValueChangeListener(event -> {
             Immobilie selectedImmobilie = event.getValue();
 
@@ -177,6 +184,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
             updatePreview();
         });
 
+        // Bei Auswahl einer Mieteinheit werden die Mietverträge weiter eingeschränkt.
         mieteinheitField.addValueChangeListener(event -> {
             mieterVertragField.clear();
             aktualisiereMietvertraege();
@@ -293,6 +301,8 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
         return card;
     }
 
+    // Wechselt zwischen Einnahme und Ausgabe.
+    // Dabei werden passende Felder ein- oder ausgeblendet und die Vorschau aktualisiert.
     private void selectBuchungstyp(String typ, Div incomeCard, Div expenseCard) {
         buchungstypGroup.setValue(typ);
 
@@ -349,6 +359,8 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
         return option;
     }
 
+    // Zeigt je nach Buchungstyp nur das passende Kategorie-Feld an:
+    // Ausgaben nutzen Ausgabenkategorie, Einnahmen nutzen Zahlungseingangtyp.
     private void aktualisiereKategorieFelder() {
         boolean istAusgabe = "Ausgabe".equals(buchungstypGroup.getValue());
 
@@ -443,6 +455,7 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
         return card;
     }
 
+    // Setzt den ausgewählten Status und aktualisiert die Live-Vorschau.
     private void selectStatus(String status, Div paid, Div open) {
         statusGroup.setValue(status);
 
@@ -516,6 +529,8 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
         return card;
     }
 
+    // Prüft die Eingaben und speichert je nach Buchungstyp
+    // entweder eine Ausgabe oder einen Zahlungseingang in der Datenbank.
     private void speichereBuchung() {
         try {
             pruefePflichtfelder();
@@ -559,6 +574,8 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
         }
     }
 
+    // Prüft die Pflichtfelder vor dem Speichern
+    // und markiert fehlende Eingaben direkt im Formular.
     private void pruefePflichtfelder() {
         boolean fehler = false;
 
@@ -591,6 +608,8 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
         }
     }
 
+    // Aktualisiert die auswählbaren Mietverträge abhängig von Immobilie und Mieteinheit.
+    // Wird keine Zuordnung gewählt, bleiben alle Mietverträge auswählbar.
     private void aktualisiereMietvertraege() {
         Immobilie immobilie = immobilieField.getValue();
         Mieteinheit mieteinheit = mieteinheitField.getValue();
@@ -628,6 +647,8 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
         );
     }
 
+    // Aktualisiert die Live-Vorschau auf der rechten Seite
+    // anhand der aktuellen Eingaben im Formular.
     private void updatePreview() {
         if (previewTyp == null) {
             return;
@@ -668,6 +689,8 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
         previewZuordnung.setText(ermittleZuordnungPreview());
     }
 
+    // Ermittelt, welche Zuordnung in der Vorschau angezeigt wird.
+    // Priorität: Mietvertrag vor Mieteinheit vor Immobilie.
     private String ermittleZuordnungPreview() {
         if (mieterVertragField.getValue() != null) {
             return UiFormatUtils.formatiereMietvertragAuswahl(mieterVertragField.getValue());
@@ -705,6 +728,8 @@ public class BuchungFormView extends VerticalLayout implements HasPageHeader {
         return card;
     }
 
+    // Erstellt ein responsives Formularlayout,
+    // das je nach Bildschirmbreite ein- oder zweispaltig angezeigt wird.
     private FormLayout createTwoColumnFormLayout() {
         FormLayout form = new FormLayout();
         form.addClassName("buchung-form-grid");
